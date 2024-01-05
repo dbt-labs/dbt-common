@@ -151,4 +151,6 @@ Automated tests run via GitHub Actions. If you're a first-time contributor, all 
 
 Once all tests are passing and your PR has been approved, a `dbt-oss-template` maintainer will merge your changes into the active development branch. And that's it! Happy developing :tada:
 
+
+## Troubleshooting Tips
 Sometimes, the content license agreement auto-check bot doesn't find a user's entry in its roster. If you need to force a rerun, add `@cla-bot check` in a comment on the pull request.

@@ -1,6 +1,6 @@
-** replace `dbt-oss-template` with your repository name in all docs
+** replace `dbt-common` with your repository name in all docs
 
-## Understanding dbt-oss-template
+## Understanding dbt-common
 
 A short description of the purpose of this repository.  Include relevant images.
 
@@ -16,8 +16,8 @@ A short description of the purpose of this repository.  Include relevant images.
 
 ## Reporting bugs and contributing code
 
-- Want to report a bug or request a feature? Let us know on [Slack](http://community.getdbt.com/), or open [an issue](https://github.com/dbt-labs/dbt-oss-template/issues/new)
-- Want to help us build dbt? Check out the [Contributing Guide](https://github.com/dbt-labs/dbt-oss-template/blob/HEAD/CONTRIBUTING.md)
+- Want to report a bug or request a feature? Let us know and open [an issue](https://github.com/dbt-labs/dbt-common/issues/new/choose)
+- Want to help us build dbt? Check out the [Contributing Guide](https://github.com/dbt-labs/dbt-common/blob/HEAD/CONTRIBUTING.md)
 
 ## Code of Conduct
 

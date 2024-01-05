@@ -1,6 +1,6 @@
 import unittest
 
-import dbt.exceptions
+import dbt.common.exceptions
 import dbt.common.utils
 
 
@@ -139,5 +139,5 @@ class TestDeepMap(unittest.TestCase):
             result = dbt.common.utils.deep_map_render(lambda x, _: x, case)
             self.assertEqual(result, case)
 
-        with self.assertRaises(dbt.exceptions.DbtConfigError):
+        with self.assertRaises(dbt.common.exceptions.DbtConfigError):
             dbt.common.utils.deep_map_render(lambda x, _: x, {"foo": object()})

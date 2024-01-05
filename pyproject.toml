@@ -21,10 +21,13 @@ classifiers = [
 ]
 dependencies = [
   "agate~=1.7.0",
+  "colorama>=0.3.9,<0.5",  # TODO: major version 0 - should we use it?
   "jsonschema~=4.0",
   "Jinja2~=3.0",
   "mashumaro[msgpack]~=3.9",
+  "protobuf>=4.0.0",
   "python-dateutil~=2.0",
+  "requests<3.0.0",
   "typing-extensions~=4.4",
 ]
 

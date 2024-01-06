@@ -72,7 +72,7 @@ jobs:
 
       - name: "Install wheel distributions"
         run: |
-          find ./dist/*.whl -maxdepth 1 -type f | xargs python -m pip install --force-reinstall --find-links=dist/
+          find ./dist/dbt_common-*.whl -maxdepth 1 -type f | xargs python -m pip install --force-reinstall --find-links=dist/
 
       # TODO: how to validate here?  we did dbt --version previously...
       - name: "Check wheel distributions"
@@ -81,7 +81,7 @@ jobs:
 
       - name: "Install source distributions"
         run: |
-          find ./dist/dbt-[a-z]*.gz -maxdepth 1 -type f | xargs python -m pip install --force-reinstall --find-links=dist/
+          find ./dist/dbt_common-*.gz -maxdepth 1 -type f | xargs python -m pip install --force-reinstall --find-links=dist/
 
       # TODO: how to validate here?  we did dbt --version previously...
       - name: "Check source distributions"

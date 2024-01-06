@@ -43,8 +43,47 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.8'
+          python-version: '3.11'
 
-      - name: "Building"
+      - name: "Install build specific python dependencies"
         run: |
-          echo "Building!"
+          python -m pip install --user --upgrade pip
+          python -m pip install --upgrade wheel twine check-wheel-contents
+          python -m pip --version
+
+      - name: "Install Hatch"
+        shell: bash
+        run: pip3 install hatch
+
+      - name: "Build Python Package"
+        run: |
+          hatch build
+
+      - name: "Show distributions"
+        run: ls -lh dist/
+
+      - name: "Check distribution descriptions"
+        run: |
+          twine check dist/*
+
+      - name: "Check wheel contents"
+        run: |
+          check-wheel-contents dist/*.whl --ignore W007,W008
+
+      - name: "Install wheel distributions"
+        run: |
+          find ./dist/*.whl -maxdepth 1 -type f | xargs python -m pip install --force-reinstall --find-links=dist/
+
+      # TODO: how to validate here?  we did dbt --version previously...
+      - name: "Check wheel distributions"
+        run: |
+          pip freeze
+
+      - name: "Install source distributions"
+        run: |
+          find ./dist/dbt-[a-z]*.gz -maxdepth 1 -type f | xargs python -m pip install --force-reinstall --find-links=dist/
+
+      # TODO: how to validate here?  we did dbt --version previously...
+      - name: "Check source distributions"
+        run: |
+          pip freeze

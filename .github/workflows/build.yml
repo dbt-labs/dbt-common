@@ -74,16 +74,16 @@ jobs:
         run: |
           find ./dist/dbt_common-*.whl -maxdepth 1 -type f | xargs python -m pip install --force-reinstall --find-links=dist/
 
-      # TODO: how to validate here?  we did dbt --version previously...
+      # TODO: how to validate here?  we did dbt --version previously. this checks it's there, but not that it can do anything. maybe it's enough?
       - name: "Check wheel distributions"
         run: |
-          pip freeze
+          pip freeze | grep dbt-common
 
       - name: "Install source distributions"
         run: |
           find ./dist/dbt_common-*.gz -maxdepth 1 -type f | xargs python -m pip install --force-reinstall --find-links=dist/
 
-      # TODO: how to validate here?  we did dbt --version previously...
+      # TODO: how to validate here?  we did dbt --version previously. this checks it's there, but not that it can do anything. maybe it's enough?
       - name: "Check source distributions"
         run: |
-          pip freeze
+          pip freeze | grep dbt-common

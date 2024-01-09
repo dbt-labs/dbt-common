@@ -63,9 +63,7 @@ def send_to_logger(l, level: str, log_line: str):
     elif level == "error":
         l.error(log_line)
     else:
-        raise AssertionError(
-            f"While attempting to log {log_line}, encountered the unhandled level: {level}"
-        )
+        raise AssertionError(f"While attempting to log {log_line}, encountered the unhandled level: {level}")
 
 
 @dataclass
@@ -152,9 +150,7 @@ class _TextLogger(_Logger):
             log_line = f"\n\n{separator} {ts} | {self.invocation_id} {separator}\n"
         scrubbed_msg: str = self.scrubber(msg.info.msg)  # type: ignore
         level = msg.info.level
-        log_line += (
-            f"{self._get_color_tag()}{ts} [{level:<5}]{self._get_thread_name()} {scrubbed_msg}"
-        )
+        log_line += f"{self._get_color_tag()}{ts} [{level:<5}]{self._get_thread_name()} {scrubbed_msg}"
         return log_line
 
     def _get_color_tag(self) -> str:

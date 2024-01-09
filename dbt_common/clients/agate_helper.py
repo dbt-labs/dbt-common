@@ -66,9 +66,7 @@ def build_type_tester(
         agate.data_types.Date(null_values=("null", ""), date_format="%Y-%m-%d"),
         agate.data_types.DateTime(null_values=("null", ""), datetime_format="%Y-%m-%d %H:%M:%S"),
         ISODateTime(null_values=("null", "")),
-        agate.data_types.Boolean(
-            true_values=("true",), false_values=("false",), null_values=("null", "")
-        ),
+        agate.data_types.Boolean(true_values=("true",), false_values=("false",), null_values=("null", "")),
         agate.data_types.Text(null_values=string_null_values),
     ]
     force = {k: agate.data_types.Text(null_values=string_null_values) for k in text_columns}
@@ -132,9 +130,7 @@ def table_from_data_flat(data, column_names: Iterable[str]) -> agate.Table:
 
         rows.append(row)
 
-    return table_from_rows(
-        rows=rows, column_names=column_names, text_only_columns=text_only_columns
-    )
+    return table_from_rows(rows=rows, column_names=column_names, text_only_columns=text_only_columns)
 
 
 def empty_table():

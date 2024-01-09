@@ -59,9 +59,7 @@ class BaseEvent:
         if class_name == "Formatting" and len(args) > 0:
             kwargs["msg"] = args[0]
             args = ()
-        assert (
-            len(args) == 0
-        ), f"[{class_name}] Don't use positional arguments when constructing logging events"
+        assert len(args) == 0, f"[{class_name}] Don't use positional arguments when constructing logging events"
         if "base_msg" in kwargs:
             kwargs["base_msg"] = str(kwargs["base_msg"])
         if "msg" in kwargs:
@@ -94,9 +92,7 @@ class BaseEvent:
             return super().__getattribute__("pb_msg").__getattribute__(key)
 
     def to_dict(self):
-        return MessageToDict(
-            self.pb_msg, preserving_proto_field_name=True, including_default_value_fields=True
-        )
+        return MessageToDict(self.pb_msg, preserving_proto_field_name=True, including_default_value_fields=True)
 
     def to_json(self) -> str:
         return MessageToJson(

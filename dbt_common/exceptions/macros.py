@@ -66,10 +66,7 @@ class MacroNameNotStringError(CompilationError):
         super().__init__(msg=self.get_message())
 
     def get_message(self) -> str:
-        msg = (
-            f"The macro_name parameter ({self.kwarg_value}) "
-            "to adapter.dispatch was not a string"
-        )
+        msg = f"The macro_name parameter ({self.kwarg_value}) " "to adapter.dispatch was not a string"
         return msg
 
 

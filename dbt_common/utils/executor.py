@@ -20,13 +20,9 @@ class SingleThreadedExecutor(ConnectingExecutor):
         if len(args) >= 2:
             self, fn, *args = args
         elif not args:
-            raise TypeError(
-                "descriptor 'submit' of 'SingleThreadedExecutor' object needs an argument"
-            )
+            raise TypeError("descriptor 'submit' of 'SingleThreadedExecutor' object needs an argument")
         else:
-            raise TypeError(
-                "submit expected at least 1 positional argument, got %d" % (len(args) - 1)
-            )
+            raise TypeError("submit expected at least 1 positional argument, got %d" % (len(args) - 1))
         fut = concurrent.futures.Future()
         try:
             result = fn(*args, **kwargs)

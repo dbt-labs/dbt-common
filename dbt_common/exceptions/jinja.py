@@ -23,7 +23,9 @@ class MissingCloseTagError(CompilationError):
         super().__init__(msg=self.get_message())
 
     def get_message(self) -> str:
-        msg = f"Reached EOF without finding a close tag for {self.block_type_name} (searched from line {self.linecount})"
+        msg = (
+            f"Reached EOF without finding a close tag for {self.block_type_name} (searched from line {self.linecount})"
+        )
         return msg
 
 

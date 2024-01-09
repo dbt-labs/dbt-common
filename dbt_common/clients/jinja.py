@@ -379,9 +379,7 @@ def create_undefined(node=None):
 
         def __getattr__(self, name):
             if name == "name" or _is_dunder_name(name):
-                raise AttributeError(
-                    "'{}' object has no attribute '{}'".format(type(self).__name__, name)
-                )
+                raise AttributeError("'{}' object has no attribute '{}'".format(type(self).__name__, name))
 
             self.name = name
 
@@ -500,6 +498,4 @@ def extract_toplevel_blocks(
     :return: A list of `BlockTag`s matching the allowed block types and (if
         `collect_raw_data` is `True`) `BlockData` objects.
     """
-    return BlockIterator(data).lex_for_blocks(
-        allowed_blocks=allowed_blocks, collect_raw_data=collect_raw_data
-    )
+    return BlockIterator(data).lex_for_blocks(allowed_blocks=allowed_blocks, collect_raw_data=collect_raw_data)

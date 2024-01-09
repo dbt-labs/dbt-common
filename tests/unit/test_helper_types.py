@@ -34,9 +34,7 @@ class TestWarnErrorOptions:
             WarnErrorOptions(include=["InvalidError"], valid_error_names=set(["ValidError"]))
 
         with pytest.raises(ValidationError):
-            WarnErrorOptions(
-                include="*", exclude=["InvalidError"], valid_error_names=set(["ValidError"])
-            )
+            WarnErrorOptions(include="*", exclude=["InvalidError"], valid_error_names=set(["ValidError"]))
 
     def test_init_invalid_error_default_valid_error_names(self):
         with pytest.raises(ValidationError):
@@ -46,9 +44,7 @@ class TestWarnErrorOptions:
             WarnErrorOptions(include="*", exclude=["InvalidError"])
 
     def test_init_valid_error(self):
-        warn_error_options = WarnErrorOptions(
-            include=["ValidError"], valid_error_names=set(["ValidError"])
-        )
+        warn_error_options = WarnErrorOptions(include=["ValidError"], valid_error_names=set(["ValidError"]))
         assert warn_error_options.include == ["ValidError"]
         assert warn_error_options.exclude == []
 

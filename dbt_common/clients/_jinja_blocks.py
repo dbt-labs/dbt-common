@@ -194,9 +194,7 @@ class TagIterator:
         are quote and `%}` - nothing else can hide the %} and be valid jinja.
         """
         while True:
-            end_match = self._expect_match(
-                'tag close ("%}")', QUOTE_START_PATTERN, TAG_CLOSE_PATTERN
-            )
+            end_match = self._expect_match('tag close ("%}")', QUOTE_START_PATTERN, TAG_CLOSE_PATTERN)
             self.advance(end_match.end())
             if end_match.groupdict().get("tag_close") is not None:
                 return
@@ -234,15 +232,11 @@ class TagIterator:
         else:
             self.advance(match.end())
             self._expect_block_close()
-        return Tag(
-            block_type_name=block_type_name, block_name=block_name, start=start_pos, end=self.pos
-        )
+        return Tag(block_type_name=block_type_name, block_name=block_name, start=start_pos, end=self.pos)
 
     def find_tags(self):
         while True:
-            match = self._first_match(
-                BLOCK_START_PATTERN, COMMENT_START_PATTERN, EXPR_START_PATTERN
-            )
+            match = self._first_match(BLOCK_START_PATTERN, COMMENT_START_PATTERN, EXPR_START_PATTERN)
             if match is None:
                 break
 
@@ -262,8 +256,7 @@ class TagIterator:
                 yield self.handle_tag(match)
             else:
                 raise DbtInternalError(
-                    "Invalid regex match in next_block, expected block start, "
-                    "expr start, or comment start"
+                    "Invalid regex match in next_block, expected block start, " "expr start, or comment start"
                 )
 
     def __iter__(self):
@@ -355,6 +348,4 @@ class BlockIterator:
                 yield BlockData(raw_data)
 
     def lex_for_blocks(self, allowed_blocks=None, collect_raw_data=True):
-        return list(
-            self.find_blocks(allowed_blocks=allowed_blocks, collect_raw_data=collect_raw_data)
-        )
+        return list(self.find_blocks(allowed_blocks=allowed_blocks, collect_raw_data=collect_raw_data))

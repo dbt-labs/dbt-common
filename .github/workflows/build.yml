@@ -1,0 +1,89 @@
+# **what?**
+# Verifies python build on all code commited to the repository. This workflow
+# should not require any secrets since it runs for PRs from forked repos. By
+# default, secrets are not passed to workflows running from a forked repos.
+
+# **why?**
+# Ensure code for dbt meets a certain quality standard.
+
+# **when?**
+# This will run for all PRs, when code is pushed to main, and when manually triggered.
+
+name: "Build"
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+  workflow_dispatch:
+
+permissions: read-all
+
+# will cancel previous workflows triggered by the same event and for the same ref for PRs or same SHA otherwise
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ contains(github.event_name, 'pull_request') && github.event.pull_request.head.ref || github.sha }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    # TODO: blocked on https://github.com/dbt-labs/dbt-adapter/issues/3
+    name: build packages
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: "Install build specific python dependencies"
+        run: |
+          python -m pip install --user --upgrade pip
+          python -m pip install --upgrade wheel twine check-wheel-contents
+          python -m pip --version
+
+      - name: "Install Hatch"
+        shell: bash
+        run: pip3 install hatch
+
+      - name: "Build Python Package"
+        run: |
+          hatch build
+
+      - name: "Show distributions"
+        run: ls -lh dist/
+
+      - name: "Check distribution descriptions"
+        run: |
+          twine check dist/*
+
+      - name: "Check wheel contents"
+        run: |
+          check-wheel-contents dist/*.whl --ignore W007,W008
+
+      - name: "Install wheel distributions"
+        run: |
+          find ./dist/dbt_common-*.whl -maxdepth 1 -type f | xargs python -m pip install --force-reinstall --find-links=dist/
+
+      # TODO: how to validate here?  we did dbt --version previously. this checks it's there, but not that it can do anything. maybe it's enough?
+      - name: "Check wheel distributions"
+        run: |
+          pip freeze | grep dbt-common
+
+      - name: "Install source distributions"
+        run: |
+          find ./dist/dbt_common-*.gz -maxdepth 1 -type f | xargs python -m pip install --force-reinstall --find-links=dist/
+
+      # TODO: how to validate here?  we did dbt --version previously. this checks it's there, but not that it can do anything. maybe it's enough?
+      - name: "Check source distributions"
+        run: |
+          pip freeze | grep dbt-common

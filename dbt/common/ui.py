@@ -1,4 +1,4 @@
-import os
+from os import getenv as os_getenv
 import sys
 import textwrap
 from typing import Dict
@@ -13,7 +13,7 @@ import colorama
 # when piped to another process for Linux and MacOS, then it loses the coloring. To combat
 # that, we will just initialize Colorama when needed on Windows using a non-Unix terminal.
 
-if sys.platform == "win32" and (not os.getenv("TERM") or os.getenv("TERM") == "None"):
+if sys.platform == "win32" and (not os_getenv("TERM") or os_getenv("TERM") == "None"):
     colorama.init(wrap=True)
 
 COLORS: Dict[str, str] = {

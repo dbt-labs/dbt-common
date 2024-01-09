@@ -55,7 +55,7 @@ exclude = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["dbt"]
+packages = ["dbt_common"]
 
 [tool.hatch.envs.dev-env.scripts]
 all = ["pre-commit run --all-files"]

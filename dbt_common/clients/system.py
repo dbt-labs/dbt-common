@@ -78,9 +78,7 @@ def find_matching(
                 relative_path_to_root = os.path.join(relative_path_to_search, relative_path)
 
                 modification_time = os.path.getmtime(absolute_path)
-                if reobj.match(local_file) and (
-                    not ignore_spec or not ignore_spec.match_file(relative_path_to_root)
-                ):
+                if reobj.match(local_file) and (not ignore_spec or not ignore_spec.match_file(relative_path_to_root)):
                     matching.append(
                         {
                             "searched_path": relative_path_to_search,
@@ -389,18 +387,14 @@ def _handle_windows_error(exc: OSError, cwd: str, cmd: List[str]) -> NoReturn:
     cls: Type[dbt_common.exceptions.DbtBaseException] = dbt_common.exceptions.base.CommandError
     if exc.errno == errno.ENOENT:
         message = (
-            "Could not find command, ensure it is in the user's PATH "
-            "and that the user has permissions to run it"
+            "Could not find command, ensure it is in the user's PATH " "and that the user has permissions to run it"
         )
         cls = dbt_common.exceptions.ExecutableError
     elif exc.errno == errno.ENOEXEC:
         message = "Command was not executable, ensure it is valid"
         cls = dbt_common.exceptions.ExecutableError
     elif exc.errno == errno.ENOTDIR:
-        message = (
-            "Unable to cd: path does not exist, user does not have"
-            " permissions, or not a directory"
-        )
+        message = "Unable to cd: path does not exist, user does not have" " permissions, or not a directory"
         cls = dbt_common.exceptions.WorkingDirectoryError
     else:
         message = 'Unknown error: {} (errno={}: "{}")'.format(
@@ -421,9 +415,7 @@ def _interpret_oserror(exc: OSError, cwd: str, cmd: List[str]) -> NoReturn:
         _handle_posix_error(exc, cwd, cmd)
 
     # this should not be reachable, raise _something_ at least!
-    raise dbt_common.exceptions.DbtInternalError(
-        "Unhandled exception in _interpret_oserror: {}".format(exc)
-    )
+    raise dbt_common.exceptions.DbtInternalError("Unhandled exception in _interpret_oserror: {}".format(exc))
 
 
 def run_cmd(cwd: str, cmd: List[str], env: Optional[Dict[str, Any]] = None) -> Tuple[bytes, bytes]:
@@ -442,9 +434,7 @@ def run_cmd(cwd: str, cmd: List[str], env: Optional[Dict[str, Any]] = None) -> T
         exe_pth = shutil.which(cmd[0])
         if exe_pth:
             cmd = [os.path.abspath(exe_pth)] + list(cmd[1:])
-        proc = subprocess.Popen(
-            cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=full_env
-        )
+        proc = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=full_env)
 
         out, err = proc.communicate()
     except OSError as exc:
@@ -460,9 +450,7 @@ def run_cmd(cwd: str, cmd: List[str], env: Optional[Dict[str, Any]] = None) -> T
     return out, err
 
 
-def download_with_retries(
-    url: str, path: str, timeout: Optional[Union[float, tuple]] = None
-) -> None:
+def download_with_retries(url: str, path: str, timeout: Optional[Union[float, tuple]] = None) -> None:
     download_fn = functools.partial(download, url, path, timeout)
     connection_exception_retry(download_fn, 5)
 
@@ -553,9 +541,7 @@ def move(src, dst):
         if os.path.isdir(src):
             if _absnorm(dst + "\\").startswith(_absnorm(src + "\\")):
                 # dst is inside src
-                raise EnvironmentError(
-                    "Cannot move a directory '{}' into itself '{}'".format(src, dst)
-                )
+                raise EnvironmentError("Cannot move a directory '{}' into itself '{}'".format(src, dst))
             shutil.copytree(src, dst, symlinks=True)
             rmtree(src)
         else:

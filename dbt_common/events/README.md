@@ -10,7 +10,7 @@ When events are processed via `fire_event`, nearly everything is logged. Whether
 # Adding a New Event
 * Add a new message in types.proto, and a second message with the same name + "Msg". The "Msg" message should have two fields, an "info" field of EventInfo, and a "data" field referring to the message name without "Msg"
 * run the protoc compiler to update types_pb2.py:   make proto_types
-* Add a wrapping class in core/dbt/event/types.py with a Level superclass  plus code and message methods
+* Add a wrapping class in dbt_common/event/types.py with a Level superclass  plus code and message methods
 * Add the class to tests/unit/test_events.py
 
 We have switched from using betterproto to using google protobuf, because of a lack of support for Struct fields in betterproto.
@@ -38,4 +38,4 @@ class PartialParsingDeletedExposure(DebugLevel):
 
 After adding a new message in `types.proto`, either:
 - In the repository root directory: `make proto_types`
-- In the `core/dbt/common/events` directory: `protoc -I=. --python_out=. types.proto`
+- In the `dbt_common/events` directory: `protoc -I=. --python_out=. types.proto`

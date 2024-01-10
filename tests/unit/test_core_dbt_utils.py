@@ -6,7 +6,7 @@ from dbt_common.exceptions import ConnectionError
 from dbt_common.utils.connection import connection_exception_retry
 
 
-class TestCoreDbtUtils(unittest.TestCase):
+class TestCommonDbtUtils(unittest.TestCase):
     def test_connection_exception_retry_none(self):
         Counter._reset()
         connection_exception_retry(lambda: Counter._add(), 5)

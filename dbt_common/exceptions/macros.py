@@ -4,10 +4,9 @@ from dbt_common.exceptions import CompilationError, DbtBaseException
 
 
 class MacroReturn(DbtBaseException):
-    """
+    """This is how we return a value from a macro, not an exception.
+
     Hack of all hacks
-    This is not actually an exception.
-    It's how we return a value from a macro.
     """
 
     def __init__(self, value) -> None:

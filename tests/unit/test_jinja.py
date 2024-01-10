@@ -53,7 +53,10 @@ class TestBlockLexer(unittest.TestCase):
         self.assertEqual(blocks[0].full_block, block_data)
 
     def test_nested_comments(self):
-        body = '{# my comment #} {{ config(foo="bar") }}\r\nselect * from {# my other comment embedding {% endmytype %} #} this.that\r\n'
+        body = (
+            '{# my comment #} {{ config(foo="bar") }}',
+            "\r\nselect * from {# my other comment embedding {% endmytype %} #} this.that\r\n",
+        )
         block_data = "  \n\r\t{%- mytype foo %}" + body + "{% endmytype -%}"
         comment = "{# external comment {% othertype bar %} select * from thing.other_thing{% endothertype %} #}"
         blocks = extract_toplevel_blocks(comment + block_data, allowed_blocks={"mytype"}, collect_raw_data=False)
@@ -100,7 +103,10 @@ class TestBlockLexer(unittest.TestCase):
         self.assertEqual(blocks[3].contents, " test ")
 
     def test_macro_with_trailing_data(self):
-        body = "{# my macro #} {% macro foo(a, b) %} do a thing {%- endmacro %} {# my model #} {% a b %} test {% enda %} raw data so cool"
+        body = (
+            "{# my macro #} {% macro foo(a, b) %} do a thing {%- endmacro %} ",
+            "{# my model #} {% a b %} test {% enda %} raw data so cool",
+        )
         blocks = extract_toplevel_blocks(body, allowed_blocks={"macro", "a"}, collect_raw_data=True)
         self.assertEqual(len(blocks), 5)
         self.assertEqual(blocks[0].full_block, "{# my macro #} ")
@@ -114,7 +120,11 @@ class TestBlockLexer(unittest.TestCase):
         self.assertEqual(blocks[4].full_block, " raw data so cool")
 
     def test_macro_with_crazy_args(self):
-        body = """{% macro foo(a, b=asdf("cool this is 'embedded'" * 3) + external_var, c)%}cool{# block comment with {% endmacro %} in it #} stuff here {% endmacro %}"""
+        body = (
+            """{% macro foo(a, b=asdf("cool this is 'embedded'" * 3) + external_var, c)%}""",
+            "cool{# block comment with {% endmacro %} in it #} stuff here ",
+            "{% endmacro %}",
+        )
         blocks = extract_toplevel_blocks(body, allowed_blocks={"macro"}, collect_raw_data=False)
         self.assertEqual(len(blocks), 1)
         self.assertEqual(blocks[0].block_type_name, "macro")
@@ -193,7 +203,10 @@ class TestBlockLexer(unittest.TestCase):
         self.assertEqual(blocks[0].full_block, "{% myblock foo %}hi{% endmyblock %}")
 
     def test_crazy_set_statement(self):
-        body = '{% set x = (thing("{% myblock foo %}")) %}{% otherblock bar %}x{% endotherblock %}{% set y = otherthing("{% myblock foo %}") %}'
+        body = (
+            '{% set x = (thing("{% myblock foo %}")) %}{% otherblock bar %}x{% endotherblock %}',
+            '{% set y = otherthing("{% myblock foo %}") %}',
+        )
         blocks = extract_toplevel_blocks(body, allowed_blocks={"otherblock"}, collect_raw_data=False)
         self.assertEqual(len(blocks), 1)
         self.assertEqual(blocks[0].full_block, "{% otherblock bar %}x{% endotherblock %}")
@@ -220,7 +233,10 @@ class TestBlockLexer(unittest.TestCase):
         self.assertEqual(blocks[1].full_block, "{% myblock foo %}hi{% endmyblock %}")
 
     def test_crazy_do_statement(self):
-        body = '{% do (thing("{% myblock foo %}")) %}{% otherblock bar %}x{% endotherblock %}{% do otherthing("{% myblock foo %}") %}{% myblock x %}hi{% endmyblock %}'
+        body = (
+            '{% do (thing("{% myblock foo %}")) %}{% otherblock bar %}x{% endotherblock %}',
+            '{% do otherthing("{% myblock foo %}") %}{% myblock x %}hi{% endmyblock %}',
+        )
         blocks = extract_toplevel_blocks(body, allowed_blocks={"myblock", "otherblock"}, collect_raw_data=False)
         self.assertEqual(len(blocks), 2)
         self.assertEqual(blocks[0].full_block, "{% otherblock bar %}x{% endotherblock %}")
@@ -260,7 +276,10 @@ class TestBlockLexer(unittest.TestCase):
         self.assertEqual(blocks[0].contents, '{% set x = ("{% endmyblock %}") %}  ')
 
     def test_docs_block(self):
-        body = '{% docs __my_doc__ %} asdf {# nope {% enddocs %}} #} {% enddocs %} {% docs __my_other_doc__ %} asdf "{% enddocs %}'
+        body = (
+            "{% docs __my_doc__ %} asdf {# nope {% enddocs %}} #} {% enddocs %}",
+            '{% docs __my_other_doc__ %} asdf "{% enddocs %}',
+        )
         blocks = extract_toplevel_blocks(body, allowed_blocks={"docs"}, collect_raw_data=False)
         self.assertEqual(len(blocks), 2)
         self.assertEqual(blocks[0].block_type_name, "docs")

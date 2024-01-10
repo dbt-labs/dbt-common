@@ -110,7 +110,9 @@ class BaseConfig(AdditionalPropertiesAllowed, Replaceable):
 
     @classmethod
     def _merge_dicts(cls, src: Dict[str, Any], data: Dict[str, Any]) -> Dict[str, Any]:
-        """Find all the items in data that match a target_field on this class,
+        """Mutate input to return merge results.
+
+        Find all the items in data that match a target_field on this class,
         and merge them with the data found in `src` for target_field, using the
         field's specified merge behavior. Matching items will be removed from
         `data` (but _not_ `src`!).
@@ -142,7 +144,9 @@ class BaseConfig(AdditionalPropertiesAllowed, Replaceable):
         return result
 
     def update_from(self: T, data: Dict[str, Any], config_cls: Type[BaseConfig], validate: bool = True) -> T:
-        """Given a dict of keys, update the current config from them, validate
+        """Update and validate config given a dict.
+
+        Given a dict of keys, update the current config from them, validate
         it, and return a new config with the updated values
         """
         dct = self.to_dict(omit_none=False)

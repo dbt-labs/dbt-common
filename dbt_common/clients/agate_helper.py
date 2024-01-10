@@ -17,7 +17,7 @@ class Integer(agate.data_types.DataType):
         # by default agate will cast none as a Number
         # but we need to cast it as an Integer to preserve
         # the type when merging and unioning tables
-        if type(d) == int or d is None:
+        if isinstance(d, int) or d is None:
             return d
         else:
             raise agate.exceptions.CastError('Can not parse value "%s" as Integer.' % d)
@@ -30,7 +30,7 @@ class Number(agate.data_types.Number):
     # undo the change in https://github.com/wireservice/agate/pull/733
     # i.e. do not cast True and False to numeric 1 and 0
     def cast(self, d):
-        if type(d) == bool:
+        if isinstance(d, bool):
             raise agate.exceptions.CastError("Do not cast True to 1 or False to 0.")
         else:
             return super().cast(d)
@@ -59,7 +59,6 @@ class ISODateTime(agate.data_types.DateTime):
 def build_type_tester(
     text_columns: Iterable[str], string_null_values: Optional[Iterable[str]] = ("null", "")
 ) -> agate.TypeTester:
-
     types = [
         Integer(null_values=("null", "")),
         Number(null_values=("null", "")),
@@ -92,13 +91,13 @@ def table_from_rows(
 
 
 def table_from_data(data, column_names: Iterable[str]) -> agate.Table:
-    "Convert a list of dictionaries into an Agate table"
+    """Convert a list of dictionaries into an Agate table.
 
-    # The agate table is generated from a list of dicts, so the column order
-    # from `data` is not preserved. We can use `select` to reorder the columns
-    #
-    # If there is no data, create an empty table with the specified columns
+    The agate table is generated from a list of dicts, so the column order
+    from `data` is not preserved. We can use `select` to reorder the columns
 
+    If there is no data, create an empty table with the specified columns
+    """
     if len(data) == 0:
         return agate.Table([], column_names=column_names)
     else:
@@ -107,13 +106,13 @@ def table_from_data(data, column_names: Iterable[str]) -> agate.Table:
 
 
 def table_from_data_flat(data, column_names: Iterable[str]) -> agate.Table:
-    """
-    Convert a list of dictionaries into an Agate table. This method does not
+    """Convert a list of dictionaries into an Agate table.
+
+    This method does not
     coerce string values into more specific types (eg. '005' will not be
     coerced to '5'). Additionally, this method does not coerce values to
     None (eg. '' or 'null' will retain their string literal representations).
     """
-
     rows = []
     text_only_columns = set()
     for _row in data:
@@ -134,14 +133,15 @@ def table_from_data_flat(data, column_names: Iterable[str]) -> agate.Table:
 
 
 def empty_table():
-    "Returns an empty Agate table. To be used in place of None"
+    """Returns an empty Agate table.
 
+    To be used in place of None
+    """
     return agate.Table(rows=[])
 
 
 def as_matrix(table):
-    "Return an agate table as a matrix of data sans columns"
-
+    """Return an agate table as a matrix of data sans columns."""
     return [r.values() for r in table.rows.values()]
 
 
@@ -203,8 +203,11 @@ class ColumnTypeBuilder(Dict[str, NullableAgateType]):
 
 
 def _merged_column_types(tables: List[agate.Table]) -> Dict[str, agate.data_types.DataType]:
-    # this is a lot like agate.Table.merge, but with handling for all-null
-    # rows being "any type".
+    """Custom version of agate.Table.merge.
+
+    this is a lot like agate.Table.merge, but with handling for all-null
+    rows being "any type".
+    """
     new_columns: ColumnTypeBuilder = ColumnTypeBuilder()
     for table in tables:
         for i in range(len(table.columns)):
@@ -219,8 +222,9 @@ def _merged_column_types(tables: List[agate.Table]) -> Dict[str, agate.data_type
 
 
 def merge_tables(tables: List[agate.Table]) -> agate.Table:
-    """This is similar to agate.Table.merge, but it handles rows of all 'null'
-    values more gracefully during merges.
+    """This is similar to agate.Table.merge.
+
+    This handles rows of all 'null' values more gracefully during merges.
     """
     new_columns = _merged_column_types(tables)
     column_names = tuple(new_columns.keys())

@@ -17,44 +17,27 @@ repos:
     exclude_types:
       - "markdown"
   - id: check-case-conflict
-- repo: https://github.com/psf/black
-  rev: 22.3.0
+- repo: https://github.com/pre-commit/mirrors-mypy
+  rev: v1.4.1
   hooks:
-  - id: black
-  - id: black
-    alias: black-check
-    stages: [manual]
-    args:
-    - "--check"
-    - "--diff"
-- repo: https://github.com/pycqa/flake8
-  rev: 4.0.1
-  hooks:
-  - id: flake8
-  - id: flake8
-    alias: flake8-check
-    stages: [manual]
-# - repo: https://github.com/pre-commit/mirrors-mypy
-#   rev: v1.4.1
-#   hooks:
-#   - id: mypy
-#     # N.B.: Mypy is... a bit fragile.
-#     #
-#     # By using `language: system` we run this hook in the local
-#     # environment instead of a pre-commit isolated one.  This is needed
-#     # to ensure mypy correctly parses the project.
+  - id: mypy
+    # N.B.: Mypy is... a bit fragile.
+    #
+    # By using `language: system` we run this hook in the local
+    # environment instead of a pre-commit isolated one.  This is needed
+    # to ensure mypy correctly parses the project.
 
-#     # It may cause trouble
-#     # in that it adds environmental variables out of our control to the
-#     # mix.  Unfortunately, there's nothing we can do about per pre-commit's
-#     # author.
-#     # See https://github.com/pre-commit/pre-commit/issues/730 for details.
-#     args: [--show-error-codes]
-#     files: ^dbt_common/
-#     language: system
-#   - id: mypy
-#     alias: mypy-check
-#     stages: [manual]
-#     args: [--show-error-codes, --pretty]
-#     files: ^dbt_common
-#     language: system
+    # It may cause trouble
+    # in that it adds environmental variables out of our control to the
+    # mix.  Unfortunately, there's nothing we can do about per pre-commit's
+    # author.
+    # See https://github.com/pre-commit/pre-commit/issues/730 for details.
+    args: [--show-error-codes]
+    files: ^dbt_common/
+    language: system
+  - id: mypy
+    alias: mypy-check
+    stages: [manual]
+    args: [--show-error-codes, --pretty]
+    files: ^dbt_common
+    language: system

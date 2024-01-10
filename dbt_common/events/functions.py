@@ -94,7 +94,9 @@ def msg_to_dict(msg: EventMsg) -> dict:
     msg_dict = dict()
     try:
         msg_dict = MessageToDict(
-            msg, preserving_proto_field_name=True, including_default_value_fields=True  # type: ignore
+            msg,
+            preserving_proto_field_name=True,
+            including_default_value_fields=True,  # type: ignore
         )
     except Exception as exc:
         event_type = type(msg).__name__
@@ -107,7 +109,6 @@ def msg_to_dict(msg: EventMsg) -> dict:
 
 def warn_or_error(event, node=None) -> None:
     if WARN_ERROR or WARN_ERROR_OPTIONS.includes(type(event).__name__):
-
         # TODO: resolve this circular import when at top
         from dbt_common.exceptions import EventCompilationError
 

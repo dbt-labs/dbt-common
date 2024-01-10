@@ -28,7 +28,7 @@ class SystemClient(unittest.TestCase):
     def tearDown(self):
         try:
             shutil.rmtree(self.tmp_dir)
-        except Exception as e:  # noqa: [F841]
+        except Exception as e:  # noqa: F841
             pass
 
     def test__make_file_when_exists(self):
@@ -81,7 +81,7 @@ class TestRunCmd(unittest.TestCase):
             self.exists_cmd = ["echo", "hello"]
 
         os.mkdir(self.run_dir)
-        with open(self.empty_file, "w") as fp:  # noqa: [F841]
+        with open(self.empty_file, "w") as fp:  # noqa: F841
             pass  # "touch"
 
     def tearDown(self):
@@ -206,7 +206,7 @@ class TestFindMatching(unittest.TestCase):
     def tearDown(self):
         try:
             shutil.rmtree(self.base_dir)
-        except Exception as e:  # noqa: [F841]
+        except Exception as e:  # noqa: F841
             pass
 
 
@@ -219,7 +219,7 @@ class TestUntarPackage(unittest.TestCase):
     def tearDown(self):
         try:
             shutil.rmtree(self.base_dir)
-        except Exception as e:  # noqa: [F841]
+        except Exception as e:  # noqa: F841
             pass
 
     def test_untar_package_success(self):
@@ -250,13 +250,12 @@ class TestUntarPackage(unittest.TestCase):
         os.rename(txt_file_name, tar_file_path)
 
         #  now that we're set up, test that untarring the file fails
-        with self.assertRaises(tarfile.ReadError) as exc:  # noqa: [F841]
+        with self.assertRaises(tarfile.ReadError) as exc:  # noqa: F841
             dbt_common.clients.system.untar_package(tar_file_path, self.tempdest)
 
     def test_untar_package_empty(self):
         #  create a tarball with nothing in it
         with NamedTemporaryFile(prefix="my-empty-package.2", suffix=".tar.gz", dir=self.tempdir) as named_file:
-
             #  make sure we throw an error for the empty file
             with self.assertRaises(tarfile.ReadError) as exc:
                 dbt_common.clients.system.untar_package(named_file.name, self.tempdest)

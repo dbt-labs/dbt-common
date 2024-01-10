@@ -49,7 +49,7 @@ class EventLevel(str, Enum):
 
 
 class BaseEvent:
-    """BaseEvent for proto message generated python events"""
+    """BaseEvent for proto message generated python events."""
 
     PROTO_TYPES_MODULE = types_pb2
 
@@ -125,7 +125,6 @@ class EventMsg(Protocol):
 
 
 def msg_from_base_event(event: BaseEvent, level: Optional[EventLevel] = None):
-
     msg_class_name = f"{type(event).__name__}Msg"
     msg_cls = getattr(event.PROTO_TYPES_MODULE, msg_class_name)
 

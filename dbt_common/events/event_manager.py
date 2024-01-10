@@ -20,7 +20,8 @@ class EventManager:
                 msg.SerializeToString()
             except Exception as exc:
                 raise Exception(
-                    f"{msg.info.name} is not serializable to binary. Originating exception: {exc}, {traceback.format_exc()}"
+                    f"{msg.info.name} is not serializable to binary. ",
+                    f"Originating exception: {exc}, {traceback.format_exc()}",
                 )
 
         for logger in self.loggers:

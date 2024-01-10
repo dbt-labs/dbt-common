@@ -41,7 +41,8 @@ def find_matching(
     file_pattern: str,
     ignore_spec: Optional[PathSpec] = None,
 ) -> List[Dict[str, Any]]:
-    """
+    """Return file info from paths and patterns.
+
     Given an absolute `root_path`, a list of relative paths to that
     absolute root path (`relative_paths_to_search`), and a `file_pattern`
     like '*.sql', returns information about the files. For example:
@@ -104,7 +105,8 @@ def load_file_contents(path: str, strip: bool = True) -> str:
 
 @functools.singledispatch
 def make_directory(path=None) -> None:
-    """
+    """Handle directory creation with threading.
+
     Make a directory and any intermediate directories that don't already
     exist. This function handles the case where two threads try to create
     a directory at once.
@@ -133,7 +135,8 @@ def _(path: Path) -> None:
 
 
 def make_file(path: str, contents: str = "", overwrite: bool = False) -> bool:
-    """
+    """Make a file with `contents` at `path`.
+
     Make a file at `path` assuming that the directory it resides in already
     exists. The file is saved with contents `contents`
     """
@@ -147,9 +150,7 @@ def make_file(path: str, contents: str = "", overwrite: bool = False) -> bool:
 
 
 def make_symlink(source: str, link_path: str) -> None:
-    """
-    Create a symlink at `link_path` referring to `source`.
-    """
+    """Create a symlink at `link_path` referring to `source`."""
     if not supports_symlinks():
         # TODO: why not import these at top?
         raise dbt_common.exceptions.SymbolicLinkError()
@@ -209,9 +210,7 @@ def _windows_rmdir_readonly(func: Callable[[str], Any], path: str, exc: Tuple[An
 
 
 def resolve_path_from_base(path_to_resolve: str, base_path: str) -> str:
-    """
-    If path_to_resolve is a relative path, create an absolute path
-    with base_path as the base.
+    """If path_to_resolve is a relative path, create an absolute path with base_path as the base.
 
     If path_to_resolve is an absolute path or a user path (~), just
     resolve it to an absolute path and return.
@@ -220,8 +219,9 @@ def resolve_path_from_base(path_to_resolve: str, base_path: str) -> str:
 
 
 def rmdir(path: str) -> None:
-    """
-    Recursively deletes a directory. Includes an error handler to retry with
+    """Recursively deletes a directory.
+
+    Includes an error handler to retry with
     different permissions on Windows. Otherwise, removing directories (eg.
     cloned via git) can cause rmtree to throw a PermissionError exception
     """
@@ -235,9 +235,7 @@ def rmdir(path: str) -> None:
 
 
 def _win_prepare_path(path: str) -> str:
-    """Given a windows path, prepare it for use by making sure it is absolute
-    and normalized.
-    """
+    """Given a windows path, prepare it for use by making sure it is absolute and normalized."""
     path = os.path.normpath(path)
 
     # if a path starts with '\', splitdrive() on it will return '' for the
@@ -281,7 +279,9 @@ def _supports_long_paths() -> bool:
 
 
 def convert_path(path: str) -> str:
-    """Convert a path that dbt has, which might be >260 characters long, to one
+    """Handle path length for windows.
+
+    Convert a path that dbt has, which might be >260 characters long, to one
     that will be writable/readable on Windows.
 
     On other platforms, this is a no-op.
@@ -496,6 +496,7 @@ def untar_package(tar_path: str, dest_dir: str, rename_to: Optional[str] = None)
 
 def chmod_and_retry(func, path, exc_info):
     """Define an error handler to pass to shutil.rmtree.
+
     On Windows, when a file is marked read-only as git likes to do, rmtree will
     fail. To handle that, on errors try to make the file writable.
     We want to retry most operations here, but listdir is one that we know will
@@ -513,7 +514,9 @@ def _absnorm(path):
 
 
 def move(src, dst):
-    """A re-implementation of shutil.move that properly removes the source
+    """A re-implementation of shutil.move for windows fun.
+
+    A re-implementation of shutil.move that properly removes the source
     directory on windows when it has read-only files in it and the move is
     between two drives.
 
@@ -550,8 +553,9 @@ def move(src, dst):
 
 
 def rmtree(path):
-    """Recursively remove the path. On permissions errors on windows, try to remove
-    the read-only flag and try again.
+    """Recursively remove the path.
+
+    On permissions errors on windows, try to remove the read-only flag and try again.
     """
     path = convert_path(path)
     return shutil.rmtree(path, onerror=chmod_and_retry)

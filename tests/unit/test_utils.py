@@ -95,7 +95,6 @@ class TestDeepMap(unittest.TestCase):
 
     @staticmethod
     def special_keypath(value, keypath):
-
         if tuple(keypath) == ("foo", "baz", 1):
             return "hello"
         else:

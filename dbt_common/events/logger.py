@@ -51,17 +51,17 @@ _log_level_map = {
 # We need this function for now because the numeric log severity levels in
 # Python do not match those for logbook, so we have to explicitly call the
 # correct function by name.
-def send_to_logger(l, level: str, log_line: str):
+def send_to_logger(logger, level: str, log_line: str):
     if level == "test":
-        l.debug(log_line)
+        logger.debug(log_line)
     elif level == "debug":
-        l.debug(log_line)
+        logger.debug(log_line)
     elif level == "info":
-        l.info(log_line)
+        logger.info(log_line)
     elif level == "warn":
-        l.warning(log_line)
+        logger.warning(log_line)
     elif level == "error":
-        l.error(log_line)
+        logger.error(log_line)
     else:
         raise AssertionError(f"While attempting to log {log_line}, encountered the unhandled level: {level}")
 

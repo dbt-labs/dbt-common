@@ -86,7 +86,9 @@ class MacroFuzzEnvironment(jinja2.sandbox.SandboxedEnvironment):
         return MacroFuzzParser(self, source, name, filename).parse()
 
     def _compile(self, source, filename):
-        """Override jinja's compilation to stash the rendered source inside
+        """Override jinja's compilation.
+
+        Use to stash the rendered source inside
         the python linecache for debugging when the appropriate environment
         variable is set.
 
@@ -140,16 +142,14 @@ class NativeSandboxEnvironment(MacroFuzzEnvironment):
 
 
 class TextMarker(str):
-    """A special native-env marker that indicates a value is text and is
-    not to be evaluated. Use this to prevent your numbery-strings from becoming
-    numbers!
+    """A special native-env marker that indicates a value is text and is not to be evaluated.
+
+    Use this to prevent your numbery-strings from becoming numbers!
     """
 
 
 class NativeMarker(str):
-    """A special native-env marker that indicates the field should be passed to
-    literal_eval.
-    """
+    """A special native-env marker that indicates the field should be passed to literal_eval."""
 
 
 class BoolMarker(NativeMarker):
@@ -165,7 +165,9 @@ def _is_number(value) -> bool:
 
 
 def quoted_native_concat(nodes):
-    """This is almost native_concat from the NativeTemplate, except in the
+    """Handle special case for native_concat from the NativeTemplate.
+
+    This is almost native_concat from the NativeTemplate, except in the
     special case of a single argument that is a quoted string and returns a
     string, the quotes are re-inserted.
     """
@@ -201,9 +203,10 @@ class NativeSandboxTemplate(jinja2.nativetypes.NativeTemplate):  # mypy: ignore
     environment_class = NativeSandboxEnvironment  # type: ignore
 
     def render(self, *args, **kwargs):
-        """Render the template to produce a native Python type. If the
-        result is a single node, its value is returned. Otherwise, the
-        nodes are concatenated as strings. If the result can be parsed
+        """Render the template to produce a native Python type.
+
+        If the result is a single node, its value is returned. Otherwise,
+        the nodes are concatenated as strings. If the result can be parsed
         with :func:`ast.literal_eval`, the parsed value is returned.
         Otherwise, the string is returned.
         """
@@ -463,7 +466,6 @@ def get_environment(
     args["extensions"].append(TestExtension)
 
     env_cls: Type[jinja2.Environment]
-    text_filter: Type
     if native:
         env_cls = NativeSandboxEnvironment
         filters = NATIVE_FILTERS
@@ -520,8 +522,9 @@ def extract_toplevel_blocks(
     allowed_blocks: Optional[Set[str]] = None,
     collect_raw_data: bool = True,
 ) -> List[Union[BlockData, BlockTag]]:
-    """Extract the top-level blocks with matching block types from a jinja
-    file, with some special handling for block nesting.
+    """Extract the top-level blocks with matching block types from a jinja file.
+
+    Includes some special handling for block nesting.
 
     :param data: The data to extract blocks from.
     :param allowed_blocks: The names of the blocks to extract from the file.

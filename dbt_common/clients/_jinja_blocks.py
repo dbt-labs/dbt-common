@@ -106,7 +106,9 @@ class TagIterator:
         self.pos: int = 0
 
     def linepos(self, end: Optional[int] = None) -> str:
-        """Given an absolute position in the input text, return a pair of
+        """Return relative position in line.
+
+        Given an absolute position in the input data, return a pair of
         line number + relative position to the start of the line.
         """
         end_val: int = self.pos if end is None else end
@@ -148,7 +150,9 @@ class TagIterator:
         return match
 
     def handle_expr(self, match: re.Match) -> None:
-        """Handle an expression. At this point we're at a string like:
+        """Handle an expression.
+
+        At this point we're at a string like:
             {{ 1 + 2 }}
             ^ right here
 
@@ -180,6 +184,7 @@ class TagIterator:
 
     def _expect_block_close(self) -> None:
         """Search for the tag close marker.
+
         To the right of the type name, there are a few possiblities:
            - a name (handled by the regex's 'block_name')
            - any number of: `=`, `(`, `)`, strings, etc (arguments)
@@ -207,7 +212,9 @@ class TagIterator:
         return match.end()
 
     def handle_tag(self, match: re.Match) -> Tag:
-        """The tag could be one of a few things:
+        """Determine tag type.
+
+        The tag could be one of a few things:
 
             {% mytag %}
             {% mytag x = y %}

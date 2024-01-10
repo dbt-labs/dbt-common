@@ -25,7 +25,7 @@ class NVEnum(StrEnum):
 
 @dataclass
 class NoValue(dbtClassMixin):
-    """Sometimes, you want a way to say none that isn't None"""
+    """Sometimes, you want a way to say none that isn't None!"""
 
     novalue: NVEnum = field(default_factory=lambda: NVEnum.novalue)
 

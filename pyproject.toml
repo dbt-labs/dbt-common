@@ -31,11 +31,6 @@ dependencies = [
   "python-dateutil~=2.0",
   "requests<3.0.0",
   "typing-extensions~=4.4",
-   # Match snowflake-connector-python, to ensure compatibility in dbt-snowflake
-  "cffi>=1.9,<2.0.0",
-  "idna>=2.5,<4",
-  "requests<3.0.0",
-  "urllib3~=1.0", # we pin urllib3 ~= 1.0 because of openssl requirement for requests
 ]
 
 [build-system]

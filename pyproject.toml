@@ -68,7 +68,7 @@ dependencies = [
   "pre-commit~=3.2",
   "isort~=5.12",
   "black~=23.3",
-  "ruff==0.0.260",
+  "ruff==0.1.11",
   "mypy~=1.3",
   "pytest~=7.3",
   "types-Jinja2~=2.11",
@@ -77,9 +77,9 @@ dependencies = [
   "types-PyYAML~=6.0",
 ]
 
-# ruff replace flake8 and black!
+# ruff replaces flake8!
 [tool.ruff]
-line-length = 120
+line-length = 99
 select = [
   "E", # Pycodestyle
   "F", # Pyflakes
@@ -100,12 +100,14 @@ ignore = [
   # Missing docstring in magic method
   "D105",
   # Missing docstring in public nested class
-  "D106", 
+  "D106",
   # Missing docstring in __init__
   "D107",
 ]
 # Let ruff autofix these errors.
 # F401 - Unused imports.
+# E501 - Line too long.
+# W292 - No newline at end of file.
 fixable = ["F401", "E501", "W292"]
 
 [tool.ruff.per-file-ignores]
@@ -130,4 +132,4 @@ disallow_untyped_defs = false
 profile = "black"
 
 [tool.black]
-line-length = 120
+line-length = 99

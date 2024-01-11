@@ -32,7 +32,9 @@ class EventManager:
             callback(msg)
 
     def add_logger(self, config: LoggerConfig) -> None:
-        logger = _JsonLogger(config) if config.line_format == LineFormat.Json else _TextLogger(config)
+        logger = (
+            _JsonLogger(config) if config.line_format == LineFormat.Json else _TextLogger(config)
+        )
         self.loggers.append(logger)
 
     def flush(self) -> None:

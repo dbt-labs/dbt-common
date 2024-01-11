@@ -36,7 +36,9 @@ _BASE_VERSION_REGEX = r"""
 (?P<major>{num_no_leading_zeros})\.
 (?P<minor>{num_no_leading_zeros})\.
 (?P<patch>{num_no_leading_zeros})
-""".format(num_no_leading_zeros=_NUM_NO_LEADING_ZEROS)
+""".format(
+    num_no_leading_zeros=_NUM_NO_LEADING_ZEROS
+)
 
 _VERSION_EXTRA_REGEX = r"""
 (\-?
@@ -45,7 +47,9 @@ _VERSION_EXTRA_REGEX = r"""
 (\+
   (?P<build>
     {alpha}(\.{alpha})*))?
-""".format(alpha_no_leading_zeros=_ALPHA_NO_LEADING_ZEROS, alpha=_ALPHA)
+""".format(
+    alpha_no_leading_zeros=_ALPHA_NO_LEADING_ZEROS, alpha=_ALPHA
+)
 
 
 _VERSION_REGEX_PAT_STR = r"""
@@ -83,14 +87,18 @@ class VersionSpecifier(VersionSpecification):
 
         if not skip_matcher:
             matcher = self.matcher
-        return "{}{}.{}.{}{}{}".format(matcher, self.major, self.minor, self.patch, prerelease, build)
+        return "{}{}.{}.{}{}{}".format(
+            matcher, self.major, self.minor, self.patch, prerelease, build
+        )
 
     @classmethod
     def from_version_string(cls, version_string):
         match = _VERSION_REGEX.match(version_string)
 
         if not match:
-            raise dbt_common.exceptions.base.SemverError(f'"{version_string}" is not a valid semantic version.')
+            raise dbt_common.exceptions.base.SemverError(
+                f'"{version_string}" is not a valid semantic version.'
+            )
 
         matched = {k: v for k, v in match.groupdict().items() if v is not None}
 
@@ -150,15 +158,22 @@ class VersionSpecifier(VersionSpecification):
                     return -1
                 # else is equal and will fall through
 
-        equal = (self.matcher == Matchers.GREATER_THAN_OR_EQUAL and other.matcher == Matchers.LESS_THAN_OR_EQUAL) or (
-            self.matcher == Matchers.LESS_THAN_OR_EQUAL and other.matcher == Matchers.GREATER_THAN_OR_EQUAL
+        equal = (
+            self.matcher == Matchers.GREATER_THAN_OR_EQUAL
+            and other.matcher == Matchers.LESS_THAN_OR_EQUAL
+        ) or (
+            self.matcher == Matchers.LESS_THAN_OR_EQUAL
+            and other.matcher == Matchers.GREATER_THAN_OR_EQUAL
         )
         if equal:
             return 0
 
         lt = (
             (self.matcher == Matchers.LESS_THAN and other.matcher == Matchers.LESS_THAN_OR_EQUAL)
-            or (other.matcher == Matchers.GREATER_THAN and self.matcher == Matchers.GREATER_THAN_OR_EQUAL)
+            or (
+                other.matcher == Matchers.GREATER_THAN
+                and self.matcher == Matchers.GREATER_THAN_OR_EQUAL
+            )
             or (self.is_upper_bound and other.is_lower_bound)
         )
         if lt:
@@ -166,7 +181,10 @@ class VersionSpecifier(VersionSpecification):
 
         gt = (
             (other.matcher == Matchers.LESS_THAN and self.matcher == Matchers.LESS_THAN_OR_EQUAL)
-            or (self.matcher == Matchers.GREATER_THAN and other.matcher == Matchers.GREATER_THAN_OR_EQUAL)
+            or (
+                self.matcher == Matchers.GREATER_THAN
+                and other.matcher == Matchers.GREATER_THAN_OR_EQUAL
+            )
             or (self.is_lower_bound and other.is_upper_bound)
         )
         if gt:
@@ -336,7 +354,9 @@ class VersionRange:
 
 class UnboundedVersionSpecifier(VersionSpecifier):
     def __init__(self, *args, **kwargs) -> None:
-        super().__init__(matcher=Matchers.EXACT, major=None, minor=None, patch=None, prerelease=None, build=None)
+        super().__init__(
+            matcher=Matchers.EXACT, major=None, minor=None, patch=None, prerelease=None, build=None
+        )
 
     def __str__(self):
         return "*"
@@ -447,5 +467,7 @@ def filter_installable(versions: List[str], install_prerelease: bool) -> List[st
             installable.append(version)
             installable_dict[str(version)] = version_string
     sorted_installable = sorted(installable)
-    sorted_installable_original_versions = [str(installable_dict.get(str(version))) for version in sorted_installable]
+    sorted_installable_original_versions = [
+        str(installable_dict.get(str(version))) for version in sorted_installable
+    ]
     return sorted_installable_original_versions

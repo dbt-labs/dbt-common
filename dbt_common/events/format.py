@@ -30,7 +30,9 @@ def format_fancy_output_line(
     else:
         status_time = " in {execution_time:0.2f}s".format(execution_time=execution_time)
 
-    output = "{justified} [{status}{status_time}]".format(justified=justified, status=status, status_time=status_time)
+    output = "{justified} [{status}{status_time}]".format(
+        justified=justified, status=status, status_time=status_time
+    )
 
     return output
 

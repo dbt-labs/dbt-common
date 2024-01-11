@@ -46,7 +46,9 @@ class SystemClient(unittest.TestCase):
 
     def test__make_file_with_overwrite(self):
         self.set_up_profile()
-        written = dbt_common.clients.system.make_file(self.profiles_path, contents="NEW_TEXT", overwrite=True)
+        written = dbt_common.clients.system.make_file(
+            self.profiles_path, contents="NEW_TEXT", overwrite=True
+        )
 
         self.assertTrue(written)
         self.assertEqual(self.get_profile_text(), "NEW_TEXT")
@@ -199,7 +201,9 @@ class TestFindMatching(unittest.TestCase):
                 self.tempdir,
                 [""],
                 "*.sql",
-                pathspec.PathSpec.from_lines(pathspec.patterns.GitWildMatchPattern, "sql-files*".splitlines()),
+                pathspec.PathSpec.from_lines(
+                    pathspec.patterns.GitWildMatchPattern, "sql-files*".splitlines()
+                ),
             )
             self.assertEqual(out, [])
 
@@ -242,7 +246,9 @@ class TestUntarPackage(unittest.TestCase):
 
     def test_untar_package_failure(self):
         #  create a text file then rename it as a tar (so it's invalid)
-        with NamedTemporaryFile(prefix="a", suffix=".txt", dir=self.tempdir, delete=False) as file_a:
+        with NamedTemporaryFile(
+            prefix="a", suffix=".txt", dir=self.tempdir, delete=False
+        ) as file_a:
             file_a.write(b"some text in the text file")
             txt_file_name = file_a.name
             file_path = os.path.dirname(txt_file_name)
@@ -255,7 +261,9 @@ class TestUntarPackage(unittest.TestCase):
 
     def test_untar_package_empty(self):
         #  create a tarball with nothing in it
-        with NamedTemporaryFile(prefix="my-empty-package.2", suffix=".tar.gz", dir=self.tempdir) as named_file:
+        with NamedTemporaryFile(
+            prefix="my-empty-package.2", suffix=".tar.gz", dir=self.tempdir
+        ) as named_file:
             #  make sure we throw an error for the empty file
             with self.assertRaises(tarfile.ReadError) as exc:
                 dbt_common.clients.system.untar_package(named_file.name, self.tempdest)

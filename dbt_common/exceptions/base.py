@@ -174,9 +174,14 @@ class CompilationError(DbtRuntimeError):
 
     def _fix_dupe_msg(self, path_1: str, path_2: str, name: str, type_name: str) -> str:
         if path_1 == path_2:
-            return f"remove one of the {type_name} entries for {name} in this file:\n - {path_1!s}\n"
+            return (
+                f"remove one of the {type_name} entries for {name} in this file:\n - {path_1!s}\n"
+            )
         else:
-            return f"remove the {type_name} entry for {name} in one of these files:\n" f" - {path_1!s}\n{path_2!s}"
+            return (
+                f"remove the {type_name} entry for {name} in one of these files:\n"
+                f" - {path_1!s}\n{path_2!s}"
+            )
 
 
 class RecursionError(DbtRuntimeError):

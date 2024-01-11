@@ -100,9 +100,15 @@ def msg_to_dict(msg: EventMsg) -> dict:
         )
     except Exception as exc:
         event_type = type(msg).__name__
-        fire_event(Note(msg=f"type {event_type} is not serializable. {str(exc)}"), level=EventLevel.WARN)
+        fire_event(
+            Note(msg=f"type {event_type} is not serializable. {str(exc)}"), level=EventLevel.WARN
+        )
     # We don't want an empty NodeInfo in output
-    if "data" in msg_dict and "node_info" in msg_dict["data"] and msg_dict["data"]["node_info"]["node_name"] == "":
+    if (
+        "data" in msg_dict
+        and "node_info" in msg_dict["data"]
+        and msg_dict["data"]["node_info"]["node_name"] == ""
+    ):
         del msg_dict["data"]["node_info"]
     return msg_dict
 
@@ -119,13 +125,17 @@ def warn_or_error(event, node=None) -> None:
 
 # an alternative to fire_event which only creates and logs the event value
 # if the condition is met. Does nothing otherwise.
-def fire_event_if(conditional: bool, lazy_e: Callable[[], BaseEvent], level: Optional[EventLevel] = None) -> None:
+def fire_event_if(
+    conditional: bool, lazy_e: Callable[[], BaseEvent], level: Optional[EventLevel] = None
+) -> None:
     if conditional:
         fire_event(lazy_e(), level=level)
 
 
 # a special case of fire_event_if, to only fire events in our unit/functional tests
-def fire_event_if_test(lazy_e: Callable[[], BaseEvent], level: Optional[EventLevel] = None) -> None:
+def fire_event_if_test(
+    lazy_e: Callable[[], BaseEvent], level: Optional[EventLevel] = None
+) -> None:
     fire_event_if(conditional=("pytest" in sys.modules), lazy_e=lazy_e, level=level)
 
 
@@ -141,7 +151,9 @@ def get_metadata_vars() -> Dict[str, str]:
     global metadata_vars
     if metadata_vars is None:
         metadata_vars = {
-            k[len(_METADATA_ENV_PREFIX) :]: v for k, v in os.environ.items() if k.startswith(_METADATA_ENV_PREFIX)
+            k[len(_METADATA_ENV_PREFIX) :]: v
+            for k, v in os.environ.items()
+            if k.startswith(_METADATA_ENV_PREFIX)
         }
     return metadata_vars
 

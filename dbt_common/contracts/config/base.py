@@ -38,7 +38,9 @@ class BaseConfig(AdditionalPropertiesAllowed, Replaceable):
 
     def __delitem__(self, key):
         if hasattr(self, key):
-            msg = ('Error, tried to delete config key "{}": Cannot delete ' "built-in keys").format(key)
+            msg = (
+                'Error, tried to delete config key "{}": Cannot delete ' "built-in keys"
+            ).format(key)
             raise CompilationError(msg)
         else:
             del self._extra[key]
@@ -143,7 +145,9 @@ class BaseConfig(AdditionalPropertiesAllowed, Replaceable):
             )
         return result
 
-    def update_from(self: T, data: Dict[str, Any], config_cls: Type[BaseConfig], validate: bool = True) -> T:
+    def update_from(
+        self: T, data: Dict[str, Any], config_cls: Type[BaseConfig], validate: bool = True
+    ) -> T:
         """Update and validate config given a dict.
 
         Given a dict of keys, update the current config from them, validate

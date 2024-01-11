@@ -15,7 +15,9 @@ class NewNameAlreadyInCacheError(CacheInconsistencyError):
     def __init__(self, old_key: str, new_key: str):
         self.old_key = old_key
         self.new_key = new_key
-        msg = f'in rename of "{self.old_key}" -> "{self.new_key}", new name is in the cache already'
+        msg = (
+            f'in rename of "{self.old_key}" -> "{self.new_key}", new name is in the cache already'
+        )
         super().__init__(msg)
 
 
@@ -55,7 +57,10 @@ class TruncatedModelNameCausedCollisionError(CacheInconsistencyError):
         else:
             message_addendum = ""
 
-        msg = f"in rename, new key {self.new_key} already in cache: {list(self.relations.keys())}{message_addendum}"
+        msg = (
+            f"in rename, new key {self.new_key} already in ",
+            f"cache: {list(self.relations.keys())}{message_addendum}",
+        )
 
         return msg
 

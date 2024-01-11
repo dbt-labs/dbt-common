@@ -20,7 +20,9 @@ class TestDeepMerge(unittest.TestCase):
             self.assertEqual(
                 case["expected"],
                 actual,
-                "failed on {} (actual {}, expected {})".format(case["description"], actual, case["expected"]),
+                "failed on {} (actual {}, expected {})".format(
+                    case["description"], actual, case["expected"]
+                ),
             )
 
 
@@ -40,7 +42,9 @@ class TestMerge(unittest.TestCase):
             self.assertEqual(
                 case["expected"],
                 actual,
-                "failed on {} (actual {}, expected {})".format(case["description"], actual, case["expected"]),
+                "failed on {} (actual {}, expected {})".format(
+                    case["description"], actual, case["expected"]
+                ),
             )
 
 

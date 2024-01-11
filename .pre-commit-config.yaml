@@ -10,7 +10,6 @@ repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v3.2.0
   hooks:
-  - id: check-toml
   - id: debug-statements
   - id: check-yaml
     args: [--unsafe]
@@ -29,27 +28,27 @@ repos:
     args:
     - "--check"
     - "--diff"
-# - repo: https://github.com/pre-commit/mirrors-mypy
-#   rev: v1.4.1
-#   hooks:
-#   - id: mypy
-#     # N.B.: Mypy is... a bit fragile.
-#     #
-#     # By using `language: system` we run this hook in the local
-#     # environment instead of a pre-commit isolated one.  This is needed
-#     # to ensure mypy correctly parses the project.
+- repo: https://github.com/pre-commit/mirrors-mypy
+  rev: v1.4.1
+  hooks:
+  - id: mypy
+    # N.B.: Mypy is... a bit fragile.
+    #
+    # By using `language: system` we run this hook in the local
+    # environment instead of a pre-commit isolated one.  This is needed
+    # to ensure mypy correctly parses the project.
 
-#     # It may cause trouble
-#     # in that it adds environmental variables out of our control to the
-#     # mix.  Unfortunately, there's nothing we can do about per pre-commit's
-#     # author.
-#     # See https://github.com/pre-commit/pre-commit/issues/730 for details.
-#     args: [--show-error-codes]
-#     files: ^dbt_common/
-#     language: system
-#   - id: mypy
-#     alias: mypy-check
-#     stages: [manual]
-#     args: [--show-error-codes, --pretty]
-#     files: ^dbt_common
-#     language: system
+    # It may cause trouble
+    # in that it adds environmental variables out of our control to the
+    # mix.  Unfortunately, there's nothing we can do about per pre-commit's
+    # author.
+    # See https://github.com/pre-commit/pre-commit/issues/730 for details.
+    args: [--show-error-codes]
+    files: ^dbt_common/
+    language: system
+  - id: mypy
+    alias: mypy-check
+    stages: [manual]
+    args: [--show-error-codes, --pretty]
+    files: ^dbt_common
+    language: system

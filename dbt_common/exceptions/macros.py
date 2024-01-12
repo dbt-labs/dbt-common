@@ -105,8 +105,8 @@ class MacroResultError(CompilationError):
 
     def get_message(self) -> str:
         msg = (
-            f'Got an invalid result from "{self.freshness_macro_name}" ',
-            f"macro: {[tuple(r) for r in self.table]}",
+            f'Got an invalid result from "{self.freshness_macro_name}" '
+            f"macro: {[tuple(r) for r in self.table]}"
         )
 
         return msg

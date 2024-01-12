@@ -58,8 +58,8 @@ class TruncatedModelNameCausedCollisionError(CacheInconsistencyError):
             message_addendum = ""
 
         msg = (
-            f"in rename, new key {self.new_key} already in ",
-            f"cache: {list(self.relations.keys())}{message_addendum}",
+            f"in rename, new key {self.new_key} already in "
+            f"cache: {list(self.relations.keys())}{message_addendum}"
         )
 
         return msg

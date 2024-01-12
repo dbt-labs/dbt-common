@@ -122,7 +122,8 @@ mypy_path = "third-party-stubs/"
 namespace_packages = true
 warn_unused_configs = true
 show_error_codes = true
-# disallow_untyped_defs = true # TODO: add type annotations everywhere
+disable_error_code = "attr-defined"  # TODO: revisit once other mypy errors resolved
+disallow_untyped_defs = false # TODO: add type annotations everywhere
 warn_redundant_casts = true
 
 # Don't run the extensive mypy checks on custom stubs

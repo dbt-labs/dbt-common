@@ -1,6 +1,6 @@
 from codecs import BOM_UTF8
 
-import agate
+import agate  # type: ignore
 import datetime
 import isodate
 import json

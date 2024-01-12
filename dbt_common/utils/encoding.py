@@ -9,7 +9,7 @@ import sys
 
 DECIMALS: Tuple[Type[Any], ...]
 try:
-    import cdecimal  # typing: ignore
+    import cdecimal  # type: ignore
 except ImportError:
     DECIMALS = (decimal.Decimal,)
 else:

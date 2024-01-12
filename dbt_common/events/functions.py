@@ -3,7 +3,7 @@ from pathlib import Path
 from dbt_common.events.event_manager_client import get_event_manager
 from dbt_common.invocation import get_invocation_id
 from dbt_common.helper_types import WarnErrorOptions
-from dbt_common.utils import ForgivingJSONEncoder
+from dbt_common.utils.encoding import ForgivingJSONEncoder
 from dbt_common.events.base_types import BaseEvent, EventLevel, EventMsg
 from dbt_common.events.logger import LoggerConfig, LineFormat
 from dbt_common.exceptions import scrub_secrets, env_secrets

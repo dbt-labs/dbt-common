@@ -53,8 +53,8 @@ class TestBlockLexer(unittest.TestCase):
     def test_evil_comments(self):
         body = '{{ config(foo="bar") }}\r\nselect * from this.that\r\n'
         comment = (
-            "{# external comment {% othertype bar %} select * from ",
-            "thing.other_thing{% endothertype %} #}",
+            "{# external comment {% othertype bar %} select * from "
+            "thing.other_thing{% endothertype %} #}"
         )
         block_data = "  \n\r\t{%- mytype foo %}" + body + "{%endmytype -%}"
         blocks = extract_toplevel_blocks(
@@ -68,13 +68,13 @@ class TestBlockLexer(unittest.TestCase):
 
     def test_nested_comments(self):
         body = (
-            '{# my comment #} {{ config(foo="bar") }}',
-            "\r\nselect * from {# my other comment embedding {% endmytype %} #} this.that\r\n",
+            '{# my comment #} {{ config(foo="bar") }}'
+            "\r\nselect * from {# my other comment embedding {% endmytype %} #} this.that\r\n"
         )
         block_data = "  \n\r\t{%- mytype foo %}" + body + "{% endmytype -%}"
         comment = (
-            "{# external comment {% othertype bar %} select * from ",
-            "thing.other_thing{% endothertype %} #}",
+            "{# external comment {% othertype bar %} select * from "
+            "thing.other_thing{% endothertype %} #}"
         )
         blocks = extract_toplevel_blocks(
             comment + block_data, allowed_blocks={"mytype"}, collect_raw_data=False
@@ -108,8 +108,8 @@ class TestBlockLexer(unittest.TestCase):
 
     def test_peaceful_macro_coexistence(self):
         body = (
-            "{# my macro #} {% macro foo(a, b) %} do a thing ",
-            "{%- endmacro %} {# my model #} {% a b %} test {% enda %}",
+            "{# my macro #} {% macro foo(a, b) %} do a thing "
+            "{%- endmacro %} {# my model #} {% a b %} test {% enda %}"
         )
         blocks = extract_toplevel_blocks(
             body, allowed_blocks={"macro", "a"}, collect_raw_data=True
@@ -126,8 +126,8 @@ class TestBlockLexer(unittest.TestCase):
 
     def test_macro_with_trailing_data(self):
         body = (
-            "{# my macro #} {% macro foo(a, b) %} do a thing {%- endmacro %} ",
-            "{# my model #} {% a b %} test {% enda %} raw data so cool",
+            "{# my macro #} {% macro foo(a, b) %} do a thing {%- endmacro %} "
+            "{# my model #} {% a b %} test {% enda %} raw data so cool"
         )
         blocks = extract_toplevel_blocks(
             body, allowed_blocks={"macro", "a"}, collect_raw_data=True
@@ -145,9 +145,9 @@ class TestBlockLexer(unittest.TestCase):
 
     def test_macro_with_crazy_args(self):
         body = (
-            """{% macro foo(a, b=asdf("cool this is 'embedded'" * 3) + external_var, c)%}""",
-            "cool{# block comment with {% endmacro %} in it #} stuff here ",
-            "{% endmacro %}",
+            """{% macro foo(a, b=asdf("cool this is 'embedded'" * 3) + external_var, c)%}"""
+            "cool{# block comment with {% endmacro %} in it #} stuff here "
+            "{% endmacro %}"
         )
         blocks = extract_toplevel_blocks(body, allowed_blocks={"macro"}, collect_raw_data=False)
         self.assertEqual(len(blocks), 1)
@@ -234,8 +234,8 @@ class TestBlockLexer(unittest.TestCase):
 
     def test_crazy_set_statement(self):
         body = (
-            '{% set x = (thing("{% myblock foo %}")) %}{% otherblock bar %}x{% endotherblock %}',
-            '{% set y = otherthing("{% myblock foo %}") %}',
+            '{% set x = (thing("{% myblock foo %}")) %}{% otherblock bar %}x{% endotherblock %}'
+            '{% set y = otherthing("{% myblock foo %}") %}'
         )
         blocks = extract_toplevel_blocks(
             body, allowed_blocks={"otherblock"}, collect_raw_data=False
@@ -268,8 +268,8 @@ class TestBlockLexer(unittest.TestCase):
 
     def test_crazy_do_statement(self):
         body = (
-            '{% do (thing("{% myblock foo %}")) %}{% otherblock bar %}x{% endotherblock %}',
-            '{% do otherthing("{% myblock foo %}") %}{% myblock x %}hi{% endmyblock %}',
+            '{% do (thing("{% myblock foo %}")) %}{% otherblock bar %}x{% endotherblock %}'
+            '{% do otherthing("{% myblock foo %}") %}{% myblock x %}hi{% endmyblock %}'
         )
         blocks = extract_toplevel_blocks(
             body, allowed_blocks={"myblock", "otherblock"}, collect_raw_data=False
@@ -313,8 +313,8 @@ class TestBlockLexer(unittest.TestCase):
 
     def test_docs_block(self):
         body = (
-            "{% docs __my_doc__ %} asdf {# nope {% enddocs %}} #} {% enddocs %}",
-            '{% docs __my_other_doc__ %} asdf "{% enddocs %}',
+            "{% docs __my_doc__ %} asdf {# nope {% enddocs %}} #} {% enddocs %}"
+            '{% docs __my_other_doc__ %} asdf "{% enddocs %}'
         )
         blocks = extract_toplevel_blocks(body, allowed_blocks={"docs"}, collect_raw_data=False)
         self.assertEqual(len(blocks), 2)
@@ -363,8 +363,8 @@ class TestBlockLexer(unittest.TestCase):
     def test_for_innocuous(self):
         # no for-loops over macros.
         body = (
-            "{% for x in range(10) %}{% something my_something %} adsf ",
-            "{% endsomething %}{% endfor %}",
+            "{% for x in range(10) %}{% something my_something %} adsf "
+            "{% endsomething %}{% endfor %}"
         )
         blocks = extract_toplevel_blocks(body)
         self.assertEqual(len(blocks), 1)
@@ -376,8 +376,8 @@ class TestBlockLexer(unittest.TestCase):
             extract_toplevel_blocks(body)
         self.assertIn(
             (
-                "Got an unexpected control flow end tag, got endif but ",
-                "never saw a preceeding if (@ 1:53)",
+                "Got an unexpected control flow end tag, got endif but "
+                "never saw a preceeding if (@ 1:53)"
             ),
             str(err.exception),
         )

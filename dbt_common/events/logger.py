@@ -11,7 +11,7 @@ from colorama import Style
 
 from dbt_common.events.base_types import EventLevel, EventMsg
 from dbt_common.events.format import timestamp_to_datetime_string
-from dbt_common.utils import ForgivingJSONEncoder
+from dbt_common.utils.encoding import ForgivingJSONEncoder
 
 # A Filter is a function which takes a BaseEvent and returns True if the event
 # should be logged, False otherwise.

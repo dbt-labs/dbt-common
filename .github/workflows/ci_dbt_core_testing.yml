@@ -1,0 +1,50 @@
+# **what?**
+# Runs all tests in dbt-core with this branch of dbt-common to ensure nothing is broken
+
+# **why?**
+# Ensure dbt-common changes do nto break dbt-core
+
+# **when?**
+# This will run when trying to merge a PR into main.
+# It can also be manually triggered.
+
+name: Test Against dbt-core
+
+on:
+  merge_group:
+    types: [checks_requested]
+  workflow_dispatch:
+
+permissions: read-all
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test-dbt-core:
+    name: "This does nothing right now - always passes"
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: "Check out dbt-core"
+        uses: actions/checkout@v3
+
+      - name: "Set up Python 3.11"
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: "Update the version of dbt-common"
+        run: |
+            echo "Update the version of dbt-common ref'd in dbt-core"
+
+      - name: "Install dbt-core"
+        run: |
+            echo "Install dbt-core with updated dbt-common ref"
+
+      - name: "Run Tests"
+        run: |
+          echo "Running tests in future versions."

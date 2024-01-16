@@ -55,7 +55,7 @@ jobs:
         run: pip3 install hatch
 
       - name: "Run Tests"
-        run: hatch run dev-env:pytest tests
+        run: hatch run unit-tests
 
       - name: "Get current date"
         if: always()

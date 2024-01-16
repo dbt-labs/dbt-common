@@ -17,7 +17,7 @@ class Integer(agate.data_types.DataType):
         # by default agate will cast none as a Number
         # but we need to cast it as an Integer to preserve
         # the type when merging and unioning tables
-        if isinstance(d, int) or d is None:
+        if type(d) == int or d is None:  # noqa [E721]
             return d
         else:
             raise agate.exceptions.CastError('Can not parse value "%s" as Integer.' % d)
@@ -30,7 +30,7 @@ class Number(agate.data_types.Number):
     # undo the change in https://github.com/wireservice/agate/pull/733
     # i.e. do not cast True and False to numeric 1 and 0
     def cast(self, d):
-        if isinstance(d, bool):
+        if type(d) == bool:  # noqa [E721]
             raise agate.exceptions.CastError("Do not cast True to 1 or False to 0.")
         else:
             return super().cast(d)

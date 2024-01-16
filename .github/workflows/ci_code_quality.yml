@@ -50,4 +50,4 @@ jobs:
         run: pip3 install hatch
 
       - name: Run Pre-commit Hooks
-        run: hatch run dev-env:pre-commit run --show-diff-on-failure --color=always --all-files
+        run: hatch run lint-all

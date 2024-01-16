@@ -222,6 +222,5 @@ class TestAgateHelper(unittest.TestCase):
             [True, Decimal(1)],
             [False, Decimal(0)],
         ]
-
         for i, row in enumerate(tbl):
             self.assertEqual(list(row), expected[i])

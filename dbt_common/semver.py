@@ -36,9 +36,7 @@ _BASE_VERSION_REGEX = r"""
 (?P<major>{num_no_leading_zeros})\.
 (?P<minor>{num_no_leading_zeros})\.
 (?P<patch>{num_no_leading_zeros})
-""".format(
-    num_no_leading_zeros=_NUM_NO_LEADING_ZEROS
-)
+""".format(num_no_leading_zeros=_NUM_NO_LEADING_ZEROS)
 
 _VERSION_EXTRA_REGEX = r"""
 (\-?
@@ -47,9 +45,7 @@ _VERSION_EXTRA_REGEX = r"""
 (\+
   (?P<build>
     {alpha}(\.{alpha})*))?
-""".format(
-    alpha_no_leading_zeros=_ALPHA_NO_LEADING_ZEROS, alpha=_ALPHA
-)
+""".format(alpha_no_leading_zeros=_ALPHA_NO_LEADING_ZEROS, alpha=_ALPHA)
 
 
 _VERSION_REGEX_PAT_STR = r"""

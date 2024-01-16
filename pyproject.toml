@@ -39,28 +39,6 @@ dependencies = [
   "requests<3.0.0",
   "typing-extensions~=4.4",
 ]
-[project.optional-dependencies]
-lint = [
-    "black~=23.3",
-    "flake8",
-    "Flake8-pyproject",
-    "mypy~=1.3",
-    "ruff==0.1.11",
-    "types-Jinja2~=2.11",
-    "types-jsonschema~=4.17",
-    "types-protobuf~=4.24.0",
-    "types-python-dateutil~=2.8",
-    "types-PyYAML~=6.0",
-    "types-requests<2.31.0" # types-requests 2.31.0.8 requires urllib3>=2, but we pin urllib3 ~= 1.0 because of openssl requirement for requests
-
-]
-test = [
-    "pytest~=7.3",
-    "pytest-xdist~=3.2",
-    "hypothesis~=6.87"
-]
-[[tool.hatch.envs.test.matrix]]
-python = ["3.8","3.9","3.10", "3.11"]
 
 [project.urls]
 Homepage = "https://github.com/dbt-labs/dbt-common"  # TODO: should this be dbt's homepage?
@@ -93,22 +71,51 @@ packages = ["dbt_common"]
 path = "dbt_common/__about__.py"
 
 [tool.hatch.envs.default]
-description = "Env for running development commands like pytest & linting"
-features = ["lint", "test"]
+description = "Default environment with dependencies for running dbt-common"
 
-# these are the commands that you run with `hatch run <cmd>` for local dev & CI
 [tool.hatch.envs.default.scripts]
-test = "- python -m pytest {args:tests/unit}"
-lint-all = [
-    "- lint-black",
-    "- lint-flake8",
-    "- lint-mypy",
-]
-lint-black = "python -m black ."
-lint-flake8 = "python -m flake8 ."
-lint-mypy = "python -m mypy ."
-format = ["black {args:.}", "ruff --fix --exit-non-zero-on-fix {args:.}"]
 proto = "protoc -I=./dbt_common/events --python_out=./dbt_common/events ./dbt_common/events/types.proto"
+
+[tool.hatch.envs.lint]
+description = "Env for running development commands for linting"
+extra-dependencies = [
+    "black~=23.3",
+    "flake8",
+    "Flake8-pyproject",
+    "mypy~=1.3",
+    "ruff==0.1.11",
+    "types-Jinja2~=2.11",
+    "types-jsonschema~=4.17",
+    "types-protobuf~=4.24.0",
+    "types-python-dateutil~=2.8",
+    "types-PyYAML~=6.0",
+    "types-requests<2.31.0" # types-requests 2.31.0.8 requires urllib3>=2, but we pin urllib3 ~= 1.0 because of openssl requirement for requests
+
+]
+
+[tool.hatch.envs.lint.scripts]
+all = [
+    "- black",
+    "- flake8",
+    "- mypy",
+]
+black = "python -m black ."
+flake8 = "python -m flake8 ."
+mypy = "python -m mypy ."
+format = ["black {args:.}", "ruff --fix --exit-non-zero-on-fix {args:.}"]
+
+[tool.hatch.envs.test]
+description = "Env for running development commands for testing"
+extra-dependencies = [
+    "pytest~=7.3",
+    "pytest-xdist~=3.2",
+    "hypothesis~=6.87"
+]
+[[tool.hatch.envs.test.matrix]]
+python = ["3.8","3.9","3.10", "3.11"]
+
+[tool.hatch.envs.test.scripts]
+unit = "- python -m pytest {args:tests/unit}"
 
 # TODO: should ruff replace flake8?
 [tool.ruff]

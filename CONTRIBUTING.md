@@ -93,15 +93,17 @@ Once you're able to manually test that your code change is working as expected, 
 
 See the pyproject.toml for a complete list of custom commands.  See the h[atch docs](https://hatch.pypa.io/latest/cli/reference/) for a description of built in commands and flags.  These are the most useful custom commands to use while developing.
 
-|Command|Description|
-|---|---|
-|`hatch run test`|run all tests|
-|`hatch run lint-all`|run black, flake8 and mypy checks|
-|`hatch run lint-black`|run black|
-|`hatch run lint-flake8`|run flake8|
-|`hatch run lint-mypy`|run mypy|
-|`hatch run format`|run TODO|
-|`hatch run proto`|regenerate protobuf definitions|
+|Type|Command|Description|
+|---|---|---|
+|Utility|`hatch run proto`|regenerate protobuf definitions|
+|Testing|`hatch run test:unit`|run all tests|
+|Testing|`hatch shell test`|Drops you into a shell env set up for manual testing|
+|Code Quality|`hatch run lint:all`|run black, flake8 and mypy checks|
+|Code Quality|`hatch run lint:black`|run black|
+|Code Quality|`hatch run lint:flake8`|run flake8|
+|Code Quality|`hatch run lint:mypy`|run mypy|
+|Testing|`hatch shell lint`|Drops you into a shell env set up for manualcode quality checks|
+|Code Quality|`hatch fmt`|runs ruff on all code|
 
 ## Debugging
 

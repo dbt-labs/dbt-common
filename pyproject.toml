@@ -110,7 +110,7 @@ lint-mypy = "python -m mypy ."
 format = ["black {args:.}", "ruff --fix --exit-non-zero-on-fix {args:.}"]
 proto = "protoc -I=./dbt_common/events --python_out=./dbt_common/events ./dbt_common/events/types.proto"
 
-# ruff replaces flake8!
+# TODO: should ruff replace flake8?
 [tool.ruff]
 line-length = 99
 select = [

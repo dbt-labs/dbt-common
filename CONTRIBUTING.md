@@ -93,8 +93,7 @@ See the pyproject.toml for a complete list of custom commands.  See the h[atch d
 
 |Command|Description|
 |---|---|
-|`hatch run setup-pre-commit`|set up pre-commit to use hatch|
-|`hatch run unit-tests`|run all unit tests|
+|`hatch run test`|run all tests|
 |`hatch run lint-all`|run black, flake8 and mypy checks|
 |`hatch run lint-black`|run black|
 |`hatch run lint-flake8`|run flake8|

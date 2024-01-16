@@ -56,7 +56,6 @@ lint = [
 ]
 test = [
     "pytest~=7.3",
-#     "pytest-dotenv",
     "pytest-xdist~=3.2",
     "hypothesis~=6.87"
 ]
@@ -84,7 +83,6 @@ exclude = [
   ".gitignore",
   ".pre-commit-config.yaml",
   "CONTRIBUTING.md",
-  "MAKEFILE",  # TODO: remove once we remove the makefile
   "/tests",
 ]
 

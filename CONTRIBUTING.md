@@ -83,7 +83,9 @@ Once you're able to manually test that your code change is working as expected, 
 
 ### Initial setup
 
-- None needed to set up your environments.  hatch will create your environment as defined in the `pyproject.toml` when you run.
+- [Install pre-commit](https://pre-commit.com/#usage)
+
+- Nothing needed to set up your environments.  hatch will create your environment as defined in the `pyproject.toml` when you run.
 
 - set up pre-commit to use hatch: `hatch run setup-pre-commit`
 

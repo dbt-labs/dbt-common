@@ -8,6 +8,9 @@
 # This will run when trying to merge a PR into main.
 # It can also be manually triggered.
 
+##  TODO: This is a stub. It does nothing right now.
+# It will be updated in the future as part of https://github.com/dbt-labs/dbt-common/issues/18
+
 name: Test Against dbt-core
 
 on:

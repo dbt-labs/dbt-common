@@ -60,6 +60,8 @@ test = [
     "pytest-xdist~=3.2",
     "hypothesis~=6.87"
 ]
+[[tool.hatch.envs.test.matrix]]
+python = ["3.8","3.9","3.10", "3.11"]
 
 [project.urls]
 Homepage = "https://github.com/dbt-labs/dbt-common"  # TODO: should this be dbt's homepage?
@@ -92,19 +94,13 @@ packages = ["dbt_common"]
 [tool.hatch.version]
 path = "dbt_common/__about__.py"
 
-# [tool.hatch.envs.dev.scripts]
-# all = ["pre-commit run --all-files"]
-
 [tool.hatch.envs.default]
 description = "Env for running development commands like pytest & linting"
 features = ["lint", "test"]
 
 # these are the commands that you run with `hatch run <cmd>` for local dev & CI
 [tool.hatch.envs.default.scripts]
-# This edits your local pre-commit hook file to use Hatch when executing.
-# TODO: move to it's own env that only installs pre-commit - may need to live here though?
-setup-pre-commit = 'sed -i -e "s/exec /exec hatch run /g" .git/hooks/pre-commit'
-unit-tests = "- python -m pytest {args:tests/unit}"
+test = "- python -m pytest {args:tests/unit}"
 lint-all = [
     "- lint-black",
     "- lint-flake8",
@@ -113,9 +109,8 @@ lint-all = [
 lint-black = "python -m black ."
 lint-flake8 = "python -m flake8 ."
 lint-mypy = "python -m mypy ."
-proto = "protoc -I=./dbt_common/events --python_out=./dbt_common/events ./dbt_common/events/types.proto"
-lint = ["black --check --diff {args:.}", "ruff check {args:.}", "mypy {args:.}"]
 format = ["black {args:.}", "ruff --fix --exit-non-zero-on-fix {args:.}"]
+proto = "protoc -I=./dbt_common/events --python_out=./dbt_common/events ./dbt_common/events/types.proto"
 
 # ruff replaces flake8!
 [tool.ruff]
@@ -155,9 +150,6 @@ exclude = [
     "third-party-stubs/*",
 ]
 
-[tool.ruff.per-file-ignores]
-"types_pb2.py" = ["E501", "E712", "F821"]
-
 [tool.ruff.pydocstyle]
 convention = "google"
 
@@ -171,7 +163,6 @@ select = ["E", "W", "F"]
 ignore = ["E203", "E501", "E741", "W503", "W504"]
 exclude = [
     "dbt_common/events/types_pb2.py",
-    "tests",
     "venv",
     "env*"
 ]
@@ -190,7 +181,3 @@ exclude = [
     "env*",
     "third-party-stubs/*",
 ]
-
-[[tool.mypy.overrides]]
-module = ["dbt_common.events.types_pb2.py"]
-follow_imports = "skip"

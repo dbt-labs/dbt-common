@@ -54,6 +54,7 @@ There are some tools that will be helpful to you in developing locally. While th
 
 These are the tools used in `dbt-common` development and testing:
 
+- [`hatch`](https://hatch.pypa.io/latest/) for project management
 - [`flake8`](https://flake8.pycqa.org/en/latest/) for code linting
 - [`black`](https://github.com/psf/black) for code formatting
 - [`mypy`](https://mypy.readthedocs.io/en/stable/) for static type checking
@@ -62,31 +63,15 @@ These are the tools used in `dbt-common` development and testing:
 
 A deep understanding of these tools in not required to effectively contribute to `dbt-common`, but we recommend checking out the attached documentation if you're interested in learning more about each one.
 
-#### Virtual environments
-
-We strongly recommend using virtual environments when developing code in `dbt-common`. We recommend creating this virtualenv
-in the root of the `dbt-common` repository. To create a new virtualenv, run:
-```sh
-python3 -m venv env
-source env/bin/activate
-```
-
-This will create and activate a new Python virtual environment.
-
 ## Running `dbt-common` in development
 
 ### Installation
 
-First make sure that you set up your `virtualenv` as described in [Setting up an environment](#setting-up-an-environment).  Also ensure you have the latest version of pip installed with `pip install --upgrade pip`. Next, install `dbt-common` (and its dependencies):
-
-```sh
-git
-pre-commit install
-```
+Ensure you have the latest version of pip installed with `pip install --upgrade pip` as well as [hatch](https://hatch.pypa.io/latest/install/).
 
 ### Running `dbt-common`
 
-This repository is just a template and cannot be run.
+This repository cannot be run on its own.
 
 ## Testing
 
@@ -98,29 +83,33 @@ Once you're able to manually test that your code change is working as expected, 
 
 ### Initial setup
 
-None needed.
+- None needed to set up your environments.  hatch will create your environment as defined in the `pyproject.toml` when you run.
 
-### Test commands
+- set up pre-commit to use hatch: `hatch run setup-pre-commit`
 
-No tests included.
+### Hatch Commands
 
+See the pyproject.toml for a complete list of custom commands.  See the h[atch docs](https://hatch.pypa.io/latest/cli/reference/) for a description of built in commands and flags.  These are the most useful custom commands to use while developing.
 
-### Unit, Integration, Functional?
-
-Here are some general rules for adding tests:
-* unit tests (`tests/unit`) don’t need to access a database; "pure Python" tests should be written as unit tests
-* functional tests (`tests/functional`) cover anything that interacts with a database, namely adapter
+|Command|Description|
+|---|---|
+|`hatch run setup-pre-commit`|set up pre-commit to use hatch|
+|`hatch run unit-tests`|run all unit tests|
+|`hatch run lint-all`|run black, flake8 and mypy checks|
+|`hatch run lint-black`|run black|
+|`hatch run lint-flake8`|run flake8|
+|`hatch run lint-mypy`|run mypy|
+|`hatch run format`|run TODO|
+|`hatch run proto`|regenerate protobuf definitions|
 
 ## Debugging
 
-1. The logs for a `dbt run` have stack traces and other information for debugging errors (in `logs/dbt.log` in your project directory).
-2. Try using a debugger, like `ipdb`. For pytest: `--pdb --pdbcls=IPython.terminal.debugger:pdb`
-3. 
+1. Try using a debugger, like `ipdb`. For pytest: `--pdb --pdbcls=IPython.terminal.debugger:pdb`
+2. 
 
 ### Assorted development tips
 * Append `# type: ignore` to the end of a line if you need to disable `mypy` on that line.
 * Sometimes flake8 complains about lines that are actually fine, in which case you can put a comment on the line such as: # noqa or # noqa: ANNN, where ANNN is the error code that flake8 issues.
-* To collect output for `CProfile`, run dbt with the `-r` option and the name of an output file, i.e. `dbt -r dbt.cprof run`. If you just want to profile parsing, you can do: `dbt -r dbt.cprof parse`. `pip` install `snakeviz` to view the output. Run `snakeviz dbt.cprof` and output will be rendered in a browser window.
 
 ## Adding or modifying a CHANGELOG Entry
 

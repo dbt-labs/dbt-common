@@ -66,6 +66,12 @@ on:
   #       default: false
   #       required: false
 
+<<<<<<< HEAD
+=======
+env:
+  ENV_SETUP_SCRIPT_PATH: "scripts/env-setup.sh"  # TODO: This isn't needed for dbt-common
+  PACKAGE_TEST_COMMAND: "tbd..."  # this should probably be the hatch command/script
+>>>>>>> 7034ccc (fix up publishing)
 
 permissions:
   contents: write # this is the permission that allows creating a new release
@@ -80,9 +86,48 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+<<<<<<< HEAD
 
   release:
     name: PyPI - ${{ inputs.deploy-to }}
+=======
+  log-inputs:
+    name: Log Inputs
+    runs-on: ubuntu-latest
+    steps:
+      - name: "[DEBUG] Print Variables"
+        run: |
+          echo "***INPUTS***"
+          echo The branch to release from:         ${{ inputs.target_branch }}
+          echo The release version number:         ${{ inputs.version_number }}
+          echo Test run:                           ${{ inputs.test_run }}
+          echo Nightly release:                    ${{ inputs.nightly_release }}
+          echo "***ENV VARS***"
+          echo Environment setup script path:      ${{ env.ENV_SETUP_SCRIPT_PATH }}
+          echo Package test command:               ${{ env.PACKAGE_TEST_COMMAND }}
+
+
+  bump-version-generate-changelog:
+    name: Bump package version, Generate changelog
+
+    uses: dbt-labs/dbt-common/.github/workflows/release_prep_hatch.yml@er/release
+
+    with:
+      version_number: ${{ inputs.version_number }}
+      target_branch: ${{ inputs.target_branch }}
+      env_setup_script_path: ${{ env.ENV_SETUP_SCRIPT_PATH }}
+      test_run: ${{ inputs.test_run }}
+      nightly_release: ${{ inputs.nightly_release }}
+
+    secrets: inherit
+
+  log-outputs-bump-version-generate-changelog:
+    name: "[Log output] Bump package version, Generate changelog"
+    if: ${{ !failure() && !cancelled() }}
+
+    needs: [bump-version-generate-changelog]
+
+>>>>>>> 7034ccc (fix up publishing)
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.deploy-to }}
@@ -104,6 +149,7 @@ jobs:
         run: hatch build
         shell: bash
 
+<<<<<<< HEAD
       - name: Check artifacts
         run: hatch run build:check-all
         shell: bash
@@ -133,28 +179,55 @@ jobs:
 #           echo Environment setup script path:      ${{ env.ENV_SETUP_SCRIPT_PATH }}
 #           echo AWS S3 bucket name:                 ${{ env.S3_BUCKET_NAME }}
 #           echo Package test command:               ${{ env.PACKAGE_TEST_COMMAND }}
+=======
+    with:
+      sha: ${{ needs.bump-version-generate-changelog.outputs.final_sha }}
+      version_number: ${{ inputs.version_number }}
+      changelog_path: ${{ needs.bump-version-generate-changelog.outputs.changelog_path }}
+      package_test_command: ${{ env.PACKAGE_TEST_COMMAND }}
+      test_run: ${{ inputs.test_run }}
+      nightly_release: ${{ inputs.nightly_release }}
+
+  github-release:
+    name: GitHub Release
+    if: ${{ !failure() && !cancelled() }}
+>>>>>>> 7034ccc (fix up publishing)
 
 
+<<<<<<< HEAD
 #   bump-version-generate-changelog:
 #     name: Bump package version, Generate changelog
+=======
+    uses: dbt-labs/dbt-common/.github/workflows/github_release_hatch.yml@er/release
+>>>>>>> 7034ccc (fix up publishing)
 
 #     uses: dbt-labs/dbt-common/.github/workflows/release_prep_hatch.yml@er/release
 
+<<<<<<< HEAD
 #     with:
 #       version_number: ${{ inputs.version_number }}
 #       target_branch: ${{ inputs.target_branch }}
 #       env_setup_script_path: ${{ env.ENV_SETUP_SCRIPT_PATH }}
 #       test_run: ${{ inputs.test_run }}
 #       nightly_release: ${{ inputs.nightly_release }}
+=======
+  pypi-release:
+    name: PyPI Release
+>>>>>>> 7034ccc (fix up publishing)
 
 #     secrets: inherit
 
+<<<<<<< HEAD
 #   log-outputs-bump-version-generate-changelog:
 #     name: "[Log output] Bump package version, Generate changelog"
 #     if: ${{ !failure() && !cancelled() }}
+=======
+    uses: dbt-labs/dbt-common/.github/workflows/pypi_release_trusted_publisher.yml@er/release
+>>>>>>> 7034ccc (fix up publishing)
 
 #     needs: [bump-version-generate-changelog]
 
+<<<<<<< HEAD
 #     runs-on: ubuntu-latest
 
 #     steps:
@@ -162,6 +235,11 @@ jobs:
 #         run: |
 #           echo Final SHA     : ${{ needs.bump-version-generate-changelog.outputs.final_sha }}
 #           echo Changelog path: ${{ needs.bump-version-generate-changelog.outputs.changelog_path }}
+=======
+  slack-notification:
+    name: Slack Notification
+    if: ${{ failure() && (!inputs.test_run || inputs.nightly_release) }}
+>>>>>>> 7034ccc (fix up publishing)
 
 #   build-test-package:
 #     name: Build, Test, Package

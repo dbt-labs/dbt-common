@@ -1,0 +1,395 @@
+# **what?**
+# Build release artifacts and store them to S3 bucket if they do not already exist.
+#
+# Expected build artifact layout:
+#
+# ├── dist
+# │   ├── dbt-*.tar.gz
+# │   ├── dbt-*.whl
+# └── <release_notes>.md
+#
+# Build artifacts get stored in S3 to a bucket with the following directory structure:
+#       "s3://<s3_bucket>/<org>/<repo>/<artifact_folder>/<version>/<commit>/"
+#
+#   Notes:
+#   <artifact_folder> - resolves based on `test_run` and `nightly_release` inputs.
+#     nightly_release == true will use "nightly-releases"
+#     nightly_release == false resolves based on `test_run` input
+#     test_run == true  will use "artifacts_testing"
+#     test_run == false will use "artifacts"
+#
+#   Examples:
+#     nightly_release == true: "s3://core-team-artifacts/dbt-labs/dbt-core/nightly-releases/1.4.0a1.dev01112023+nightly/aaa410f17d300f1bde2cd67c03e48df135ab347b"
+#     test_run == true  : "s3://core-team-artifacts/dbt-labs/dbt-core/artifacts_testing/1.2.3/ce98e6f067d9fa63a9b213bf99ebaf0c29d2b7eb/"
+#     test_run == false : "s3://core-team-artifacts/dbt-labs/dbt-core/artifacts/1.2.3/ce98e6f067d9fa63a9b213bf99ebaf0c29d2b7eb/"
+#
+# Inputs:
+#  sha:                  The commit to attach to this release
+#  version_number:       The release version number (i.e. 1.0.0b1, 1.2.3rc2, 1.0.0)
+#  changelog_path:       Path to the changelog file for release notes
+#  s3_bucket_name:       AWS S3 bucket name
+#  package_test_command: Command to use to check package runs
+#  test_run:             Test run (Bucket to upload the artifact)
+#  nightly_release:      Identifier that this is nightly release
+#
+# **why?**
+# Reusable and consistent build process.
+#
+# **when?**
+# Call after a successful version bump up.
+# This workflow expects that the package version is bumped and the associated changelog living in sources.
+#
+# Validation Checks
+#
+#  1. Make sure the sha has a changelog entry for this version and the version bump has been completed.
+#  2. Check if build already exists in AWS s3 bucket.  It will live in a bucket following the env.s3 naming convention below.
+#      If it does exist, upload it to the GitHub artifacts and skip the rest of the workflow.
+#  3. Only upload artifacts and changelog to S3 if tests pass
+
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      sha:
+        required: true
+        type: string
+      version_number:
+        required: true
+        type: string
+      changelog_path:
+        required: true
+        type: string
+      s3_bucket_name:
+        required: true
+        default: "core-team-artifacts"
+        type: string
+      package_test_command:
+        required: true
+        default: "dbt --version"
+        type: string
+      test_run:
+        required: false
+        default: true
+        type: boolean
+      nightly_release:
+        required: false
+        default: false
+        type: boolean
+
+    # pass through secrets so every repo can have their own and won't depend on a name
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        description: AWS Access Key ID
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        description: AWS Access Key
+        required: true
+
+permissions:
+  contents: write
+  # this will be needed if we go with OIDC for auth instead of managing secrets in github for AWS
+  # id-token: write  # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-cloud-providers#adding-permissions-settings
+
+env:
+  ARTIFACT_RETENTION_DAYS: 2
+  AWS_REGION: "us-east-1"
+  PYTHON_TARGET_VERSION: 3.8
+  NOTIFICATION_PREFIX: "[Build]"
+
+jobs:
+  log-inputs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "[DEBUG] Print Variables"
+        run: |
+          # WORKFLOW INPUTS
+          echo The last commit sha in the release: ${{ inputs.sha }}
+          echo The release version number:         ${{ inputs.version_number }}
+          echo The changelog path:                 ${{ inputs.changelog_path }}
+          echo The s3 bucket name:                 ${{ inputs.s3_bucket_name }}
+          echo The package test command:           ${{ inputs.package_test_command }}
+          echo Test run:                           ${{ inputs.test_run }}
+          echo Nightly release:                    ${{ inputs.nightly_release }}
+          # ENVIRONMENT VARIABLES
+          echo GitHub artifact retention days:     ${{ env.ARTIFACT_RETENTION_DAYS }}
+          echo Amazon Web Services region:         ${{ env.AWS_REGION }}
+          echo Python target version:              ${{ env.PYTHON_TARGET_VERSION }}
+          echo Notification prefix:                ${{ env.NOTIFICATION_PREFIX }}
+
+  resolve-aws-bucket:
+    runs-on: ubuntu-latest
+    outputs:
+      aws-s3-bucket: ${{ steps.bucket_path.outputs.path }}
+
+    steps:
+      - name: "Resolve S3 Bucket Path"
+        id: bucket_path
+        run: |
+          # Resolve folder to upload/check build artifact
+          artifact_folder="artifacts"
+          if [[ ${{ inputs.nightly_release }} == true ]]
+          then
+            artifact_folder="nightly-releases"
+          elif [[ ${{ inputs.test_run }} == true ]]
+          then
+            artifact_folder="artifacts_testing"
+          fi
+          # Generate path for build artifact.
+          # Include commit in path in case release commit gets updates on subsequent runs
+          bucket_path="s3://${{ inputs.s3_bucket_name }}/${{ github.repository }}/$artifact_folder/${{ inputs.version_number }}/${{ inputs.sha }}"
+          echo "path=$bucket_path" >> $GITHUB_OUTPUT
+          # Send notification
+          title="S3 Bucket Path"
+          echo "$title: $bucket_path"
+          echo "::notice title=${{ env.NOTIFICATION_PREFIX }}: $title::$bucket_path"
+
+  audit-version-changelog:
+    # Make sure the changelog has been generated and the version is up to date
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Checkout ${{ github.repository }} Commit ${{ inputs.sha }}"
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.sha }}
+
+      - name: "Audit Version And Parse Into Parts"
+        id: semver
+        uses: dbt-labs/actions/parse-semver@v1.1.0
+        with:
+          version: ${{ inputs.version_number }}
+
+      - name: "Audit Changelog Exists"
+        run: |
+          title="Audit Changelog Exists"
+          if test -f ${{ inputs.changelog_path }}
+          then
+            message="Specified file ${{ inputs.changelog_path }} - exists."
+            echo "::notice title=${{ env.NOTIFICATION_PREFIX }}: $title::$message"
+          else
+            message="Specified file ${{ inputs.changelog_path }} does not exist! The changelog for this release must exist before running this workflow."
+            git status
+            echo "::error title=${{ env.NOTIFICATION_PREFIX }}: $title::$message"
+            exit 1
+          fi
+
+      - name: "Check Current Version In Code"
+        id: set_status
+        run: |
+          title="Check Current Version In Code"
+          current_version=$(hatch version)
+          if test "$current_version" = "${{ inputs.version_number }}"
+          then
+            message="Version set to ${{ inputs.version_number }}."
+            echo "::notice title=${{ env.NOTIFICATION_PREFIX }}: $title::$message"
+          else
+            message="Version not set to ${{ inputs.version_number }}. The version bump workflow must be complete before running this workflow."
+            git status
+            echo "::error title=${{ env.NOTIFICATION_PREFIX }}: $title::$message"
+            exit 1
+          fi
+
+  check-build-exists:
+    runs-on: ubuntu-latest
+    needs: [audit-version-changelog, resolve-aws-bucket]
+
+    outputs:
+      is_exists: ${{ steps.artifact_exists.outputs.is_exists }}
+
+    steps:
+      - name: "Configure AWS Credentials"
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: "Copy Artifact From S3 Via CLI"
+        run: |
+          aws s3 cp ${{ needs.resolve-aws-bucket.outputs.aws-s3-bucket }} . --recursive  # since it's an entire directory
+
+      - name: "[DEBUG] Display Structure Of All Downloaded Files"
+        run: ls -R
+
+      - name: "Check Artifact Integrity"
+        id: artifact_integrity
+        uses: andstor/file-existence-action@v2
+        with:
+          files: "${{ inputs.changelog_path }}, dist/*.tar.gz, dist/*.whl"
+
+      # upload the files downloaded from S3 to artifacts so we don't have to keep
+      # downloading from S3
+      - name: "Upload Artifact From S3 To GitHub"
+        if: ${{ steps.artifact_integrity.outputs.files_exists == 'true' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.version_number }}
+          path: |
+            ${{ inputs.changelog_path }}
+            dist/
+          if-no-files-found: error
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+
+      - name: "[Notification] Upload Artifact From S3 To GitHub"
+        if: ${{ steps.artifact_integrity.outputs.files_exists == 'true' }}
+        run: |
+          title="Artifact ${{ inputs.version_number }} uploaded from S3 To GitHub"
+          message="The build artifact is pulled from the S3 bucket and uploaded to the GitHub artifact storage."
+          echo "::notice title=${{ env.NOTIFICATION_PREFIX }}: $title::$message"
+
+      - name: "Set Artifact Existence For Subsequent Jobs"
+        id: artifact_exists
+        run: echo "is_exists=${{ steps.artifact_integrity.outputs.files_exists }}" >> $GITHUB_OUTPUT
+
+  skip-build:
+    runs-on: ubuntu-latest
+    needs: [check-build-exists]
+    if: ${{ needs.check-build-exists.outputs.is_exists == 'true' }}
+
+    steps:
+      - name: "Build Exists, Skip To Test"
+        run: |
+          title="Build Exists in AWS S3 bucket"
+          message="A build already exists for version ${{ inputs.version_number }}, skipping build job."
+          echo "::notice title=${{ env.NOTIFICATION_PREFIX }}: $title::$message"
+
+  unit:
+    name: Unit Test
+    runs-on: ubuntu-latest
+    needs: [audit-version-changelog, check-build-exists]
+    if: ${{ needs.check-build-exists.outputs.is_exists == 'false' }}
+
+    steps:
+      - name: "Checkout ${{ github.repository }} Commit ${{ inputs.sha }}"
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.sha }}
+
+      - name: "Set up Python & Hatch - ${{ env.PYTHON_TARGET_VERSION }}"
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: ${{ env.PYTHON_TARGET_VERSION }}
+
+      - name: "Run Unit Tests"
+        run: hatch run test:unit
+
+  build-packages:
+    runs-on: ubuntu-latest
+    needs: [unit]
+
+    outputs:
+      finished: ${{ steps.set_success.outputs.finished }}
+
+    steps:
+      - name: "Checkout Commit - ${{ inputs.sha }}"
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.sha }}
+
+      - name: "Set up Python & Hatch - ${{ env.PYTHON_TARGET_VERSION }}"
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: ${{ env.PYTHON_TARGET_VERSION }}
+
+      - name: "Build Python Package"
+        run: |
+          hatch build
+
+      - name: "Upload Build Artifact - ${{ inputs.version_number }}"
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.version_number }}
+          # TODO: check these paths
+          path: |
+            ${{ inputs.changelog_path }}
+            ./dist/
+            !dist/dbt-${{ inputs.version_number }}.tar.gz
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+
+  test-build:
+    runs-on: ubuntu-latest
+    needs: [build-packages]
+
+    steps:
+      - name: "Set up Python - ${{ env.PYTHON_TARGET_VERSION }}"
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_TARGET_VERSION }}
+
+      - name: "Install Python Dependencies"
+        run: |
+          python -m pip install --user --upgrade pip
+          python -m pip install --upgrade wheel
+          python -m pip --version
+
+      - name: "Download Build Artifact - ${{ inputs.version_number }}"
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.version_number }}
+          path: .
+
+      - name: "[DEBUG] Display Structure Of All Downloaded Files"
+        run: ls -R
+
+      - name: "[DEBUG] Show Distributions"
+        run: ls -lh dist/
+
+      - name: "Show distributions"
+        run: ls -lh dist/
+
+      - name: "Check distribution descriptions"
+        run: |
+          twine check dist/*
+
+      - name: "Check wheel contents"
+        run: |
+          check-wheel-contents dist/*.whl --ignore W007,W008
+
+      - name: "Install wheel distributions"
+        run: |
+          find ./dist/dbt_common-*.whl -maxdepth 1 -type f | xargs python -m pip install --force-reinstall --find-links=dist/
+
+      # TODO: how to validate here?  we did dbt --version previously. this checks it's there, but not that it can do anything. maybe it's enough?
+      - name: "Check wheel distributions"
+        run: |
+          pip freeze | grep dbt-common
+
+      - name: "Install source distributions"
+        run: |
+          find ./dist/dbt_common-*.gz -maxdepth 1 -type f | xargs python -m pip install --force-reinstall --find-links=dist/
+
+    # TODO: how to validate here?  we did dbt --version previously. this checks it's there, but not that it can do anything. maybe it's enough?
+      - name: "Check source distributions"
+        run: |
+          pip freeze | grep dbt-common
+
+  upload-artifacts-aws:
+    runs-on: ubuntu-latest
+    needs: [test-build, resolve-aws-bucket]
+
+    steps:
+      - name: "Download Artifact ${{ inputs.version_number }}"
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.version_number }}
+          path: .
+
+      - name: "Display Structure Of All Downloaded Files"
+        run: ls -R
+
+      - name: "Configure Aws Credentials"
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: "Upload Artifact To S3 Via CLI"
+        run: |
+          aws s3 cp . ${{ needs.resolve-aws-bucket.outputs.aws-s3-bucket }} --recursive  # since it's an entire directory
+          title="Artifact ${{ inputs.version_number }} uploaded to AWS S3 bucket"
+          message="S3 path: ${{ needs.resolve-aws-bucket.outputs.aws-s3-bucket }}"
+          echo "::notice title=${{ env.NOTIFICATION_PREFIX }}: $title::$message"

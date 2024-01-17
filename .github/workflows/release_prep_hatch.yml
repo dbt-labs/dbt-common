@@ -2,7 +2,6 @@
 # Perform the version bump, generate the changelog and run tests.
 #
 # Inputs:
-#  sha:                   The commit to attach to this release
 #  version_number:        The release version number (i.e. 1.0.0b1, 1.2.3rc2, 1.0.0)
 #  target_branch:         The branch that we will release from
 #  env_setup_script_path: Path to the environment setup script
@@ -168,8 +167,10 @@ jobs:
       up_to_date: ${{ steps.version-check.outputs.up_to_date }}
 
     steps:
-      - name: "Checkout ${{ github.repository }}"
-        uses: actions/checkout@v3
+      - name: "Checkout ${{ github.repository }} Branch ${{ inputs.target_branch }}"
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.target_branch }}
 
       - name: "Check Current Version In Code"
         id: version-check
@@ -232,10 +233,10 @@ jobs:
       branch_name: ${{ steps.variables.outputs.branch_name }}
 
     steps:
-      - name: "Checkout ${{ github.repository }} Commit ${{ inputs.sha }}"
-        uses: actions/checkout@v3
+      - name: "Checkout ${{ github.repository }} Branch ${{ inputs.target_branch }}"
+        uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.sha }}
+          ref: ${{ inputs.target_branch }}
 
       - name: "Generate Branch Name"
         id: variables
@@ -341,9 +342,8 @@ jobs:
             exit 1
           fi
 
-      # TODO: validate this is needed
-      - name: "Set up Python - ${{ env.PYTHON_TARGET_VERSION }}"
-        uses: actions/setup-python@v4
+      - name: "Set up Python & Hatch - ${{ env.PYTHON_TARGET_VERSION }}"
+        uses: ./.github/actions/setup-python-env
         with:
           python-version: ${{ env.PYTHON_TARGET_VERSION }}
 
@@ -401,15 +401,10 @@ jobs:
         with:
           ref: ${{ needs.create-temp-branch.outputs.branch_name }}
 
-      - name: "Set up Python - ${{ env.PYTHON_TARGET_VERSION }}"
-        uses: actions/setup-python@v4
+      - name: "Set up Python & Hatch - ${{ env.PYTHON_TARGET_VERSION }}"
+        uses: ./.github/actions/setup-python-env
         with:
           python-version: ${{ env.PYTHON_TARGET_VERSION }}
-
-      - name: "Install Python Dependencies"
-        run: |
-          python -m pip install --user --upgrade pip
-          python -m pip install hatch
 
       - name: "Run Unit Tests"
         run: hatch run test:unit
@@ -458,16 +453,10 @@ jobs:
         env:
           SECRETS_CONTEXT: ${{ toJson(secrets) }}
 
-      - name: "Set up Python - ${{ env.PYTHON_TARGET_VERSION }}"
-        uses: actions/setup-python@v4
+      - name: "Set up Python & Hatch - ${{ env.PYTHON_TARGET_VERSION }}"
+        uses: ./.github/actions/setup-python-env
         with:
           python-version: ${{ env.PYTHON_TARGET_VERSION }}
-
-      - name: "Install python tools"
-        run: |
-          python -m pip install --user --upgrade pip
-          python -m pip --version
-          python -m pip install hatch
 
       - name: Run tests
         run: hatch run test:integration

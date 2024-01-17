@@ -1,8 +1,6 @@
-** replace `dbt-common` with your repository name in all docs
-
 ## Understanding dbt-common
 
-A short description of the purpose of this repository.  Include relevant images.
+The shared common utilities for dbt-core and adapter implementations use
 
 ## Getting started
 

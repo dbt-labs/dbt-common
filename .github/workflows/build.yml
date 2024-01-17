@@ -47,6 +47,10 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: "Install build specific python dependencies"
+        run: |
+          python -m pip install --upgrade wheel twine check-wheel-contents
+
       - name: "Build Python Package"
         run: |
           hatch build

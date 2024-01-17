@@ -195,11 +195,15 @@ jobs:
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 #   bump-version-generate-changelog:
 #     name: Bump package version, Generate changelog
 =======
     uses: dbt-labs/dbt-common/.github/workflows/github_release_hatch.yml@er/release
 >>>>>>> 7034ccc (fix up publishing)
+=======
+    uses: dbt-labs/dbt-release/.github/workflows/github-release.yml@main
+>>>>>>> 6aee97b (cleanup github release)
 
 #     uses: dbt-labs/dbt-common/.github/workflows/release_prep_hatch.yml@er/release
 

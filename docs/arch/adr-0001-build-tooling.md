@@ -19,7 +19,7 @@ We need to select a build tool for managing dependencies for, building, and dist
 
 - most popular option
 - supported by Python Packaging Authority
-- build tool of record for existing internal adapters
+- build tool of record for dbt-core & existing internal adapters
 
 #### Con's
 
@@ -43,7 +43,7 @@ We need to select a build tool for managing dependencies for, building, and dist
 
 - far less popular than other options
 - no dependency management (manually add to `pyproject.toml`)
-- only one maintainer (but is part of the larger PyPA working group)
+- only one maintainer (but is officially part of the larger PyPA working group)
 - Hatch does not allow for the installation of specific patch release versions but rather only uses minor release granularity that tracks the latest patch release
 
 
@@ -74,5 +74,7 @@ for anyone working in multiple repositories.
 
 - [+] retire `tox`
 - [+] retire `make`
+- [+] rewriting the release workflows will create a more intuitive release for hatch projects
+- [-] we cannot reuse the existing release workflows
 - [-] write more detailed docs given lower familiarity
 - [-] learning curve

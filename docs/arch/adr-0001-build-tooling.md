@@ -44,7 +44,7 @@ We need to select a build tool for managing dependencies for, building, and dist
 - far less popular than other options
 - no dependency management (manually add to `pyproject.toml`)
 - only one maintainer (but is officially part of the larger PyPA working group)
-- Hatch does not allow for the installation of specific patch release versions but rather only uses minor release granularity that tracks the latest patch release
+- Hatch does not allow for the installation of specific patch release versions of itself but rather only uses minor release granularity that tracks the latest patch release
 
 
 ### poetry

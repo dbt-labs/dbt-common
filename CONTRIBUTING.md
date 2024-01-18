@@ -84,6 +84,7 @@ Once you're able to manually test that your code change is working as expected, 
 ### Initial setup
 
 - [Install pre-commit](https://pre-commit.com/#usage)
+- [Install hatch](https://hatch.pypa.io/1.7/install/#pip)
 
 - Nothing needed to set up your environments.  hatch will create your environment as defined in the `pyproject.toml` when you run.
 

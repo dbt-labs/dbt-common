@@ -1,3 +1,12 @@
+---
+name: TaskList Template
+about: Template for issues created off tasklists
+title: ''
+labels: ''
+assignees: ''
+
+---
+
 ## Short description
 
 <!-- Describe the scope of the ticket, a high-level implementation approach and any tradeoffs to consider -->

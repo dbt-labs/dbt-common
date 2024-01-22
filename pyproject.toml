@@ -1,6 +1,6 @@
 [project]
 name = "dbt-common"
-version = "0.0.1"
+dynamic = ["version"]
 description = "The shared common utilities that dbt-core and adapter implementations use"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -32,6 +32,9 @@ dependencies = [
   "requests<3.0.0",
   "typing-extensions~=4.4",
 ]
+
+[tool.hatch.version]
+path = "dbt_common/__about__.py"
 
 [build-system]
 requires = ["hatchling"]

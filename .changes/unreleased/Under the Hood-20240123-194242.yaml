@@ -1,0 +1,6 @@
+kind: Under the Hood
+body: Change metadata_vars \`if not\` to \`if ... is None\`
+time: 2024-01-23T19:42:42.95727089Z
+custom:
+  Author: truls-p
+  Issue: "6073"

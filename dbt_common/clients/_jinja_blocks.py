@@ -1,6 +1,6 @@
 import re
 from collections import namedtuple
-from typing import Iterator, Optional, List
+from typing import Iterator, Optional, List, Set
 
 from dbt_common.exceptions import (
     BlockDefinitionNotAtTopError,
@@ -294,7 +294,7 @@ class BlockIterator:
         )
 
     def find_blocks(
-        self, allowed_blocks: Optional[set[str]] = None, collect_raw_data: bool = True
+        self, allowed_blocks: Optional[Set[str]] = None, collect_raw_data: bool = True
     ) -> Iterator[BlockData | BlockTag]:
         """Find all top-level blocks in the data."""
         if allowed_blocks is None:
@@ -347,6 +347,6 @@ class BlockIterator:
                 yield BlockData(raw_data)
 
     def lex_for_blocks(
-        self, allowed_blocks: Optional[set[str]] = None, collect_raw_data: bool = True
+        self, allowed_blocks: Optional[Set[str]] = None, collect_raw_data: bool = True
     ) -> List[BlockData | BlockTag]:
         return list(self.find_blocks(allowed_blocks=allowed_blocks, collect_raw_data=collect_raw_data))

@@ -272,8 +272,8 @@ _CONTROL_FLOW_END_TAGS = {v: k for k, v in _CONTROL_FLOW_TAGS.items()}
 
 
 class BlockIterator:
-    def __init__(self, data):
-        self.tag_parser = TagIterator(data)
+    def __init__(self, tag_iterator):
+        self.tag_parser = tag_iterator
         self.current = None
         self.stack = []
         self.last_position = 0

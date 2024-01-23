@@ -534,4 +534,5 @@ def extract_toplevel_blocks(
     :return: A list of `BlockTag`s matching the allowed block types and (if
         `collect_raw_data` is `True`) `BlockData` objects.
     """
-    return BlockIterator(data).lex_for_blocks(allowed_blocks=allowed_blocks, collect_raw_data=collect_raw_data)
+    tag_iterator = TagIterator(data)
+    return BlockIterator(tag_iterator).lex_for_blocks(allowed_blocks=allowed_blocks, collect_raw_data=collect_raw_data)

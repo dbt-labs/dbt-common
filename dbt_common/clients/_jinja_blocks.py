@@ -287,7 +287,7 @@ class BlockIterator:
 
     @property
     def data(self):
-        return self.tag_parser.data
+        return self.tag_parser.text
 
     def is_current_end(self, tag):
         return (

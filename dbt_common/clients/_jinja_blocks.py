@@ -27,7 +27,9 @@ class BlockData:
 
 
 class BlockTag:
-    def __init__(self, block_type_name: str, block_name: str, contents: Optional[str] = None, full_block: Optional[str] = None) -> None:
+    def __init__(
+        self, block_type_name: str, block_name: str, contents: Optional[str] = None, full_block: Optional[str] = None
+    ) -> None:
         self.block_type_name = block_type_name
         self.block_name = block_name
         self.contents = contents
@@ -142,7 +144,7 @@ class TagIterator:
     def _expect_match(self, expected_name: str, *patterns) -> re.Match:  # type: ignore
         match = self._first_match(*patterns)
         if match is None:
-            raise UnexpectedMacroEOFError(expected_name, self.text[self.pos:])
+            raise UnexpectedMacroEOFError(expected_name, self.text[self.pos :])
         return match
 
     def handle_expr(self, match: re.Match) -> None:
@@ -291,7 +293,9 @@ class BlockIterator:
             and tag.block_type_name[3:] == self.current.block_type_name
         )
 
-    def find_blocks(self, allowed_blocks: Optional[set[str]] = None, collect_raw_data: bool = True) -> Iterator[BlockData | BlockTag]:
+    def find_blocks(
+        self, allowed_blocks: Optional[set[str]] = None, collect_raw_data: bool = True
+    ) -> Iterator[BlockData | BlockTag]:
         """Find all top-level blocks in the data."""
         if allowed_blocks is None:
             allowed_blocks = {"snapshot", "macro", "materialization", "docs"}
@@ -342,5 +346,7 @@ class BlockIterator:
             if raw_data:
                 yield BlockData(raw_data)
 
-    def lex_for_blocks(self, allowed_blocks: Optional[set[str]] = None, collect_raw_data: bool = True) -> List[BlockData | BlockTag]:
+    def lex_for_blocks(
+        self, allowed_blocks: Optional[set[str]] = None, collect_raw_data: bool = True
+    ) -> List[BlockData | BlockTag]:
         return list(self.find_blocks(allowed_blocks=allowed_blocks, collect_raw_data=collect_raw_data))

@@ -98,22 +98,22 @@ QUOTE_START_PATTERN = regex(r"""(?P<quote>(['"]))""")
 
 
 class TagIterator:
-    def __init__(self, data):
-        self.data = data
+    def __init__(self, text):
+        self.text = text
         self.blocks = []
         self._parenthesis_stack = []
         self.pos = 0
 
     def linepos(self, end=None) -> str:
-        """Given an absolute position in the input data, return a pair of
+        """Given an absolute position in the input text, return a pair of
         line number + relative position to the start of the line.
         """
         end_val: int = self.pos if end is None else end
-        data = self.data[:end_val]
+        text = self.text[:end_val]
         # if not found, rfind returns -1, and -1+1=0, which is perfect!
-        last_line_start = data.rfind("\n") + 1
+        last_line_start = text.rfind("\n") + 1
         # it's easy to forget this, but line numbers are 1-indexed
-        line_number = data.count("\n") + 1
+        line_number = text.count("\n") + 1
         return f"{line_number}:{end_val - last_line_start}"
 
     def advance(self, new_position):
@@ -123,10 +123,10 @@ class TagIterator:
         self.pos -= amount
 
     def _search(self, pattern):
-        return pattern.search(self.data, self.pos)
+        return pattern.search(self.text, self.pos)
 
     def _match(self, pattern):
-        return pattern.match(self.data, self.pos)
+        return pattern.match(self.text, self.pos)
 
     def _first_match(self, *patterns, **kwargs):
         matches = []
@@ -147,7 +147,7 @@ class TagIterator:
     def _expect_match(self, expected_name, *patterns, **kwargs):
         match = self._first_match(*patterns, **kwargs)
         if match is None:
-            raise UnexpectedMacroEOFError(expected_name, self.data[self.pos :])
+            raise UnexpectedMacroEOFError(expected_name, self.text[self.pos :])
         return match
 
     def handle_expr(self, match):

@@ -155,8 +155,12 @@ exclude = [
 packages = ["dbt_common"]
 
 [tool.hatch.envs.build]
-detached = true
-features = ["build"]
+description = "Env for running development commands for linting"
+extra-dependencies = [
+    "wheel",
+    "twine",
+    "check-wheel-contents",
+]
 
 [tool.hatch.envs.build.scripts]
 check-all = [

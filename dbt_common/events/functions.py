@@ -138,7 +138,7 @@ def fire_event(e: BaseEvent, level: Optional[EventLevel] = None) -> None:
 
 def get_metadata_vars() -> Dict[str, str]:
     global metadata_vars
-    if not metadata_vars:
+    if metadata_vars is None:
         metadata_vars = {
             k[len(_METADATA_ENV_PREFIX) :]: v for k, v in os.environ.items() if k.startswith(_METADATA_ENV_PREFIX)
         }

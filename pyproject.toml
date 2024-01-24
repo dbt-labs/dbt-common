@@ -67,9 +67,6 @@ exclude = [
 [tool.hatch.build.targets.wheel]
 packages = ["dbt_common"]
 
-[tool.hatch.version]
-path = "dbt_common/__about__.py"
-
 [tool.hatch.envs.default]
 description = "Default environment with dependencies for running dbt-common"
 

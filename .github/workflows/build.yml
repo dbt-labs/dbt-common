@@ -59,31 +59,5 @@ jobs:
         run: |
           hatch build
 
-      - name: "Show distributions"
-        run: ls -lh dist/
-
-      - name: "Check distribution descriptions"
-        run: |
-          twine check dist/*
-
-      - name: "Check wheel contents"
-        run: |
-          check-wheel-contents dist/*.whl --ignore W007,W008
-
-      - name: "Install wheel distributions"
-        run: |
-          find ./dist/dbt_common-*.whl -maxdepth 1 -type f | xargs python -m pip install --force-reinstall --find-links=dist/
-
-      # TODO: how to validate here?  we did dbt --version previously. this checks it's there, but not that it can do anything. maybe it's enough?
-      - name: "Check wheel distributions"
-        run: |
-          pip freeze | grep dbt-common
-
-      - name: "Install source distributions"
-        run: |
-          find ./dist/dbt_common-*.gz -maxdepth 1 -type f | xargs python -m pip install --force-reinstall --find-links=dist/
-
-      # TODO: how to validate here?  we did dbt --version previously. this checks it's there, but not that it can do anything. maybe it's enough?
-      - name: "Check source distributions"
-        run: |
-          pip freeze | grep dbt-common
+      - name: "Check build"
+        run: hatch run build:check-all

@@ -28,7 +28,11 @@ class BlockData:
 
 class BlockTag:
     def __init__(
-        self, block_type_name: str, block_name: str, contents: Optional[str] = None, full_block: Optional[str] = None
+        self,
+        block_type_name: str,
+        block_name: str,
+        contents: Optional[str] = None,
+        full_block: Optional[str] = None,
     ) -> None:
         self.block_type_name = block_type_name
         self.block_name = block_name
@@ -363,4 +367,6 @@ class BlockIterator:
     def lex_for_blocks(
         self, allowed_blocks: Optional[Set[str]] = None, collect_raw_data: bool = True
     ) -> List[Union[BlockData, BlockTag]]:
-        return list(self.find_blocks(allowed_blocks=allowed_blocks, collect_raw_data=collect_raw_data))
+        return list(
+            self.find_blocks(allowed_blocks=allowed_blocks, collect_raw_data=collect_raw_data)
+        )

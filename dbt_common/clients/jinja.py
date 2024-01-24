@@ -86,9 +86,13 @@ class MacroFuzzEnvironment(jinja2.sandbox.SandboxedEnvironment):
         return MacroFuzzParser(self, source, name, filename).parse()
 
     def _compile(self, source, filename):
-        """Override jinja's compilation.
+        """
 
-        Use to stash the rendered source inside
+
+
+
+
+        Override jinja's compilation. Use to stash the rendered source inside
         the python linecache for debugging when the appropriate environment
         variable is set.
 
@@ -115,7 +119,8 @@ class MacroFuzzTemplate(jinja2.nativetypes.NativeTemplate):
         # parameters are not used, so enforce that.
         if shared or locals:
             raise Exception(
-                "The MacroFuzzTemplate.new_context() override cannot use the shared or locals parameters."
+                "The MacroFuzzTemplate.new_context() override cannot use the "
+                "shared or locals parameters."
             )
 
         parent = ChainMap(vars, self.globals) if self.globals else vars
@@ -544,4 +549,6 @@ def extract_toplevel_blocks(
         `collect_raw_data` is `True`) `BlockData` objects.
     """
     tag_iterator = TagIterator(text)
-    return BlockIterator(tag_iterator).lex_for_blocks(allowed_blocks=allowed_blocks, collect_raw_data=collect_raw_data)
+    return BlockIterator(tag_iterator).lex_for_blocks(
+        allowed_blocks=allowed_blocks, collect_raw_data=collect_raw_data
+    )

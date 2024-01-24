@@ -41,13 +41,100 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/dbt-labs/dbt-common"  # TODO: should this be dbt's homepage?
+Homepage = "https://github.com/dbt-labs/dbt-common"
+
 Repository = "https://github.com/dbt-labs/dbt-common.git"
 Issues = "https://github.com/dbt-labs/dbt-common/issues"
 Changelog = "https://github.com/dbt-labs/dbt-common/blob/main/CHANGELOG.md"
 
 [tool.hatch.version]
 path = "dbt_common/__about__.py"
+
+### Default env & scripts
+
+[tool.hatch.envs.default]
+description = "Default environment with dependencies for running dbt-common"
+
+[tool.hatch.envs.default.scripts]
+proto = "protoc -I=./dbt_common/events --python_out=./dbt_common/events ./dbt_common/events/types.proto"
+
+### Test settings, envs & scripts
+
+[tool.hatch.envs.test]
+description = "Env for running development commands for testing"
+extra-dependencies = [
+    "pytest~=7.3",
+    "pytest-xdist~=3.2",
+    "hypothesis~=6.87"
+]
+
+[[tool.hatch.envs.test.matrix]]
+python = ["3.8","3.9","3.10", "3.11"]
+
+[tool.hatch.envs.test.scripts]
+unit = "- python -m pytest {args:tests/unit}"
+
+### Linting settings, envs & scripts
+
+[tool.hatch.envs.lint]
+description = "Env for running development commands for linting"
+extra-dependencies = [
+    "black~=23.3",
+    "flake8",
+    "flake8-pyproject",
+    "flake8-docstrings",
+    "mypy~=1.3",
+    "pytest~=7.3",  # needed for linting tests
+    "types-Jinja2~=2.11",
+    "types-jsonschema~=4.17",
+    "types-protobuf~=4.24.0",
+    "types-python-dateutil~=2.8",
+    "types-PyYAML~=6.0",
+    "types-requests<2.31.0" # types-requests 2.31.0.8 requires urllib3>=2, but we pin urllib3 ~= 1.0 because of openssl requirement for requests
+]
+
+[tool.hatch.envs.lint.scripts]
+all = [
+    "- black",
+    "- flake8",
+    "- mypy",
+]
+black = "python -m black ."
+flake8 = "python -m flake8 ."
+mypy = "python -m mypy ."
+
+[tool.black]
+extend-exclude = "dbt_common/events/types_pb2.py"
+line-length = 99
+target-version = ['py38']
+
+[tool.flake8]
+max-line-length = 99
+select = ["E", "W", "F"]
+ignore = ["E203", "E501", "E741", "W503", "W504"]
+exclude = [
+    "dbt_common/events/types_pb2.py",
+    "venv",
+    "env*"
+]
+per-file-ignores = ["*/__init__.py: F401"]
+docstring-convention = "google"
+
+[tool.mypy]
+mypy_path = "third-party-stubs/"
+namespace_packages = true
+warn_unused_configs = true
+show_error_codes = true
+disable_error_code = "attr-defined"  # TODO: revisit once other mypy errors resolved
+disallow_untyped_defs = false # TODO: add type annotations everywhere
+warn_redundant_casts = true
+exclude = [
+    "dbt_common/events/types_pb2.py",
+    "env*",
+    "third-party-stubs/*",
+]
+
+### Build settings, envs & scripts
 
 [build-system]
 requires = ["hatchling"]
@@ -67,120 +154,22 @@ exclude = [
 [tool.hatch.build.targets.wheel]
 packages = ["dbt_common"]
 
-[tool.hatch.envs.default]
-description = "Default environment with dependencies for running dbt-common"
+[tool.hatch.envs.build]
+detached = true
+features = ["build"]
 
-[tool.hatch.envs.default.scripts]
-proto = "protoc -I=./dbt_common/events --python_out=./dbt_common/events ./dbt_common/events/types.proto"
-
-[tool.hatch.envs.lint]
-description = "Env for running development commands for linting"
-extra-dependencies = [
-    "black~=23.3",
-    "flake8",
-    "Flake8-pyproject",
-    "mypy~=1.3",
-    "pytest~=7.3",  # needed for linting tests
-    "ruff==0.1.11",
-    "types-Jinja2~=2.11",
-    "types-jsonschema~=4.17",
-    "types-protobuf~=4.24.0",
-    "types-python-dateutil~=2.8",
-    "types-PyYAML~=6.0",
-    "types-requests<2.31.0" # types-requests 2.31.0.8 requires urllib3>=2, but we pin urllib3 ~= 1.0 because of openssl requirement for requests
+[tool.hatch.envs.build.scripts]
+check-all = [
+    "- check-wheel",
+    "- check-sdist",
 ]
-
-[tool.hatch.envs.lint.scripts]
-all = [
-    "- black",
-    "- flake8",
-    "- mypy",
+check-wheel = [
+    "twine check dist/*",
+    "find ./dist/dbt_common-*.whl -maxdepth 1 -type f | xargs python -m pip install --force-reinstall --find-links=dist/",
+    "pip freeze | grep dbt-common",
 ]
-black = "python -m black ."
-flake8 = "python -m flake8 ."
-mypy = "python -m mypy ."
-format = ["black {args:.}", "ruff --fix --exit-non-zero-on-fix {args:.}"]
-
-[tool.hatch.envs.test]
-description = "Env for running development commands for testing"
-extra-dependencies = [
-    "pytest~=7.3",
-    "pytest-xdist~=3.2",
-    "hypothesis~=6.87"
-]
-
-[[tool.hatch.envs.test.matrix]]
-python = ["3.8","3.9","3.10", "3.11"]
-
-[tool.hatch.envs.test.scripts]
-unit = "- python -m pytest {args:tests/unit}"
-
-# TODO: should ruff replace flake8?
-[tool.ruff]
-line-length = 99
-select = [
-  "E", # Pycodestyle
-  "F", # Pyflakes
-  "W", # Whitespace
-  "D", # Pydocs
-]
-ignore = [
-  # Missing docstring in public module -- often docs handled within classes
-  "D100",
-  # Missing docstring in public class
-  "D101",
-  # Missing docstring in public method
-  "D102",
-  # Missing docstring in public function
-  "D103",
-  # Missing docstring in public package -- often docs handled within files not __init__.py
-  "D104",
-  # Missing docstring in magic method
-  "D105",
-  # Missing docstring in public nested class
-  "D106",
-  # Missing docstring in __init__
-  "D107",
-]
-# Let ruff autofix these errors.
-# F401 - Unused imports.
-# E501 - Line too long.
-# W292 - No newline at end of file.
-fixable = ["F401", "E501", "W292"]
-exclude = [
-    "dbt_common/events/types_pb2.py",
-    "env*",
-    "third-party-stubs/*",
-]
-
-[tool.ruff.pydocstyle]
-convention = "google"
-
-[tool.black]
-extend-exclude = "dbt_common/events/types_pb2.py"
-line-length = 99
-target-version = ['py38']
-
-[tool.flake8]
-select = ["E", "W", "F"]
-ignore = ["E203", "E501", "E741", "W503", "W504"]
-exclude = [
-    "dbt_common/events/types_pb2.py",
-    "venv",
-    "env*"
-]
-per-file-ignores = ["*/__init__.py: F401"]
-
-[tool.mypy]
-mypy_path = "third-party-stubs/"
-namespace_packages = true
-warn_unused_configs = true
-show_error_codes = true
-disable_error_code = "attr-defined"  # TODO: revisit once other mypy errors resolved
-disallow_untyped_defs = false # TODO: add type annotations everywhere
-warn_redundant_casts = true
-exclude = [
-    "dbt_common/events/types_pb2.py",
-    "env*",
-    "third-party-stubs/*",
+check-sdist = [
+    "check-wheel-contents dist/*.whl --ignore W007,W008",
+    "find ./dist/dbt_common-*.gz -maxdepth 1 -type f | xargs python -m pip install --force-reinstall --find-links=dist/",
+    "pip freeze | grep dbt-common",
 ]

@@ -114,7 +114,9 @@ class MacroFuzzTemplate(jinja2.nativetypes.NativeTemplate):
         # This custom override makes the assumption that the locals and shared
         # parameters are not used, so enforce that.
         if shared or locals:
-            raise Exception("The MacroFuzzTemplate.new_context() override cannot use the shared or locals parameters.")
+            raise Exception(
+                "The MacroFuzzTemplate.new_context() override cannot use the shared or locals parameters."
+            )
 
         parent = ChainMap(vars, self.globals) if self.globals else vars
 
@@ -122,7 +124,9 @@ class MacroFuzzTemplate(jinja2.nativetypes.NativeTemplate):
 
     def render(self, *args: Any, **kwargs: Any) -> Any:
         if kwargs or len(args) != 1:
-            raise Exception("The MacroFuzzTemplate.render() override requires exactly one argument.")
+            raise Exception(
+                "The MacroFuzzTemplate.render() override requires exactly one argument."
+            )
 
         ctx = self.new_context(args[0])
 

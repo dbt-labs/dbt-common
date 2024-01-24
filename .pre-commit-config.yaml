@@ -18,10 +18,12 @@ repos:
     exclude_types:
       - "markdown"
   - id: check-case-conflict
-  # - id: linter
-  #   name: linter
-  #   entry: hatch run lint:all
-  #   language: system
-  #   types: [python]
-  #   pass_filenames: false
-  #   verbose: true
+- repo: local
+  hooks:
+  - id: linter
+    name: linter
+    entry: hatch run lint:all
+    language: system
+    types: [python]
+    pass_filenames: false
+    verbose: true

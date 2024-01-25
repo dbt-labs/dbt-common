@@ -88,27 +88,22 @@ Once you're able to manually test that your code change is working as expected, 
 
 - Nothing needed to set up your environments.  hatch will create your environment as defined in the `pyproject.toml` when you run.
 
-- set up pre-commit to use hatch: `hatch run setup-pre-commit`
-
 ### Hatch Commands
 
-See the pyproject.toml for a complete list of custom commands.  See the h[atch docs](https://hatch.pypa.io/latest/cli/reference/) for a description of built in commands and flags.  These are the most useful custom commands to use while developing.
+See the pyproject.toml for a complete list of custom commands.  See the h[atch docs](https://hatch.pypa.io/latest/cli/reference/) for a description of built in commands and flags.
+
+Run `hatch env show` to view a list of all envoronments and all commands available within them.
+
+Example uses:
 
 |Type|Command|Description|
 |---|---|---|
 |Utility|`hatch run proto`|regenerate protobuf definitions|
 |Testing|`hatch run test:unit`|run all tests|
-|Testing|`hatch shell test`|Drops you into a shell env set up for manual testing|
 |Code Quality|`hatch run lint:all`|run black, flake8 and mypy checks|
 |Code Quality|`hatch run lint:black`|run black|
-|Code Quality|`hatch run lint:flake8`|run flake8|
-|Code Quality|`hatch run lint:mypy`|run mypy|
-|Testing|`hatch shell`|Drops you into a shell env with all dependencies + dev dependencies installed.  Use `exit` to leave the shell, _not_ `deactivate`.|
-
-## Debugging
-
-1. Try using a debugger, like `ipdb`. For pytest: `--pdb --pdbcls=IPython.terminal.debugger:pdb`
-2. 
+|Shell|`hatch shell`|Drops you into the default shell with  project + dev requirements installed.  Use `exit` to leave the shell, _not_ `deactivate`.|
+|Shell|`hatch -e <environment-name> shell`|Drops you into a shell of the specified environment.  Use `exit` to leave the shell, _not_ `deactivate`.|
 
 ### Assorted development tips
 * Append `# type: ignore` to the end of a line if you need to disable `mypy` on that line.

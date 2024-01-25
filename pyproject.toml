@@ -60,6 +60,11 @@ test = [
     "pytest-xdist~=3.2",
     "hypothesis~=6.87"
 ]
+build = [
+    "wheel",
+    "twine",
+    "check-wheel-contents",
+]
 
 [project.urls]
 Homepage = "https://github.com/dbt-labs/dbt-common"
@@ -159,11 +164,7 @@ packages = ["dbt_common"]
 
 [tool.hatch.envs.build]
 description = "Env for running development commands for linting"
-extra-dependencies = [
-    "wheel",
-    "twine",
-    "check-wheel-contents",
-]
+features = ["build"]
 
 [tool.hatch.envs.build.scripts]
 check-all = [

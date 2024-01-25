@@ -1,0 +1,6 @@
+kind: Under the Hood
+body: Inject TagIterator into BlockIterator for greater flexibility.
+time: 2024-01-23T16:11:07.24321-05:00
+custom:
+  Author: peterallenwebb
+  Issue: "38"

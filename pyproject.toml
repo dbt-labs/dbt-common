@@ -63,7 +63,6 @@ test = [
 
 [project.urls]
 Homepage = "https://github.com/dbt-labs/dbt-common"
-
 Repository = "https://github.com/dbt-labs/dbt-common.git"
 Issues = "https://github.com/dbt-labs/dbt-common/issues"
 Changelog = "https://github.com/dbt-labs/dbt-common/blob/main/CHANGELOG.md"

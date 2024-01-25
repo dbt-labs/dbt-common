@@ -7,9 +7,9 @@ on:
         type: choice
         description: Choose where to publish (test/prod)
         options:
-        - prod
-        - test
-        default: prod
+          - PypiProd
+          - PypiTest
+        default: PypiTest
 
 permissions: read-all
 
@@ -39,14 +39,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+      - name: "Set up Python & Hatch - 3.11"
+        uses: ./.github/actions/setup-python-env
         with:
           python-version: "3.11"
-
-      - name: Install hatch
-        run: python -m pip install hatch
-        shell: bash
 
       - name: Build artifacts
         run: hatch build
@@ -58,3 +54,5 @@ jobs:
 
       - name: Publish artifacts to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/

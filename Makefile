@@ -22,7 +22,7 @@ lint:
 
 .PHONY: proto_types
 proto_types:  ## generates google protobuf python file from types.proto
-	protoc -I=./dbt/common/events --python_out=./dbt/common/events ./dbt/common/events/types.proto
+	protoc -I=./dbt_common/events --python_out=./dbt_common/events ./dbt_common/events/types.proto
 
 .PHONY: help
 help: ## Show this help message.

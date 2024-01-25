@@ -42,14 +42,10 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: "Set up Python & Hatch - 3.11"
+        uses: ./.github/actions/setup-python-env
         with:
-          python-version: '3.11'
-
-      - name: Install Hatch
-        shell: bash
-        run: pip3 install hatch
+          python-version: "3.11"
 
       - name: Install pre-commit
         shell: bash

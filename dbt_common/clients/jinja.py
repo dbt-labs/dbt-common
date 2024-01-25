@@ -22,7 +22,7 @@ from dbt_common.utils import (
     get_materialization_macro_name,
     get_test_macro_name,
 )
-from dbt_common.clients._jinja_blocks import BlockIterator, BlockData, BlockTag
+from dbt_common.clients._jinja_blocks import BlockIterator, BlockData, BlockTag, TagIterator
 
 from dbt_common.exceptions import (
     CompilationError,
@@ -516,7 +516,7 @@ def render_template(template, ctx: Dict[str, Any], node=None) -> str:
 
 
 def extract_toplevel_blocks(
-    data: str,
+    text: str,
     allowed_blocks: Optional[Set[str]] = None,
     collect_raw_data: bool = True,
 ) -> List[Union[BlockData, BlockTag]]:
@@ -534,4 +534,5 @@ def extract_toplevel_blocks(
     :return: A list of `BlockTag`s matching the allowed block types and (if
         `collect_raw_data` is `True`) `BlockData` objects.
     """
-    return BlockIterator(data).lex_for_blocks(allowed_blocks=allowed_blocks, collect_raw_data=collect_raw_data)
+    tag_iterator = TagIterator(text)
+    return BlockIterator(tag_iterator).lex_for_blocks(allowed_blocks=allowed_blocks, collect_raw_data=collect_raw_data)

@@ -43,7 +43,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: "Set up Python & Hatch - 3.11"
-        uses: ./.github/actions/setup-python-env
+        uses: ./.github/actions/setup-python-hatch
         with:
           python-version: "3.11"
 

@@ -103,8 +103,7 @@ See the pyproject.toml for a complete list of custom commands.  See the h[atch d
 |Code Quality|`hatch run lint:black`|run black|
 |Code Quality|`hatch run lint:flake8`|run flake8|
 |Code Quality|`hatch run lint:mypy`|run mypy|
-|Testing|`hatch shell lint`|Drops you into a shell env set up for manualcode quality checks|
-|Code Quality|`hatch fmt`|runs ruff on all code|
+|Testing|`hatch shell`|Drops you into a shell env with all dependencies + dev dependencies installed.  Use `exit` to leave the shell, _not_ `deactivate`.|
 
 ## Debugging
 

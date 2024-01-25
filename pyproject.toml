@@ -56,7 +56,7 @@ exclude = [
 packages = ["dbt_common"]
 
 [tool.hatch.envs.dev-env.scripts]
-unit = "- python -m pytest --cov=dbt-common --cov-report=xml {args:tests/unit}"
+unit = "- python -m pytest --cov --cov-report=xml {args:tests/unit}"
 
 [tool.hatch.envs.dev-env]
 description = "Env for running development commands like pytest / pre-commit"

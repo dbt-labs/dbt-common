@@ -113,9 +113,12 @@ class Formatting(InfoLevel):
 
 
 class Note(InfoLevel):
-    """The Note event provides a way to log messages which aren't likely to be
+    """Unstructured events.
+
+    The Note event provides a way to log messages which aren't likely to be
     useful as more structured events. For console formatting text like empty
-    lines and separator bars, use the Formatting event instead."""
+    lines and separator bars, use the Formatting event instead.
+    """
 
     def code(self) -> str:
         return "Z050"

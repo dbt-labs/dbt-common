@@ -42,14 +42,14 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: "Set up Python & Hatch - 3.11"
+        uses: ./.github/actions/setup-python-hatch
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
-      - name: Install Hatch
+      - name: Install pre-commit
         shell: bash
-        run: pip3 install hatch
+        run: pip3 install pre-commit
 
       - name: Run Pre-commit Hooks
-        run: hatch run dev-env:pre-commit run --show-diff-on-failure --color=always --all-files
+        run: pre-commit run --show-diff-on-failure --color=always --all-files

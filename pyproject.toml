@@ -9,8 +9,15 @@ keywords = []
 authors = [
   { name = "dbt Labs", email = "info@dbtlabs.com" },
 ]
+maintainers = [
+    { name = "dbt Labs", email = "info@dbtlabs.com" },
+]
 classifiers = [
-  "Development Status :: 4 - Beta",
+  "Development Status :: 2 - Pre-Alpha",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: MacOS :: MacOS X",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
@@ -26,15 +33,116 @@ dependencies = [
   "jsonschema~=4.0",
   "Jinja2~=3.0",
   "mashumaro[msgpack]~=3.9",
-  "pathspec>=0.9,<0.12", # TODO: I'm not sure this is needed.  check search.py?
+  "pathspec>=0.9,<0.12",
   "protobuf>=4.0.0",
   "python-dateutil~=2.0",
   "requests<3.0.0",
   "typing-extensions~=4.4",
 ]
 
+[project.optional-dependencies]
+lint = [
+    "black~=23.3",
+    "flake8",
+    "flake8-pyproject",
+    "flake8-docstrings",
+    "mypy~=1.3",
+    "pytest~=7.3",  # needed for linting tests
+    "types-Jinja2~=2.11",
+    "types-jsonschema~=4.17",
+    "types-protobuf~=4.24.0",
+    "types-python-dateutil~=2.8",
+    "types-PyYAML~=6.0",
+    "types-requests"
+]
+test = [
+    "pytest~=7.3",
+    "pytest-xdist~=3.2",
+    "hypothesis~=6.87"
+]
+build = [
+    "wheel",
+    "twine",
+    "check-wheel-contents",
+]
+
+[project.urls]
+Homepage = "https://github.com/dbt-labs/dbt-common"
+Repository = "https://github.com/dbt-labs/dbt-common.git"
+Issues = "https://github.com/dbt-labs/dbt-common/issues"
+Changelog = "https://github.com/dbt-labs/dbt-common/blob/main/CHANGELOG.md"
+
 [tool.hatch.version]
 path = "dbt_common/__about__.py"
+
+### Default env & scripts
+
+[tool.hatch.envs.default]
+description = "Default environment with dependencies for running dbt-common"
+features = ["lint", "test"]
+
+[tool.hatch.envs.default.scripts]
+proto = "protoc -I=./dbt_common/events --python_out=./dbt_common/events ./dbt_common/events/types.proto"
+
+### Test settings, envs & scripts
+
+[tool.hatch.envs.test]
+description = "Env for running development commands for testing"
+features = ["test"]
+
+[tool.hatch.envs.test.scripts]
+unit = "- python -m pytest {args:tests/unit}"
+
+
+### Linting settings, envs & scripts
+
+[tool.hatch.envs.lint]
+type = "virtual"
+description = "Env for running development commands for linting"
+features = ["lint"]
+
+[tool.hatch.envs.lint.scripts]
+all = [
+    "- black",
+    "- flake8",
+    "- mypy",
+]
+black = "python -m black ."
+flake8 = "python -m flake8 ."
+mypy = "python -m mypy ."
+
+[tool.black]
+extend-exclude = "dbt_common/events/types_pb2.py"
+line-length = 99
+target-version = ['py38']
+
+[tool.flake8]
+max-line-length = 99
+select = ["E", "W", "F"]
+ignore = ["E203", "E501", "E741", "W503", "W504"]
+exclude = [
+    "dbt_common/events/types_pb2.py",
+    "venv",
+    "env*"
+]
+per-file-ignores = ["*/__init__.py: F401"]
+docstring-convention = "google"
+
+[tool.mypy]
+mypy_path = "third-party-stubs/"
+namespace_packages = true
+warn_unused_configs = true
+show_error_codes = true
+disable_error_code = "attr-defined"  # TODO: revisit once other mypy errors resolved
+disallow_untyped_defs = false # TODO: add type annotations everywhere
+warn_redundant_casts = true
+exclude = [
+    "dbt_common/events/types_pb2.py",
+    "env*",
+    "third-party-stubs/*",
+]
+
+### Build settings, envs & scripts
 
 [build-system]
 requires = ["hatchling"]
@@ -48,70 +156,28 @@ exclude = [
   ".gitignore",
   ".pre-commit-config.yaml",
   "CONTRIBUTING.md",
-  "MAKEFILE",
   "/tests",
 ]
 
 [tool.hatch.build.targets.wheel]
 packages = ["dbt_common"]
 
-[tool.hatch.envs.dev-env.scripts]
-all = ["pre-commit run --all-files"]
+[tool.hatch.envs.build]
+description = "Env for running development commands for linting"
+features = ["build"]
 
-[tool.hatch.envs.dev-env]
-description = "Env for running development commands like pytest / pre-commit"
-dependencies = [
-  "pytest~=7.3",
-  "pytest-xdist~=3.2",
-  "httpx~=0.24",
-  "hypothesis~=6.87",
-  "pre-commit~=3.2",
-  "isort~=5.12",
-  "black~=23.3",
-  "ruff==0.0.260",
-  "mypy~=1.3",
-  "pytest~=7.3",
-  "types-Jinja2~=2.11",
-  "types-jsonschema~=4.17",
-  "types-python-dateutil~=2.8",
-  "types-PyYAML~=6.0",
+[tool.hatch.envs.build.scripts]
+check-all = [
+    "- check-wheel",
+    "- check-sdist",
 ]
-
-[tool.ruff]
-line-length = 120
-select = [
-  "E", # Pycodestyle
-  "F", # Pyflakes
-  "W", # Whitespace
-  "D", # Pydocs
+check-wheel = [
+    "twine check dist/*",
+    "find ./dist/dbt_common-*.whl -maxdepth 1 -type f | xargs python -m pip install --force-reinstall --find-links=dist/",
+    "pip freeze | grep dbt-common",
 ]
-ignore = [
-  # Missing docstring in public module -- often docs handled within classes
-  "D100",
-  # Missing docstring in public package -- often docs handled within files not __init__.py
-  "D104"
+check-sdist = [
+    "check-wheel-contents dist/*.whl --ignore W007,W008",
+    "find ./dist/dbt_common-*.gz -maxdepth 1 -type f | xargs python -m pip install --force-reinstall --find-links=dist/",
+    "pip freeze | grep dbt-common",
 ]
-# Let ruff autofix these errors.
-# F401 - Unused imports.
-fixable = ["F401"]
-
-[tool.ruff.pydocstyle]
-convention = "google"
-
-[tool.mypy]
-mypy_path = "third-party-stubs/"
-namespace_packages = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-warn_redundant_casts = true
-
-# Don't run the extensive mypy checks on custom stubs
-[[tool.mypy.overrides]]
-module = ["logbook.*"]
-disallow_untyped_defs = false
-
-[tool.isort]
-profile = "black"
-
-[tool.black]
-line-length = 120

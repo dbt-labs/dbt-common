@@ -58,7 +58,8 @@ def red(text: str) -> str:
 
 
 def line_wrap_message(msg: str, subtract: int = 0, dedent: bool = True, prefix: str = "") -> str:
-    """
+    """Line wrap a message to a given printer width.
+
     Line wrap the given message to PRINTER_WIDTH - {subtract}. Convert double
     newlines to newlines and avoid calling textwrap.fill() on them (like
     markdown)

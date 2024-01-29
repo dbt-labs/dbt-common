@@ -4,10 +4,9 @@ from dbt_common.exceptions import CompilationError, DbtBaseException
 
 
 class MacroReturn(DbtBaseException):
-    """
+    """This is how we return a value from a macro, not an exception.
+
     Hack of all hacks
-    This is not actually an exception.
-    It's how we return a value from a macro.
     """
 
     def __init__(self, value) -> None:
@@ -66,7 +65,10 @@ class MacroNameNotStringError(CompilationError):
         super().__init__(msg=self.get_message())
 
     def get_message(self) -> str:
-        msg = f"The macro_name parameter ({self.kwarg_value}) " "to adapter.dispatch was not a string"
+        msg = (
+            f"The macro_name parameter ({self.kwarg_value}) "
+            "to adapter.dispatch was not a string"
+        )
         return msg
 
 
@@ -102,6 +104,9 @@ class MacroResultError(CompilationError):
         super().__init__(msg=self.get_message())
 
     def get_message(self) -> str:
-        msg = f'Got an invalid result from "{self.freshness_macro_name}" macro: {[tuple(r) for r in self.table]}'
+        msg = (
+            f'Got an invalid result from "{self.freshness_macro_name}" '
+            f"macro: {[tuple(r) for r in self.table]}"
+        )
 
         return msg

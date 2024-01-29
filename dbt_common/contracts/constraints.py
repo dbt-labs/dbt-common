@@ -30,8 +30,12 @@ class ColumnLevelConstraint(dbtClassMixin):
     # It could be a predicate (check type), or a sequence sql keywords (e.g. unique type),
     # so the vague naming of 'expression' is intended to capture this range.
     expression: Optional[str] = None
-    warn_unenforced: bool = True  # Warn if constraint cannot be enforced by platform but will be in DDL
-    warn_unsupported: bool = True  # Warn if constraint is not supported by the platform and won't be in DDL
+    warn_unenforced: bool = (
+        True  # Warn if constraint cannot be enforced by platform but will be in DDL
+    )
+    warn_unsupported: bool = (
+        True  # Warn if constraint is not supported by the platform and won't be in DDL
+    )
 
 
 @dataclass

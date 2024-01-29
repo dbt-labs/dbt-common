@@ -25,7 +25,7 @@ class NVEnum(StrEnum):
 
 @dataclass
 class NoValue(dbtClassMixin):
-    """Sometimes, you want a way to say none that isn't None"""
+    """Sometimes, you want a way to say none that isn't None!"""
 
     novalue: NVEnum = field(default_factory=lambda: NVEnum.novalue)
 
@@ -39,10 +39,14 @@ class IncludeExclude(dbtClassMixin):
 
     def __post_init__(self):
         if isinstance(self.include, str) and self.include not in self.INCLUDE_ALL:
-            raise ValidationError(f"include must be one of {self.INCLUDE_ALL} or a list of strings")
+            raise ValidationError(
+                f"include must be one of {self.INCLUDE_ALL} or a list of strings"
+            )
 
         if self.exclude and self.include not in self.INCLUDE_ALL:
-            raise ValidationError(f"exclude can only be specified if include is one of {self.INCLUDE_ALL}")
+            raise ValidationError(
+                f"exclude can only be specified if include is one of {self.INCLUDE_ALL}"
+            )
 
         if isinstance(self.include, list):
             self._validate_items(self.include)
@@ -51,7 +55,9 @@ class IncludeExclude(dbtClassMixin):
             self._validate_items(self.exclude)
 
     def includes(self, item_name: str):
-        return (item_name in self.include or self.include in self.INCLUDE_ALL) and item_name not in self.exclude
+        return (
+            item_name in self.include or self.include in self.INCLUDE_ALL
+        ) and item_name not in self.exclude
 
     def _validate_items(self, items: List[str]):
         pass

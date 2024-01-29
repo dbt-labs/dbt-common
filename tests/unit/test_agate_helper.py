@@ -131,9 +131,15 @@ class TestAgateHelper(unittest.TestCase):
         self.assertEqual(len(result), 4)
 
     def test_merge_mixed(self):
-        t1 = agate_helper.table_from_rows([(1, "a", None, None), (2, "b", None, None)], ("a", "b", "c", "d"))
-        t2 = agate_helper.table_from_rows([(3, "c", "dog", 1), (4, "d", "cat", 5)], ("a", "b", "c", "d"))
-        t3 = agate_helper.table_from_rows([(3, "c", None, 1.5), (4, "d", None, 3.5)], ("a", "b", "c", "d"))
+        t1 = agate_helper.table_from_rows(
+            [(1, "a", None, None), (2, "b", None, None)], ("a", "b", "c", "d")
+        )
+        t2 = agate_helper.table_from_rows(
+            [(3, "c", "dog", 1), (4, "d", "cat", 5)], ("a", "b", "c", "d")
+        )
+        t3 = agate_helper.table_from_rows(
+            [(3, "c", None, 1.5), (4, "d", None, 3.5)], ("a", "b", "c", "d")
+        )
 
         result = agate_helper.merge_tables([t1, t2])
         self.assertEqual(result.column_names, ("a", "b", "c", "d"))
@@ -216,6 +222,5 @@ class TestAgateHelper(unittest.TestCase):
             [True, Decimal(1)],
             [False, Decimal(0)],
         ]
-
         for i, row in enumerate(tbl):
             self.assertEqual(list(row), expected[i])

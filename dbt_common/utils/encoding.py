@@ -9,7 +9,7 @@ import sys
 
 DECIMALS: Tuple[Type[Any], ...]
 try:
-    import cdecimal  # typing: ignore
+    import cdecimal  # type: ignore
 except ImportError:
     DECIMALS = (decimal.Decimal,)
 else:
@@ -24,7 +24,9 @@ def md5(string, charset="utf-8"):
 
 
 class JSONEncoder(json.JSONEncoder):
-    """A 'custom' json encoder that does normal json encoder things, but also
+    """A 'custom' json encoder.
+
+    A 'custom' json encoder that does normal json encoder things, but also
     handles `Decimal`s and `Undefined`s. Decimals can lose precision because
     they get converted to floats. Undefined's are serialized to an empty string
     """

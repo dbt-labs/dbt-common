@@ -29,7 +29,6 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.deploy-to }}
-      url: ${{ vars.PYPI_URL }}
     permissions:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
 
@@ -40,7 +39,7 @@ jobs:
           persist-credentials: false
 
       - name: "Set up Python & Hatch - 3.11"
-        uses: ./.github/actions/setup-python-env
+        uses: ./.github/actions/setup-python-hatch
         with:
           python-version: "3.11"
 
@@ -52,7 +51,12 @@ jobs:
         run: hatch run build:check-all
         shell: bash
 
-      - name: Publish artifacts to PyPI
+      - name: Publish artifacts to PyPI Test
+        if: inputs.deploy-to == 'PypiTest'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
+
+      - name: Publish artifacts to PyPI Prod
+        if: inputs.deploy-to == 'PypiProd'
+        uses: pypa/gh-action-pypi-publish@release/v1

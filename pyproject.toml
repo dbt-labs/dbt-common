@@ -94,7 +94,6 @@ features = ["test"]
 [tool.hatch.envs.test.scripts]
 unit = "python -m pytest --cov=dbt_common --cov-report=xml {args:tests/unit}"
 
-
 ### Linting settings, envs & scripts
 
 [tool.hatch.envs.lint]

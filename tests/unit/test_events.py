@@ -27,7 +27,6 @@ def get_all_subclasses(cls):
 
 
 class TestEventCodes:
-
     # checks to see if event codes are duplicated to keep codes singluar and clear.
     # also checks that event codes follow correct namming convention ex. E001
     def test_event_codes(self):
@@ -63,7 +62,6 @@ sample_values = [
 
 
 class TestEventJSONSerialization:
-
     # attempts to test that every event is serializable to json.
     # event types that take `Any` are not possible to test in this way since some will serialize
     # just fine and others won't.
@@ -79,7 +77,7 @@ class TestEventJSONSerialization:
 
         # make sure everything in the list is a value not a type
         for event in sample_values:
-            assert type(event) != type
+            assert not isinstance(event, type)
 
         # if we have everything we need to test, try to serialize everything
         count = 0
@@ -107,6 +105,7 @@ class TestEventJSONSerialization:
                 )
             count += 1
         print(f"--- Found {count} events")
+
 
 def test_bad_serialization():
     """Tests that bad serialization enters the proper exception handling

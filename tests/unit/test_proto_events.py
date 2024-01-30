@@ -1,10 +1,7 @@
 from dbt_common.events.functions import msg_to_dict, msg_to_json, reset_metadata_vars
 from dbt_common.events import types_pb2
 from dbt_common.events.base_types import msg_from_base_event
-from dbt_common.events.types import (
-    RetryExternalCall
-)
-from dbt_common.events import types_pb2
+from dbt_common.events.types import RetryExternalCall
 from google.protobuf.json_format import MessageToDict
 
 info_keys = {
@@ -22,7 +19,6 @@ info_keys = {
 
 
 def test_events():
-
     # M020 event
     event_code = "M020"
     event = RetryExternalCall(attempt=3, max=5)
@@ -48,8 +44,8 @@ def test_events():
     assert new_msg.info.code == msg.info.code
     assert new_msg.data.attempt == msg.data.attempt
 
-def test_extra_dict_on_event(monkeypatch):
 
+def test_extra_dict_on_event(monkeypatch):
     monkeypatch.setenv("DBT_ENV_CUSTOM_ENV_env_key", "env_value")
 
     reset_metadata_vars()

@@ -63,7 +63,7 @@ description = "Env for running development commands like pytest / pre-commit"
 dependencies = [
   "pytest~=7.3",
   "pytest-xdist~=3.2",
-  "pytest-cov",
+  "pytest-cov~=4.1",
   "httpx~=0.24",
   "hypothesis~=6.87",
   "pre-commit~=3.2",

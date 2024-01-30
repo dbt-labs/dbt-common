@@ -1,17 +1,9 @@
 import re
-from argparse import Namespace
-from typing import TypeVar
 
 import pytest
 
-# from dbt.adapters.events import types as adapter_types
-from dbt_common.events.event_manager_client import ctx_set_event_manager
-# from dbt.artifacts.schemas.results import TimingInfo, RunStatus
-# from dbt.artifacts.schemas.run import RunResult
 from dbt_common.events import types
-# from dbt.adapters.events.logging import AdapterLogger
 from dbt_common.events.base_types import msg_from_base_event
-# from dbt.events import types as core_types
 from dbt_common.events.base_types import (
     BaseEvent,
     DebugLevel,
@@ -21,7 +13,6 @@ from dbt_common.events.base_types import (
     TestLevel,
     WarnLevel,
 )
-from dbt_common.events.event_manager import TestEventManager, EventManager
 from dbt_common.events.functions import msg_to_dict, msg_to_json
 
 
@@ -116,7 +107,6 @@ class TestEventJSONSerialization:
                 )
             count += 1
         print(f"--- Found {count} events")
-
 
 def test_bad_serialization():
     """Tests that bad serialization enters the proper exception handling

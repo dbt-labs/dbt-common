@@ -94,7 +94,7 @@ def msg_to_dict(msg: EventMsg) -> dict:
     msg_dict = dict()
     try:
         msg_dict = MessageToDict(
-            msg.data,
+            msg,
             preserving_proto_field_name=True,
             including_default_value_fields=True,  # type: ignore
         )

@@ -58,6 +58,7 @@ lint = [
 test = [
     "pytest~=7.3",
     "pytest-xdist~=3.2",
+    "pytest-cov~=4.1",
     "hypothesis~=6.87"
 ]
 build = [
@@ -91,7 +92,7 @@ description = "Env for running development commands for testing"
 features = ["test"]
 
 [tool.hatch.envs.test.scripts]
-unit = "- python -m pytest {args:tests/unit}"
+unit = "spython -m pytest --cov=dbt_common --cov-report=xml {args:tests/unit}"
 
 
 ### Linting settings, envs & scripts

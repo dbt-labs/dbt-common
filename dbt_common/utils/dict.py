@@ -37,11 +37,15 @@ def _merge(a, b):
     return to_return
 
 
-# http://stackoverflow.com/questions/20656135/python-deep-merge-dictionary-data
 def deep_merge(*args):
-    """
-    >>> dbt_common.utils.deep_merge({'a': 1, 'b': 2, 'c': 3}, {'a': 2}, {'a': 3, 'b': 1})  # noqa
+    """Deep merge dictionaries.
+
+    Example:
+    >>> dbt_common.utils.deep_merge(
+    ...     {"a": 1, "b": 2, "c": 3}, {"a": 2}, {"a": 3, "b": 1}
+    ... )  # noqa
     {'a': 3, 'b': 1, 'c': 3}
+    From: http://stackoverflow.com/questions/20656135/python-deep-merge-dictionary-data
     """
     if len(args) == 0:
         return None
@@ -93,14 +97,17 @@ def _deep_map_render(
     else:
         container_types: Tuple[Type[Any], ...] = (list, dict)
         ok_types = container_types + atomic_types
-        raise DbtConfigError("in _deep_map_render, expected one of {!r}, got {!r}".format(ok_types, type(value)))
+        raise DbtConfigError(
+            "in _deep_map_render, expected one of {!r}, got {!r}".format(ok_types, type(value))
+        )
 
     return ret
 
 
 def deep_map_render(func: Callable[[Any, Tuple[Union[str, int], ...]], Any], value: Any) -> Any:
-    """This function renders a nested dictionary derived from a yaml
-    file. It is used to render dbt_project.yml, profiles.yml, and
+    """This function renders a nested dictionary derived from a yaml file.
+
+    It is used to render dbt_project.yml, profiles.yml, and
     schema files.
 
     It maps the function func() onto each non-container value in 'value'

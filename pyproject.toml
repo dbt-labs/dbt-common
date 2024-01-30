@@ -92,7 +92,7 @@ description = "Env for running development commands for testing"
 features = ["test"]
 
 [tool.hatch.envs.test.scripts]
-unit = "spython -m pytest --cov=dbt_common --cov-report=xml {args:tests/unit}"
+unit = "python -m pytest --cov=dbt_common --cov-report=xml {args:tests/unit}"
 
 
 ### Linting settings, envs & scripts

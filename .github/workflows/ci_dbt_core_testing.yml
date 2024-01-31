@@ -62,6 +62,7 @@ jobs:
       - name: "Check out dbt-core"
         uses: actions/checkout@v4
         with:
+          repository: dbt-labs/dbt-core
           ref: ${{ github.event.inputs.dbt-core-ref }}
 
       - name: "Set up Python 3.11"
@@ -152,6 +153,7 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v4
         with:
+          repository: dbt-labs/dbt-core
           ref: ${{ github.event.inputs.dbt-core-ref }}
 
       - name: Set up Python ${{ matrix.python-version }}

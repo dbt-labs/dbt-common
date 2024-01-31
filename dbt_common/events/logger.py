@@ -11,7 +11,7 @@ from colorama import Style
 
 from dbt_common.events.base_types import EventLevel, EventMsg
 from dbt_common.events.format import timestamp_to_datetime_string
-from dbt_common.utils import ForgivingJSONEncoder
+from dbt_common.utils.encoding import ForgivingJSONEncoder
 
 # A Filter is a function which takes a BaseEvent and returns True if the event
 # should be logged, False otherwise.
@@ -51,19 +51,21 @@ _log_level_map = {
 # We need this function for now because the numeric log severity levels in
 # Python do not match those for logbook, so we have to explicitly call the
 # correct function by name.
-def send_to_logger(l, level: str, log_line: str):
+def send_to_logger(logger, level: str, log_line: str):
     if level == "test":
-        l.debug(log_line)
+        logger.debug(log_line)
     elif level == "debug":
-        l.debug(log_line)
+        logger.debug(log_line)
     elif level == "info":
-        l.info(log_line)
+        logger.info(log_line)
     elif level == "warn":
-        l.warning(log_line)
+        logger.warning(log_line)
     elif level == "error":
-        l.error(log_line)
+        logger.error(log_line)
     else:
-        raise AssertionError(f"While attempting to log {log_line}, encountered the unhandled level: {level}")
+        raise AssertionError(
+            f"While attempting to log {log_line}, encountered the unhandled level: {level}"
+        )
 
 
 @dataclass
@@ -150,7 +152,9 @@ class _TextLogger(_Logger):
             log_line = f"\n\n{separator} {ts} | {self.invocation_id} {separator}\n"
         scrubbed_msg: str = self.scrubber(msg.info.msg)  # type: ignore
         level = msg.info.level
-        log_line += f"{self._get_color_tag()}{ts} [{level:<5}]{self._get_thread_name()} {scrubbed_msg}"
+        log_line += (
+            f"{self._get_color_tag()}{ts} [{level:<5}]{self._get_thread_name()} {scrubbed_msg}"
+        )
         return log_line
 
     def _get_color_tag(self) -> str:

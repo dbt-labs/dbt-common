@@ -47,17 +47,13 @@ jobs:
       - name: "Check out the repository"
         uses: actions/checkout@v4
 
-      - name: "Set up Python ${{ matrix.python-version }}"
-        uses: actions/setup-python@v5
+      - name: "Set up Python & Hatch - ${{ matrix.python-version }}"
+        uses: ./.github/actions/setup-python-hatch
         with:
           python-version: "${{ matrix.python-version }}"
 
-      - name: "Install Hatch"
-        shell: bash
-        run: pip3 install hatch
-
       - name: "Run Tests"
-        run: hatch run dev-env:pytest tests
+        run: hatch run test:unit
 
       - name: "Get current date"
         if: always()
@@ -66,10 +62,9 @@ jobs:
           CURRENT_DATE=$(date +'%Y-%m-%dT%H_%M_%S') # no colons allowed for artifacts
           echo "date=$CURRENT_DATE" >> $GITHUB_OUTPUT
 
-      # TODO: what setup is needed here?
-      # - name: Upload Unit Test Coverage to Codecov
-      #   if: ${{ matrix.python-version == '3.11' }}
-      #   uses: codecov/codecov-action@v3
-      #   with:
-      #     token: ${{ secrets.CODECOV_TOKEN }}
-      #     flags: unit
+      - name: Upload Unit Test Coverage to Codecov
+        if: ${{ matrix.python-version == '3.11' }}
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: unit

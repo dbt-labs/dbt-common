@@ -28,7 +28,11 @@ class BlockData:
 
 class BlockTag:
     def __init__(
-        self, block_type_name: str, block_name: str, contents: Optional[str] = None, full_block: Optional[str] = None
+        self,
+        block_type_name: str,
+        block_name: str,
+        contents: Optional[str] = None,
+        full_block: Optional[str] = None,
     ) -> None:
         self.block_type_name = block_type_name
         self.block_name = block_name
@@ -106,7 +110,9 @@ class TagIterator:
         self.pos: int = 0
 
     def linepos(self, end: Optional[int] = None) -> str:
-        """Given an absolute position in the input text, return a pair of
+        """Return relative position in line.
+
+        Given an absolute position in the input data, return a pair of
         line number + relative position to the start of the line.
         """
         end_val: int = self.pos if end is None else end
@@ -148,7 +154,9 @@ class TagIterator:
         return match
 
     def handle_expr(self, match: re.Match) -> None:
-        """Handle an expression. At this point we're at a string like:
+        """Handle an expression.
+
+        At this point we're at a string like:
             {{ 1 + 2 }}
             ^ right here
 
@@ -180,6 +188,7 @@ class TagIterator:
 
     def _expect_block_close(self) -> None:
         """Search for the tag close marker.
+
         To the right of the type name, there are a few possiblities:
            - a name (handled by the regex's 'block_name')
            - any number of: `=`, `(`, `)`, strings, etc (arguments)
@@ -191,7 +200,9 @@ class TagIterator:
         are quote and `%}` - nothing else can hide the %} and be valid jinja.
         """
         while True:
-            end_match = self._expect_match('tag close ("%}")', QUOTE_START_PATTERN, TAG_CLOSE_PATTERN)
+            end_match = self._expect_match(
+                'tag close ("%}")', QUOTE_START_PATTERN, TAG_CLOSE_PATTERN
+            )
             self.advance(end_match.end())
             if end_match.groupdict().get("tag_close") is not None:
                 return
@@ -207,7 +218,9 @@ class TagIterator:
         return match.end()
 
     def handle_tag(self, match: re.Match) -> Tag:
-        """The tag could be one of a few things:
+        """Determine tag type.
+
+        The tag could be one of a few things:
 
             {% mytag %}
             {% mytag x = y %}
@@ -229,11 +242,15 @@ class TagIterator:
         else:
             self.advance(match.end())
             self._expect_block_close()
-        return Tag(block_type_name=block_type_name, block_name=block_name, start=start_pos, end=self.pos)
+        return Tag(
+            block_type_name=block_type_name, block_name=block_name, start=start_pos, end=self.pos
+        )
 
     def find_tags(self) -> Iterator[Tag]:
         while True:
-            match = self._first_match(BLOCK_START_PATTERN, COMMENT_START_PATTERN, EXPR_START_PATTERN)
+            match = self._first_match(
+                BLOCK_START_PATTERN, COMMENT_START_PATTERN, EXPR_START_PATTERN
+            )
             if match is None:
                 break
 
@@ -253,7 +270,8 @@ class TagIterator:
                 yield self.handle_tag(match)
             else:
                 raise DbtInternalError(
-                    "Invalid regex match in next_block, expected block start, " "expr start, or comment start"
+                    "Invalid regex match in next_block, expected block start, "
+                    "expr start, or comment start"
                 )
 
     def __iter__(self) -> Iterator[Tag]:
@@ -349,4 +367,6 @@ class BlockIterator:
     def lex_for_blocks(
         self, allowed_blocks: Optional[Set[str]] = None, collect_raw_data: bool = True
     ) -> List[Union[BlockData, BlockTag]]:
-        return list(self.find_blocks(allowed_blocks=allowed_blocks, collect_raw_data=collect_raw_data))
+        return list(
+            self.find_blocks(allowed_blocks=allowed_blocks, collect_raw_data=collect_raw_data)
+        )

@@ -134,8 +134,8 @@ jobs:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11"]
         os: [ubuntu-20.04]
-        split-group: ${{ fromJson(needs.integration-metadata.outputs.split-groups) }}
-        include: ${{ fromJson(needs.integration-metadata.outputs.include) }}
+        split-group: ${{ fromJson(needs.dbt-core-integration-metadata.outputs.split-groups) }}
+        include: ${{ fromJson(needs.dbt-core-integration-metadata.outputs.include) }}
     env:
       TOXENV: integration
       DBT_INVOCATION_ENV: github-actions
@@ -197,7 +197,7 @@ jobs:
     needs: [dbt-core-integration-tests]
     steps:
       - name: "Integration Tests Failed"
-        if: ${{ contains(needs.integration.result, 'failure') || contains(needs.integration.result, 'cancelled') }}
+        if: ${{ contains(needs.dbt-core-integration-tests.result, 'failure') || contains(needs.dbt-core-integration-tests.result, 'cancelled') }}
         # when this is true the next step won't execute
         run: |
           echo "::notice title='Integration test suite failed'"

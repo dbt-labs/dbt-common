@@ -27,6 +27,7 @@ on:
           - PypiTest
         default: PypiTest
 
+
   #     target_branch:
   #       description: "The branch to release from"
   #       type: string
@@ -66,12 +67,6 @@ on:
   #       default: false
   #       required: false
 
-<<<<<<< HEAD
-=======
-env:
-  ENV_SETUP_SCRIPT_PATH: "scripts/env-setup.sh"  # TODO: This isn't needed for dbt-common
-  PACKAGE_TEST_COMMAND: "tbd..."  # this should probably be the hatch command/script
->>>>>>> 7034ccc (fix up publishing)
 
 permissions:
   contents: write # this is the permission that allows creating a new release
@@ -85,12 +80,45 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ contains(github.event_name, 'pull_request') && github.event.pull_request.head.ref || github.sha }}
   cancel-in-progress: true
 
-jobs:
-<<<<<<< HEAD
+# jobs:
 
-  release:
-    name: PyPI - ${{ inputs.deploy-to }}
-=======
+#   release:
+#     name: PyPI - ${{ inputs.deploy-to }}
+#     runs-on: ubuntu-latest
+#     environment:
+#       name: ${{ inputs.deploy-to }}
+#     permissions:
+#       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
+
+#     steps:
+#       - name: Check out repository
+#         uses: actions/checkout@v4
+#         with:
+#           persist-credentials: false
+
+#       - name: "Set up Python & Hatch - 3.11"
+#         uses: ./.github/actions/setup-python-hatch
+#         with:
+#           python-version: "3.11"
+
+#       - name: Build artifacts
+#         run: hatch build
+#         shell: bash
+
+#       - name: Check artifacts
+#         run: hatch run build:check-all
+#         shell: bash
+
+#       - name: Publish artifacts to PyPI Test
+#         if: inputs.deploy-to == 'PypiTest'
+#         uses: pypa/gh-action-pypi-publish@release/v1
+#         with:
+#           repository-url: https://test.pypi.org/legacy/
+
+#       - name: Publish artifacts to PyPI Prod
+#         if: inputs.deploy-to == 'PypiProd'
+#         uses: pypa/gh-action-pypi-publish@release/v1
+jobs:
   log-inputs:
     name: Log Inputs
     runs-on: ubuntu-latest
@@ -98,13 +126,9 @@ jobs:
       - name: "[DEBUG] Print Variables"
         run: |
           echo "***INPUTS***"
-          echo The branch to release from:         ${{ inputs.target_branch }}
           echo The release version number:         ${{ inputs.version_number }}
           echo Test run:                           ${{ inputs.test_run }}
           echo Nightly release:                    ${{ inputs.nightly_release }}
-          echo "***ENV VARS***"
-          echo Environment setup script path:      ${{ env.ENV_SETUP_SCRIPT_PATH }}
-          echo Package test command:               ${{ env.PACKAGE_TEST_COMMAND }}
 
 
   bump-version-generate-changelog:
@@ -114,8 +138,6 @@ jobs:
 
     with:
       version_number: ${{ inputs.version_number }}
-      target_branch: ${{ inputs.target_branch }}
-      env_setup_script_path: ${{ env.ENV_SETUP_SCRIPT_PATH }}
       test_run: ${{ inputs.test_run }}
       nightly_release: ${{ inputs.nightly_release }}
 
@@ -127,192 +149,66 @@ jobs:
 
     needs: [bump-version-generate-changelog]
 
->>>>>>> 7034ccc (fix up publishing)
     runs-on: ubuntu-latest
-    environment:
-      name: ${{ inputs.deploy-to }}
-    permissions:
-      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
+      - name: Print variables
+        run: |
+          echo Final SHA     : ${{ needs.bump-version-generate-changelog.outputs.final_sha }}
+          echo Changelog path: ${{ needs.bump-version-generate-changelog.outputs.changelog_path }}
 
-      - name: "Set up Python & Hatch - 3.11"
-        uses: ./.github/actions/setup-python-hatch
-        with:
-          python-version: "3.11"
+  build-test-package:
+    name: Build, Test, Package
+    if: ${{ !failure() && !cancelled() }}
+    needs: [bump-version-generate-changelog]
 
-      - name: Build artifacts
-        run: hatch build
-        shell: bash
-
-<<<<<<< HEAD
-      - name: Check artifacts
-        run: hatch run build:check-all
-        shell: bash
-
-      - name: Publish artifacts to PyPI Test
-        if: inputs.deploy-to == 'PypiTest'
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
-
-      - name: Publish artifacts to PyPI Prod
-        if: inputs.deploy-to == 'PypiProd'
-        uses: pypa/gh-action-pypi-publish@release/v1
-# jobs:
-#   log-inputs:
-#     name: Log Inputs
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: "[DEBUG] Print Variables"
-#         run: |
-#           echo "***INPUTS***"
-#           echo The branch to release from:         ${{ inputs.target_branch }}
-#           echo The release version number:         ${{ inputs.version_number }}
-#           echo Test run:                           ${{ inputs.test_run }}
-#           echo Nightly release:                    ${{ inputs.nightly_release }}
-#           echo "***ENV VARS***"
-#           echo Environment setup script path:      ${{ env.ENV_SETUP_SCRIPT_PATH }}
-#           echo AWS S3 bucket name:                 ${{ env.S3_BUCKET_NAME }}
-#           echo Package test command:               ${{ env.PACKAGE_TEST_COMMAND }}
-=======
+    uses: dbt-labs/dbt-common/.github/workflows/build.yml@er/releases
     with:
-      sha: ${{ needs.bump-version-generate-changelog.outputs.final_sha }}
-      version_number: ${{ inputs.version_number }}
       changelog_path: ${{ needs.bump-version-generate-changelog.outputs.changelog_path }}
-      package_test_command: ${{ env.PACKAGE_TEST_COMMAND }}
-      test_run: ${{ inputs.test_run }}
-      nightly_release: ${{ inputs.nightly_release }}
 
   github-release:
     name: GitHub Release
     if: ${{ !failure() && !cancelled() }}
->>>>>>> 7034ccc (fix up publishing)
 
+    needs: [bump-version-generate-changelog, build-test-package]
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-#   bump-version-generate-changelog:
-#     name: Bump package version, Generate changelog
-=======
-    uses: dbt-labs/dbt-common/.github/workflows/github_release_hatch.yml@er/release
->>>>>>> 7034ccc (fix up publishing)
-=======
     uses: dbt-labs/dbt-release/.github/workflows/github-release.yml@main
->>>>>>> 6aee97b (cleanup github release)
 
-#     uses: dbt-labs/dbt-common/.github/workflows/release_prep_hatch.yml@er/release
+    with:
+      version_number: ${{ inputs.version_number }}
+      changelog_path: ${{ needs.bump-version-generate-changelog.outputs.changelog_path }}
+      test_run: ${{ inputs.test_run }}
 
-<<<<<<< HEAD
-#     with:
-#       version_number: ${{ inputs.version_number }}
-#       target_branch: ${{ inputs.target_branch }}
-#       env_setup_script_path: ${{ env.ENV_SETUP_SCRIPT_PATH }}
-#       test_run: ${{ inputs.test_run }}
-#       nightly_release: ${{ inputs.nightly_release }}
-=======
+  # TODO: this should be updated to use trusted publishers for these repos.  adapters could also start
+  # using it at that point. core/postgres are in the same repo and therefore can't use trusted publisers
+  # right now which is why this doesn't currently use it.  It can't be updated until the project is set
+  # up in PyPI and we can't set it up in PyPI until we have a release. Chicken and egg.
   pypi-release:
     name: PyPI Release
->>>>>>> 7034ccc (fix up publishing)
 
-#     secrets: inherit
+    needs: [github-release]
 
-<<<<<<< HEAD
-#   log-outputs-bump-version-generate-changelog:
-#     name: "[Log output] Bump package version, Generate changelog"
-#     if: ${{ !failure() && !cancelled() }}
-=======
-    uses: dbt-labs/dbt-common/.github/workflows/pypi_release_trusted_publisher.yml@er/release
->>>>>>> 7034ccc (fix up publishing)
+    uses: dbt-labs/dbt-common/.github/workflows/pypi-release_trusted_publisher.yml@main
 
-#     needs: [bump-version-generate-changelog]
+    with:
+      version_number: ${{ inputs.version_number }}
+      test_run: ${{ inputs.test_run }}
 
-<<<<<<< HEAD
-#     runs-on: ubuntu-latest
-
-#     steps:
-#       - name: Print variables
-#         run: |
-#           echo Final SHA     : ${{ needs.bump-version-generate-changelog.outputs.final_sha }}
-#           echo Changelog path: ${{ needs.bump-version-generate-changelog.outputs.changelog_path }}
-=======
   slack-notification:
     name: Slack Notification
     if: ${{ failure() && (!inputs.test_run || inputs.nightly_release) }}
->>>>>>> 7034ccc (fix up publishing)
 
-#   build-test-package:
-#     name: Build, Test, Package
-#     if: ${{ !failure() && !cancelled() }}
-#     needs: [bump-version-generate-changelog]
+    needs:
+      [
+        bump-version-generate-changelog,
+        build-test-package,
+        github-release,
+        pypi-release,
+      ]
 
-#     uses: dbt-labs/dbt-common/.github/workflows/build_hatch.yml@er/release
+    uses: dbt-labs/dbt-release/.github/workflows/slack-post-notification.yml@main
+    with:
+      status: "failure"
 
-#     with:
-#       sha: ${{ needs.bump-version-generate-changelog.outputs.final_sha }}
-#       version_number: ${{ inputs.version_number }}
-#       changelog_path: ${{ needs.bump-version-generate-changelog.outputs.changelog_path }}
-#       s3_bucket_name: ${{ env.S3_BUCKET_NAME }}
-#       package_test_command: ${{ env.PACKAGE_TEST_COMMAND }}
-#       test_run: ${{ inputs.test_run }}
-#       nightly_release: ${{ inputs.nightly_release }}
-
-#     secrets:
-#       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-#   github-release:
-#     name: GitHub Release
-#     if: ${{ !failure() && !cancelled() }}
-
-#     needs: [bump-version-generate-changelog, build-test-package]
-
-#     uses: dbt-labs/dbt-release/.github/workflows/github-release.yml@main
-
-#     with:
-#       sha: ${{ needs.bump-version-generate-changelog.outputs.final_sha }}
-#       version_number: ${{ inputs.version_number }}
-#       changelog_path: ${{ needs.bump-version-generate-changelog.outputs.changelog_path }}
-#       test_run: ${{ inputs.test_run }}
-
-#   # TODO: this should be updated to use trusted publishers for these repos.  adapters could also start
-#   # using it at that point. core/postgres are in the same repo and therefore can't use trusted publisers
-#   # right now which is why this doesn't currently use it.  It can't be updated until the project is set
-#   # up in PyPI and we can't set it up in PyPI until we have a release. Chicken and egg.
-#   pypi-release:
-#     name: PyPI Release
-
-#     needs: [github-release]
-
-#     uses: dbt-labs/dbt-release/.github/workflows/pypi-release.yml@main
-
-#     with:
-#       version_number: ${{ inputs.version_number }}
-#       test_run: ${{ inputs.test_run }}
-
-#     secrets:
-#       PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-#       TEST_PYPI_API_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
-
-#   slack-notification:
-#     name: Slack Notification
-#     if: ${{ failure() && (!inputs.test_run || inputs.nightly_release) }}
-
-#     needs:
-#       [
-#         bump-version-generate-changelog,
-#         build-test-package,
-#         github-release,
-#         pypi-release,
-#       ]
-
-#     uses: dbt-labs/dbt-release/.github/workflows/slack-post-notification.yml@main
-#     with:
-#       status: "failure"
-
-#     secrets:
-#       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_DEV_CORE_ALERTS }}
+    secrets:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_DEV_CORE_ALERTS }}

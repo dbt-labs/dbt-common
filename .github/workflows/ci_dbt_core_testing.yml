@@ -108,6 +108,9 @@ jobs:
           python -m pip --version
           python -m pip install -r dev-requirements.txt -r editable-requirements.txt
 
+      - name: "Check installed versions"
+        run: pip freeze
+
       - name: "Update the version of dbt-common"
         run: |
           pip install pip install git+https://github.com/dbt-labs/dbt-common.git@${{ inputs.dbt-common-ref }}
@@ -203,6 +206,9 @@ jobs:
           python -m pip install --user --upgrade pip
           python -m pip --version
           python -m pip install -r dev-requirements.txt -r editable-requirements.txt
+
+      - name: "Check installed versions"
+        run: pip freeze
 
       - name: "Update the version of dbt-common"
         run: |

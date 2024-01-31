@@ -542,10 +542,7 @@ def render_template(template, ctx: Dict[str, Any], node=None) -> str:
 _TESTING_BLOCKS_CACHE: Dict[int, List[Union[BlockData, BlockTag]]] = {}
 
 
-def _get_blocks_hash(text: str,
-    allowed_blocks: Optional[Set[str]],
-    collect_raw_data: bool
-) -> int:
+def _get_blocks_hash(text: str, allowed_blocks: Optional[Set[str]], collect_raw_data: bool) -> int:
     """Provides a hash function over the arguments to extract_toplevel_blocks, in order to support caching."""
     allowed_tuple = tuple(sorted(allowed_blocks) or [])
     return text.__hash__() + allowed_tuple.__hash__() + collect_raw_data.__hash__()

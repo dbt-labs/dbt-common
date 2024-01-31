@@ -2,16 +2,14 @@
 # Runs all tests in dbt-core with this branch of dbt-common to ensure nothing is broken
 
 # **why?**
-# Ensure dbt-common changes do nto break dbt-core
+# Ensure dbt-common changes do not break dbt-core
 
 # **when?**
 # This will run when trying to merge a PR into main.
 # It can also be manually triggered.
 
-##  TODO: This is a stub. It does nothing right now.
-# It will be updated in the future as part of https://github.com/dbt-labs/dbt-common/issues/18
-
-name: Test Against dbt-core
+name: "Test Branches of dbt-core + dbt-common"
+run-name: "Test dbt-core@${{ inputs.dbt-core-ref }} with dbt-common@${{ inputs.dbt-common-ref }}"
 
 on:
   merge_group:
@@ -20,11 +18,9 @@ on:
     inputs:
       dbt-core-ref:
         description: "The branch of dbt-core to test against"
-        required: true
         default: "main"
       dbt-common-ref:
         description: "The branch of dbt-common to test against"
-        required: true
         default: "main"
   workflow_call:
     inputs:

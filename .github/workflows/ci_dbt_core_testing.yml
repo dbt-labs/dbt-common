@@ -14,6 +14,7 @@ run-name: "Test dbt-core@${{ inputs.dbt-core-ref }} with dbt-common@${{ inputs.d
 on:
   merge_group:
     types: [checks_requested]
+  pull_request:
   workflow_dispatch:
     inputs:
       dbt-core-ref:
@@ -47,9 +48,44 @@ env:
   PYTHON_INTEGRATION_TEST_WORKERS: 5
 
 jobs:
+  job-prep:
+    # This allow us to run the workflow on pull_requests as well so we can always run unit tests
+    # and only run integration tests on merge for time purposes
+    name: Setup Repo Refs
+    runs-on: ubuntu-latest
+    outputs:
+      dbt-core-ref: ${{ steps.ref.outputs.dbt-core-ref }}
+      dbt-common-ref: ${{ steps.ref.outputs.dbt-common-ref }}
+
+    steps:
+      - name: Set up job inputs
+        id: job-inputs
+        run: |
+          echo "dbt-core-ref=${{ github.event.inputs.dbt-core-ref }}"
+          echo "dbt-common-ref=${{ github.event.inputs.dbt-common-ref }}"
+          echo "dbt-core-ref=${{ github.event.inputs.dbt-core-ref }}" >> $GITHUB_OUTPUT
+          echo "dbt-common-ref=${{ github.event.inputs.dbt-common-ref }}" >> $GITHUB_OUTPUT
+
+      - name: Set up job outputs
+        id: ref
+        run: |
+          if [[ -z "${{ github.event.inputs.dbt-core-ref }}" ]]; then
+            echo "dbt-core-ref=${{ github.event.inputs.dbt-core-ref }}"
+          else
+            echo "dbt-core-ref=main"
+          fi
+          if [[ -z "${{ github.event.inputs.dbt-common-ref }}" ]]; then
+            echo "dbt-common-ref=${{ github.event.inputs.dbt-common-ref }}"
+          else
+            echo "dbt-common-ref=main"
+          fi
+          echo "dbt-core-ref=${{ github.event.inputs.dbt-core-ref }}" >> $GITHUB_OUTPUT
+          echo "dbt-common-ref=${{ github.event.inputs.dbt-common-ref }}" >> $GITHUB_OUTPUT
+
   # TODO: maybe split these into 2 workflows.  Then we can call unit tests always and just do int tests on merge? or just use an trigger checks
   dbt-core-unit-test:
     name: "Run unit tests for dbt-core"
+    needs: [job-prep]
 
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -59,7 +95,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: dbt-labs/dbt-core
-          ref: ${{ github.event.inputs.dbt-core-ref }}
+          ref: ${{ needs.job-prep.outputs.dbt-core-ref }}
 
       - name: "Set up Python 3.11"
         uses: actions/setup-python@v5
@@ -88,6 +124,7 @@ jobs:
   dbt-core-integration-metadata:
     name: integration test metadata generation
     runs-on: ubuntu-latest
+    if: ${{ github.event.name != 'pull_request' }}
     outputs:
       split-groups: ${{ steps.generate-split-groups.outputs.split-groups }}
       include: ${{ steps.generate-include.outputs.include }}
@@ -122,10 +159,11 @@ jobs:
 
   dbt-core-integration-tests:
     name: (${{ matrix.split-group }}) integration test / python ${{ matrix.python-version }} / ${{ matrix.os }}
+    if: ${{ github.event.name != 'pull_request' }}
 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
-    needs: [dbt-core-integration-metadata]
+    needs: [job-prep, dbt-core-integration-metadata]
     strategy:
       fail-fast: false
       matrix:
@@ -150,7 +188,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: dbt-labs/dbt-core
-          ref: ${{ github.event.inputs.dbt-core-ref }}
+          ref: ${{ needs.job-prep.outputs.dbt-core-ref }}
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -178,7 +216,7 @@ jobs:
 
       - name: "Update the version of dbt-common"
         run: |
-          pip install pip install git+https://github.com/dbt-labs/dbt-common.git@${{ inputs.dbt-common-ref }}
+          pip install pip install git+https://github.com/dbt-labs/dbt-common.git@${{ needs.job-prep.outputs.dbt-common-ref }}
 
       - name: "Check installed versions"
         run: pip freeze
@@ -202,5 +240,11 @@ jobs:
           exit 1
 
       - name: "Integration Tests Passed"
+        if: ${{ github.event.name != 'pull_request' }}
         run: |
           echo "::notice title='Integration test suite passed'"
+
+      - name: "Integration Tests Skipped"
+        if: ${{ github.event.name == 'pull_request' }}
+        run: |
+          echo "::notice title='Integration test suite skipped on Pull Requests'"

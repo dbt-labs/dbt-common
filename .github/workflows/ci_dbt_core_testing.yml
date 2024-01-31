@@ -48,7 +48,7 @@ defaults:
 # top-level adjustments can be made here
 env:
   # number of parallel processes to spawn for python integration testing
-  PYTHON_INTEGRATION_TEST_WORKERS: 5s
+  PYTHON_INTEGRATION_TEST_WORKERS: 5
 
 jobs:
   # TODO: maybe split these into 2 workflows.  Then we can call unit tests always and just do int tests on merge? or just use an trigger checks

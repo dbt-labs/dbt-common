@@ -1,17 +1,58 @@
-name: Release
+# **what?**
+# Release workflow provides the following steps:
+# - checkout the HEAD of the target branch;
+# - validate version in sources and changelog file for given version;
+# - bump the version and generate a changelog if needed;
+# - merge all changes to the target branch if needed;
+# - run unit and integration tests against given commit;
+# - build and package that SHA;
+# - release it to GitHub and PyPI with that specific build;
+#
+# **why?**
+# Ensure an automated and tested release process
+#
+# **when?**
+# This workflow can be run manually on demand or can be called by other workflows
+
+name: Release to GitHub and PyPI
 
 on:
   workflow_dispatch:
     inputs:
-      deploy-to:
-        type: choice
-        description: Choose where to publish (test/prod)
-        options:
-          - PypiProd
-          - PypiTest
-        default: PypiTest
+      version_number:
+        description: "The release version number (i.e. 1.0.0b1)"
+        type: string
+        required: true
+      test_run:
+        description: "Test run (Publish release as draft)"
+        type: boolean
+        default: true
+        required: false
+      nightly_release:
+        description: "Nightly release to dev environment"
+        type: boolean
+        default: false
+        required: false
+  workflow_call:
+    inputs:
+      version_number:
+        description: "The release version number (i.e. 1.0.0b1)"
+        type: string
+        required: true
+      test_run:
+        description: "Test run (Publish release as draft)"
+        type: boolean
+        default: true
+        required: false
+      nightly_release:
+        description: "Nightly release to dev environment"
+        type: boolean
+        default: false
+        required: false
 
-permissions: read-all
+
+permissions:
+  contents: write # this is the permission that allows creating a new release
 
 defaults:
   run:
@@ -23,40 +64,96 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-
-  release:
-    name: PyPI - ${{ inputs.deploy-to }}
+  log-inputs:
+    name: Log Inputs
     runs-on: ubuntu-latest
-    environment:
-      name: ${{ inputs.deploy-to }}
-    permissions:
-      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
+    steps:
+      - name: "[DEBUG] Print Variables"
+        run: |
+          echo "***INPUTS***"
+          echo The release version number:         ${{ inputs.version_number }}
+          echo Test run:                           ${{ inputs.test_run }}
+          echo Nightly release:                    ${{ inputs.nightly_release }}
+
+
+  bump-version-generate-changelog:
+    name: Bump package version, Generate changelog
+
+    uses: dbt-labs/dbt-common/.github/workflows/release_prep_hatch.yml@er/release
+
+    with:
+      version_number: ${{ inputs.version_number }}
+      test_run: ${{ inputs.test_run }}
+      nightly_release: ${{ inputs.nightly_release }}
+
+    secrets: inherit
+
+  log-outputs-bump-version-generate-changelog:
+    name: "[Log output] Bump package version, Generate changelog"
+    if: ${{ !failure() && !cancelled() }}
+
+    needs: [bump-version-generate-changelog]
+
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
+      - name: Print variables
+        run: |
+          echo Final SHA     : ${{ needs.bump-version-generate-changelog.outputs.final_sha }}
+          echo Changelog path: ${{ needs.bump-version-generate-changelog.outputs.changelog_path }}
 
-      - name: "Set up Python & Hatch - 3.11"
-        uses: ./.github/actions/setup-python-hatch
-        with:
-          python-version: "3.11"
+  build-test-package:
+    name: Build, Test, Package
+    if: ${{ !failure() && !cancelled() }}
+    needs: [bump-version-generate-changelog]
 
-      - name: Build artifacts
-        run: hatch build
-        shell: bash
+    uses: dbt-labs/dbt-common/.github/workflows/build.yml@er/releases
+    with:
+      changelog_path: ${{ needs.bump-version-generate-changelog.outputs.changelog_path }}
 
-      - name: Check artifacts
-        run: hatch run build:check-all
-        shell: bash
+  github-release:
+    name: GitHub Release
+    if: ${{ !failure() && !cancelled() }}
 
-      - name: Publish artifacts to PyPI Test
-        if: inputs.deploy-to == 'PypiTest'
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
+    needs: [bump-version-generate-changelog, build-test-package]
 
-      - name: Publish artifacts to PyPI Prod
-        if: inputs.deploy-to == 'PypiProd'
-        uses: pypa/gh-action-pypi-publish@release/v1
+    uses: dbt-labs/dbt-release/.github/workflows/github-release.yml@main
+
+    with:
+      version_number: ${{ inputs.version_number }}
+      changelog_path: ${{ needs.bump-version-generate-changelog.outputs.changelog_path }}
+      test_run: ${{ inputs.test_run }}
+
+  # TODO: this should be updated to use trusted publishers for these repos.  adapters could also start
+  # using it at that point. core/postgres are in the same repo and therefore can't use trusted publisers
+  # right now which is why this doesn't currently use it.  It can't be updated until the project is set
+  # up in PyPI and we can't set it up in PyPI until we have a release. Chicken and egg.
+  pypi-release:
+    name: PyPI Release
+
+    needs: [github-release]
+
+    uses: dbt-labs/dbt-common/.github/workflows/pypi-release_trusted_publisher.yml@main
+
+    with:
+      version_number: ${{ inputs.version_number }}
+      test_run: ${{ inputs.test_run }}
+
+  slack-notification:
+    name: Slack Notification
+    if: ${{ failure() && (!inputs.test_run || inputs.nightly_release) }}
+
+    needs:
+      [
+        bump-version-generate-changelog,
+        build-test-package,
+        github-release,
+        pypi-release,
+      ]
+
+    uses: dbt-labs/dbt-release/.github/workflows/slack-post-notification.yml@main
+    with:
+      status: "failure"
+
+    secrets:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_DEV_CORE_ALERTS }}

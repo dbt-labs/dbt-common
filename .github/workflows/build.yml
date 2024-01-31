@@ -19,6 +19,12 @@ on:
   merge_group:
     types: [checks_requested]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      changelog_path:
+        description: "Path to changelog file"
+        required: true
+        type: string
 
 permissions: read-all
 
@@ -53,3 +59,19 @@ jobs:
 
       - name: "Check build"
         run: hatch run build:check-all
+
+      - name: "Check version"
+        id: version
+        run: |
+          echo "version=$(hatch version)" >> $GITHUB_OUTPUT
+
+      # this step is only needed for the release process
+      - name: "Upload Build Artifact"
+        if: ${{ github.event_name == 'workflow_call' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.version.outputs.version_number }}
+          path: |
+            ${{ inputs.changelog_path }}
+            ./dist/
+          retention-days: 3

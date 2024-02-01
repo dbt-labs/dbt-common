@@ -107,7 +107,7 @@ jobs:
           echo "dbt-common-ref=${{ steps.common-ref.outputs.ref }}"
 
   dbt-core-unit-test:
-    name: "Run unit tests"
+    name: "dbt-core unit tests"
     needs: [job-prep]
 
     runs-on: ubuntu-latest
@@ -274,7 +274,7 @@ jobs:
 
   integration-report:
     if: ${{ always() }}
-    name: "Integration Test Suite Report"
+    name: "dbt-core Integration Test Suite Report"
     runs-on: ubuntu-latest
     needs: [dbt-core-integration-tests]
     steps:

@@ -145,6 +145,8 @@ jobs:
           python -m pip install pip install git+https://github.com/dbt-labs/dbt-common.git@${{ needs.job-prep.outputs.dbt-common-ref }} --force-reinstall
 
       - name: "Run unit tests"
+        # Doing the check here instead of the top level because this is job a required check, the
+        # label just means we should skip the tests
         if: ${{ !contains(github.event.label.name, 'Skip Core Testing')}}
         run: tox
         env:
@@ -156,7 +158,7 @@ jobs:
   dbt-core-integration-metadata:
     name: integration test metadata generation
     runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'pull_request' }} || ${{ !contains(github.event.label.name, 'Skip Core Testing')}}
+    if: ${{ github.event_name != 'pull_request' }} && ${{ !contains(github.event.label.name, 'Skip Core Testing')}}
     outputs:
       split-groups: ${{ steps.generate-split-groups.outputs.split-groups }}
       include: ${{ steps.generate-include.outputs.include }}
@@ -191,7 +193,7 @@ jobs:
 
   dbt-core-integration-tests:
     name: (${{ matrix.split-group }}) integration test / python ${{ matrix.python-version }} / ${{ matrix.os }}
-    if: ${{ github.event_name != 'pull_request' }} || ${{ !contains(github.event.label.name, 'Skip Core Testing')}}
+    if: ${{ github.event_name != 'pull_request' }} && ${{ !contains(github.event.label.name, 'Skip Core Testing')}}
 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
@@ -289,11 +291,11 @@ jobs:
           echo "::notice title='Integration test suite passed'"
 
       - name: "Integration Tests Skipped on Pull Request"
-        if: ${{ github.event_name == 'pull_request' ||  contains(github.event.label.name, 'Skip Core Testing')}}
+        if: ${{ github.event_name == 'pull_request' &&  !contains(github.event.label.name, 'Skip Core Testing')}}
         run: |
           echo "::notice title='Integration test suite skipped on Pull Requests - they will run on merge'"
 
       - name: "Integration Tests Skipped by Label"
         if: ${{ contains(github.event.label.name, 'Skip Core Testing')}}
         run: |
-          echo "::notice title='Integration test suite skipped due to Skip Core Testing label'"
+          echo "::notice title='dbt-core test suite skipped due to Skip Core Testing label'"

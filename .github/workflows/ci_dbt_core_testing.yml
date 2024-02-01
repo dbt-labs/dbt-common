@@ -9,7 +9,10 @@
 # It can also be manually triggered.
 
 name: "Test Branches of dbt-core + dbt-common"
-run-name: "Test dbt-core@${{ inputs.dbt-core-ref }} with dbt-common@${{ inputs.dbt-common-ref }}"
+run-name: >-
+  if [[ ${{ github.event.name }} == "workflow_dispatch" or ${{ github.event.name }} == "workflow_call"]]; then
+  "Test dbt-core@${{ inputs.dbt-core-ref }} with dbt-common@${{ inputs.dbt-common-ref }}"
+  fi
 
 on:
   merge_group:
@@ -80,6 +83,11 @@ jobs:
             echo "dbt-core-ref=main"
           fi
           if [[ -z "${{ github.event.inputs.dbt-common-ref }}" ]]; then
+            if [[ "${{ github.event.name }}" == "merge_group" ]]; then
+              echo "dbt-common-ref=${{ github.event.pull_request.merge_commit_sha }}"
+            else
+              echo "dbt-common-ref=${{ github.event.pull_request.base.sha }}"
+            fi
             echo "dbt-common-ref=${{ github.event.inputs.dbt-common-ref }}"
           else
             echo "dbt-common-ref=main"
@@ -119,13 +127,10 @@ jobs:
 
       # Since the dbt-common dependency is pinned in dev-requirements.txt we need to force update it
       # Since tox installs dependencies but doesn't force update, it won't get overridden in the next
-      # step since the requirements will already be met
-      - name: "Force update the version of dbt-common@${{ inputs.dbt-common-ref }}"
+      # ssstep since the requirements will already be met
+      - name: "Force update the version of dbt-common@${{ needs.job-prep.outputs.dbt-common-ref }}"
         run: |
-          pip install pip install git+https://github.com/dbt-labs/dbt-common.git@${{ inputs.dbt-common-ref }} --force-reinstall
-
-      - name: "Check installed versions"
-        run: pip freeze
+          pip install pip install git+https://github.com/dbt-labs/dbt-common.git@${{ needs.job-prep.outputs.dbt-common-ref }} --force-reinstall
 
       - name: Run unit tests
         run: tox

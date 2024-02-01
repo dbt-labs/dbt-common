@@ -91,7 +91,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - name: "Check out dbt-core"
+      - name: "Check out dbt-core@${{ needs.job-prep.outputs.dbt-core-ref }}"
         uses: actions/checkout@v4
         with:
           repository: dbt-labs/dbt-core
@@ -109,11 +109,11 @@ jobs:
           python -m pip install -r dev-requirements.txt -r editable-requirements.txt
 
       - name: "Check installed versions"
-        run: pip freeze
+        run: pip freezes
 
-      - name: "Update the version of dbt-common"
+      - name: "Update the version of dbt-common@${{ inputs.dbt-common-ref }}"
         run: |
-          pip install pip install git+https://github.com/dbt-labs/dbt-common.git@${{ inputs.dbt-common-ref }}
+          pip install pip install git+https://github.com/dbt-labs/dbt-common.git@${{ inputs.dbt-common-ref }} --force-reinstall
 
       - name: "Check installed versions"
         run: pip freeze
@@ -178,7 +178,7 @@ jobs:
       DBT_TEST_USER_3: dbt_test_user_3
 
     steps:
-      - name: Check out the repository
+      - name: "Check out the repository@${{ needs.job-prep.outputs.dbt-core-ref }}"
         uses: actions/checkout@v4
         with:
           repository: dbt-labs/dbt-core
@@ -210,9 +210,9 @@ jobs:
       - name: "Check installed versions"
         run: pip freeze
 
-      - name: "Update the version of dbt-common"
+      - name: "Update the version of dbt-common@${{ needs.job-prep.outputs.dbt-common-ref }}s"
         run: |
-          pip install pip install git+https://github.com/dbt-labs/dbt-common.git@${{ needs.job-prep.outputs.dbt-common-ref }}
+          pip install pip install git+https://github.com/dbt-labs/dbt-common.git@${{ needs.job-prep.outputs.dbt-common-ref }} --force-reinstall
 
       - name: "Check installed versions"
         run: pip freeze

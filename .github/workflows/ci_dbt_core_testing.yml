@@ -63,41 +63,45 @@ jobs:
     name: Setup Repo Refs
     runs-on: ubuntu-latest
     outputs:
-      dbt-core-ref: ${{ steps.ref.outputs.dbt-core-ref }}
-      dbt-common-ref: ${{ steps.ref.outputs.dbt-common-ref }}
+      dbt-core-ref: ${{ steps.core-ref.outputs.ref }}
+      dbt-common-ref: ${{ steps.common-ref.outputs.ref }}
 
     steps:
-      - name: "Display job inputs"
+      - name: "[[DEBUG]] Input Refs"
         id: job-inputs
         run: |
           echo "inputs.dbt-core-ref=${{ inputs.dbt-core-ref }}"
           echo "inputs.dbt-common-ref=${{ inputs.dbt-common-ref }}"
 
-      - name: "Set up job outputs"
-        id: ref
+      - name: "Determine dbt-core ref"
+        id: core-ref
         run: |
           if [[ -z "${{ inputs.dbt-core-ref }}" ]]; then
-            DBT_CORE_REF="main"
+            REF="main"
           else
-            DBT_CORE_REF=${{ inputs.dbt-core-ref }}
+            REF=${{ inputs.dbt-core-ref }}
           fi
+          echo "ref=$REF" >> $GITHUB_OUTPUT
+
+      - name: "Determine dbt-common ref"
+        id: common-ref
+        run: |
           if [[ -z "${{ inputs.dbt-common-ref }}" ]]; then
             # these will be commits instead of branches
             if [[ "${{ github.event_name }}" == "merge_group" ]]; then
-              DBT_COMMON_REF=${{ github.event.pull_request.merge_commit_sha }}
+              REF=${{ github.event.pull_request.merge_commit_sha }}
             else
-              DBT_COMMON_REF=${{ github.event.pull_request.base.sha }}
+              REF=${{ github.event.pull_request.base.sha }}
             fi
           else
-            DBT_COMMON_REF=${{ inputs.dbt-common-ref }}
+            REF=${{ inputs.dbt-common-ref }}
           fi
-          echo "dbt-core-ref=$DBT_CORE_REF" >> $GITHUB_OUTPUT
-          echo "dbt-common-ref=$DBT_COMMON_REF" >> $GITHUB_OUTPUT
+          echo "ref=$REF" >> $GITHUB_OUTPUT
 
-      - name: "Display Refs"
+      - name: "[[DEBUG]] Final Refs"
         run: |
-          echo "dbt-core-ref=${{ steps.ref.outputs.dbt-core-ref }}"
-          echo "dbt-common-ref=${{ steps.ref.outputs.dbt-common-ref }}"
+          echo "dbt-core-ref=${{ steps.core-ref.outputs.ref }}"
+          echo "dbt-common-ref=${{ steps.common-ref.outputs.ref }}"
 
   dbt-core-unit-test:
     name: "Run unit tests for dbt-core"

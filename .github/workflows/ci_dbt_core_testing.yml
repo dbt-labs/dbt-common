@@ -161,7 +161,7 @@ jobs:
   dbt-core-integration-metadata:
     name: integration test metadata generation
     runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'pull_request' }} && ${{ !contains(github.event.label.name, 'Skip Core Testing')}}
+    if: ${{ github.event_name != 'pull_request' && !contains(github.event.label.name, 'Skip Core Testing')}}
     outputs:
       split-groups: ${{ steps.generate-split-groups.outputs.split-groups }}
       include: ${{ steps.generate-include.outputs.include }}

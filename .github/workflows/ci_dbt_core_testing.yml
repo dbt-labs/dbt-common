@@ -144,7 +144,7 @@ jobs:
         run: |
           python -m pip install pip install git+https://github.com/dbt-labs/dbt-common.git@${{ needs.job-prep.outputs.dbt-common-ref }} --force-reinstall
 
-      - name: Run unit tests
+      - name: "Run unit tests"
         if: ${{ !contains(github.event.label.name, 'Skip Core Testing')}}
         run: tox
         env:
@@ -162,7 +162,7 @@ jobs:
       include: ${{ steps.generate-include.outputs.include }}
 
     steps:
-      - name: generate split-groups
+      - name: "generate split-groups"
         id: generate-split-groups
         run: |
           MATRIX_JSON="["
@@ -174,7 +174,7 @@ jobs:
           echo "split-groups=${MATRIX_JSON}"
           echo "split-groups=${MATRIX_JSON}" >> $GITHUB_OUTPUT
 
-      - name: generate include
+      - name: "generate include"
         id: generate-include
         run: |
           INCLUDE=('"python-version":"3.8","os":"windows-latest"' '"python-version":"3.8","os":"macos-latest"' )
@@ -216,20 +216,20 @@ jobs:
           repository: dbt-labs/dbt-core
           ref: ${{ needs.job-prep.outputs.dbt-core-ref }}
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: "Set up Python ${{ matrix.python-version }}"
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Set up postgres (linux)
+      - name: "Set up postgres (linux)"
         if: runner.os == 'Linux'
         uses: ./.github/actions/setup-postgres-linux
 
-      - name: Set up postgres (macos)
+      - name: "Set up postgres (macos)"
         if: runner.os == 'macOS'
         uses: ./.github/actions/setup-postgres-macos
 
-      - name: Set up postgres (windows)
+      - name: "Set up postgres (windows)"
         if: runner.os == 'Windows'
         uses: ./.github/actions/setup-postgres-windows
 
@@ -252,8 +252,8 @@ jobs:
           python -m pip uninstall dbt-common -y
           python -m pip install pip install git+https://github.com/dbt-labs/dbt-common.git@${{ needs.job-prep.outputs.dbt-common-ref }} --force-reinstall
 
-      - name: Run Functional tests
-        run: tox
+      - name: "Run Functional tests"
+        run: tox -- --ddtrace
         env:
           TOXENV: integration
           DBT_INVOCATION_ENV: github-actions

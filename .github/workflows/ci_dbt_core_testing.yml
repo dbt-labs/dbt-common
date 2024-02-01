@@ -104,8 +104,8 @@ jobs:
       - name: "Where are we?"
         run: ls -al
 
-      - name: "Move into Core directory"
-        run: cd dbt-core
+      - name: "Cat action"
+        run: cat ./.github/actions/setup-postgres-linux/action.yml
 
       # TODO: do we want to run other os versions?
       - name: Set up postgres (linux)

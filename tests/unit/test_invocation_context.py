@@ -1,10 +1,12 @@
 from dbt_common.constants import SECRET_ENV_PREFIX
 from dbt_common.context import InvocationContext
 
+
 def test_invocation_context_env():
     test_env = {"VAR_1": "value1", "VAR_2": "value2"}
     ic = InvocationContext(env=test_env)
     assert ic.env == test_env
+
 
 def test_invocation_context_secrets():
     test_env = {

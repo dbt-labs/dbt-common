@@ -109,7 +109,7 @@ jobs:
           python -m pip install -r dev-requirements.txt -r editable-requirements.txt
 
       - name: "Check installed versions"
-        run: pip freezes
+        run: pip freeze
 
       - name: "Update the version of dbt-common@${{ inputs.dbt-common-ref }}"
         run: |

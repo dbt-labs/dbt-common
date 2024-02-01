@@ -77,6 +77,7 @@ jobs:
           echo "inputs.dbt-common-ref=${{ inputs.dbt-common-ref }}"
           echo "event_name=${{ github.event_name }}"
           echo "github.event.label.name=${{github.event.label.name}}"
+          echo "test="${{ github.event_name != 'pull_request' }} && ${{ !contains(github.event.label.name, 'Skip Core Testing')}}
 
       - name: "Determine dbt-core ref"
         id: core-ref

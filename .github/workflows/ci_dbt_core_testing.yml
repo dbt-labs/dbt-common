@@ -12,6 +12,8 @@ name: "Test Branches of dbt-core + dbt-common"
 run-name: >-
   if [[ ${{ github.event_name }} == "workflow_dispatch" or ${{ github.event_name }} == "workflow_call"]]; then
   "Test dbt-core@${{ inputs.dbt-core-ref }} with dbt-common@${{ inputs.dbt-common-ref }}"
+  else
+  "Test dbt-core@main with dbt-common branch"
   fi
 
 on:

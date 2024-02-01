@@ -101,6 +101,12 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: "Where are we?"
+        run: ls -al
+
+      - name: "Move into Core directory"
+        run: cd dbt-core
+
       # TODO: do we want to run other os versions?
       - name: Set up postgres (linux)
         if: runner.os == 'Linux'

@@ -12,7 +12,7 @@
 # useful when making a change in both `dbt-core` and `dbt-common` where the changes are dependant
 # and cause the other repository to break.
 
-name: "Test Branches of dbt-core + dbt-common"
+name: "dbt-core Tests"
 run-name: >-
   ${{ (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call')
   && format('dbt-core@{0} with dbt-common@{1}', inputs.dbt-core-ref, inputs.dbt-common-ref)
@@ -107,7 +107,7 @@ jobs:
           echo "dbt-common-ref=${{ steps.common-ref.outputs.ref }}"
 
   dbt-core-unit-test:
-    name: "Run unit tests for dbt-core"
+    name: "Run unit tests"
     needs: [job-prep]
 
     runs-on: ubuntu-latest
@@ -156,7 +156,7 @@ jobs:
         run: pip freeze
 
   dbt-core-integration-metadata:
-    name: integration test metadata generation
+    name: "integration test metadata generation"
     runs-on: ubuntu-latest
     if: ${{ github.event_name != 'pull_request' && !contains(github.event.label.name, 'Skip Core Testing')}}
     outputs:
@@ -192,7 +192,7 @@ jobs:
           echo "include=${INCLUDE_GROUPS}" >> $GITHUB_OUTPUT
 
   dbt-core-integration-tests:
-    name: (${{ matrix.split-group }}) integration test / python ${{ matrix.python-version }} / ${{ matrix.os }}
+    name: "(${{ matrix.split-group }}) integration test / python ${{ matrix.python-version }} / ${{ matrix.os }}"
     if: ${{ github.event_name != 'pull_request' && !contains(github.event.label.name, 'Skip Core Testing')}}
 
     runs-on: ${{ matrix.os }}
@@ -274,7 +274,7 @@ jobs:
 
   integration-report:
     if: ${{ always() }}
-    name: Integration Test Suite
+    name: "Integration Test Suite Report"
     runs-on: ubuntu-latest
     needs: [dbt-core-integration-tests]
     steps:

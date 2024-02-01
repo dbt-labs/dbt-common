@@ -10,7 +10,7 @@
 
 name: "Test Branches of dbt-core + dbt-common"
 run-name: >-
-  if [[ ${{ github.event.name }} == "workflow_dispatch" or ${{ github.event.name }} == "workflow_call"]]; then
+  if [[ ${{ github.event_name }} == "workflow_dispatch" or ${{ github.event_name }} == "workflow_call"]]; then
   "Test dbt-core@${{ inputs.dbt-core-ref }} with dbt-common@${{ inputs.dbt-common-ref }}"
   fi
 
@@ -83,7 +83,7 @@ jobs:
             echo "dbt-core-ref=main"
           fi
           if [[ -z "${{ github.event.inputs.dbt-common-ref }}" ]]; then
-            if [[ "${{ github.event.name }}" == "merge_group" ]]; then
+            if [[ "${{ github.event_name }}" == "merge_group" ]]; then
               echo "dbt-common-ref=${{ github.event.pull_request.merge_commit_sha }}"
             else
               echo "dbt-common-ref=${{ github.event.pull_request.base.sha }}"
@@ -143,7 +143,7 @@ jobs:
   # dbt-core-integration-metadata:
   #   name: integration test metadata generation
   #   runs-on: ubuntu-latest
-  #   if: ${{ github.event.name != 'pull_request' }}
+  #   if: ${{ github.event_name != 'pull_request' }}
   #   outputs:
   #     split-groups: ${{ steps.generate-split-groups.outputs.split-groups }}
   #     include: ${{ steps.generate-include.outputs.include }}
@@ -178,7 +178,7 @@ jobs:
 
   # dbt-core-integration-tests:
   #   name: (${{ matrix.split-group }}) integration test / python ${{ matrix.python-version }} / ${{ matrix.os }}
-  #   if: ${{ github.event.name != 'pull_request' }}
+  #   if: ${{ github.event_name != 'pull_request' }}
 
   #   runs-on: ${{ matrix.os }}
   #   timeout-minutes: 30
@@ -258,11 +258,11 @@ jobs:
   #         exit 1
 
   #     - name: "Integration Tests Passed"
-  #       if: ${{ github.event.name != 'pull_request' }}
+  #       if: ${{ github.event_name != 'pull_request' }}
   #       run: |
   #         echo "::notice title='Integration test suite passed'"
 
   #     - name: "Integration Tests Skipped"
-  #       if: ${{ github.event.name == 'pull_request' }}
+  #       if: ${{ github.event_name == 'pull_request' }}
   #       run: |
   #         echo "::notice title='Integration test suite skipped on Pull Requests'"

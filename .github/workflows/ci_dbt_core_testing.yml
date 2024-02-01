@@ -78,7 +78,7 @@ jobs:
         id: ref
         run: |
           if [[ -z "${{ inputs.dbt-core-ref }}" ]]; then
-            dbt-core-ref=main
+            dbt-core-ref="main"
           else
             dbt-core-ref=${{ inputs.dbt-core-ref }}
           fi

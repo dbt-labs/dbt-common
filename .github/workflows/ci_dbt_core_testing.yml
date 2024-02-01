@@ -131,6 +131,7 @@ jobs:
       # install them first s that we can override the dbt-common branch
       - name: "Manually install dbt-core dependencies"
         run: |
+          python -m pip uninstall dbt-common -y
           python -m pip install -r dev-requirements.txt -r editable-requirements.txt
 
       # Since the dbt-common dependency is pinned in dev-requirements.txt we need to force update it
@@ -138,7 +139,7 @@ jobs:
       # step since the requirements will already be met
       - name: "Force update the version of dbt-common@${{ needs.job-prep.outputs.dbt-common-ref }}"
         run: |
-          pip install pip install git+https://github.com/dbt-labs/dbt-common.git@${{ needs.job-prep.outputs.dbt-common-ref }} --force-reinstall
+          python -m pip install pip install git+https://github.com/dbt-labs/dbt-common.git@${{ needs.job-prep.outputs.dbt-common-ref }} --force-reinstall
 
       - name: Run unit tests
         run: tox
@@ -244,7 +245,8 @@ jobs:
       # step since the requirements will already be met
       - name: "Force update the version of dbt-common@${{ needs.job-prep.outputs.dbt-common-ref }}"
         run: |
-          pip install pip install git+https://github.com/dbt-labs/dbt-common.git@${{ needs.job-prep.outputs.dbt-common-ref }} --force-reinstall
+          python -m pip uninstall dbt-common -y
+          python -m pip install pip install git+https://github.com/dbt-labs/dbt-common.git@${{ needs.job-prep.outputs.dbt-common-ref }} --force-reinstall
 
       - name: Run Functional tests
         run: tox
@@ -294,4 +296,4 @@ jobs:
       - name: "Integration Tests Skipped"
         if: ${{ github.event_name == 'pull_request' }}
         run: |
-          echo "::notice title='Integration test suite skipped on Pull Requests'"
+          echo "::notice title='Integration test suite skipped on Pull Requests - they will run on merge'"

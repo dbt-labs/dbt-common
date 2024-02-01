@@ -78,17 +78,17 @@ jobs:
         id: ref
         run: |
           if [[ -z "${{ inputs.dbt-core-ref }}" ]]; then
-            echo "dbt-core-ref=${{ inputs.dbt-core-ref }}"
+            dbt-core-ref=${{ inputs.dbt-core-ref }}
           else
-            echo "dbt-core-ref=main"
+            dbt-core-ref=main
           fi
           if [[ -z "${{ inputs.dbt-common-ref }}" ]]; then
-            echo "dbt-common-ref=${{ inputs.dbt-common-ref }}"
+            dbt-common-ref=${{ inputs.dbt-common-ref }}
           else
             if [[ "${{ github.event_name }}" == "merge_group" ]]; then
-              echo "dbt-common-ref=${{ github.event.pull_request.merge_commit_sha }}"
+              dbt-common-ref=${{ github.event.pull_request.merge_commit_sha }}
             else
-              echo "dbt-common-ref=${{ github.event.pull_request.base.sha }}"
+              dbt-common-ref=${{ github.event.pull_request.base.sha }}
             fi
           fi
           echo "dbt-core-ref=$dbt-core-ref" >> $GITHUB_OUTPUT

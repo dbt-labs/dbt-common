@@ -75,6 +75,8 @@ jobs:
         run: |
           echo "inputs.dbt-core-ref=${{ inputs.dbt-core-ref }}"
           echo "inputs.dbt-common-ref=${{ inputs.dbt-common-ref }}"
+          echo "event_name=${{ github.event_name }}"
+          echo "github.event.label.name=${{github.event.label.name}}"
 
       - name: "Determine dbt-core ref"
         id: core-ref

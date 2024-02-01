@@ -1,0 +1,6 @@
+kind: Features
+body: Add dataclass utility `Mergeable`
+time: 2024-02-01T10:18:51.474231-08:00
+custom:
+  Author: QMalcolm
+  Issue: "58"

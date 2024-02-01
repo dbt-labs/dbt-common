@@ -92,7 +92,7 @@ jobs:
             DBT_COMMON_REF=${{ inputs.dbt-common-ref }}
           fi
           echo "dbt-core-ref=$DBT_CORE_REF" >> $GITHUB_OUTPUT
-          echo "dbt-common-ref=$DBT_COMMON_REFss" >> $GITHUB_OUTPUT
+          echo "dbt-common-ref=$DBT_COMMON_REF" >> $GITHUB_OUTPUT
 
       - name: "Display Refs"
         run: |

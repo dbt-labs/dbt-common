@@ -10,11 +10,10 @@
 
 name: "Test Branches of dbt-core + dbt-common"
 run-name: >-
-  if [[ ${{ github.event_name }} =~ ^(workflow_dispatch|workflow_call)$ ]]; then
-  "Test dbt-core@${{ inputs.dbt-core-ref }} with dbt-common@${{ inputs.dbt-common-ref }}"
-  else
-  "Test dbt-core@main with dbt-common branch"
-  fi
+  ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call'
+  && format('dbt-core@{0} with dbt-common@{1}', inputs.dbt-core-ref, inputs.dbt-common-ref)
+  || 'dbt-core@main with dbt-common branch' }}
+
 
 on:
   merge_group:
@@ -78,22 +77,22 @@ jobs:
         id: ref
         run: |
           if [[ -z "${{ inputs.dbt-core-ref }}" ]]; then
-            dbt-core-ref="main"
+            DBT_CORE_REF="main"
           else
-            dbt-core-ref=${{ inputs.dbt-core-ref }}
+            DBT_CORE_REF=${{ inputs.dbt-core-ref }}
           fi
           if [[ -z "${{ inputs.dbt-common-ref }}" ]]; then
             # these will be commits instead of branches
             if [[ "${{ github.event_name }}" == "merge_group" ]]; then
-              dbt-common-ref=${{ github.event.pull_request.merge_commit_sha }}
+              DBT_COMMON_REF=${{ github.event.pull_request.merge_commit_sha }}
             else
-              dbt-common-ref=${{ github.event.pull_request.base.sha }}
+              DBT_COMMON_REF=${{ github.event.pull_request.base.sha }}
             fi
           else
-            dbt-common-ref=${{ inputs.dbt-common-ref }}
+            DBT_COMMON_REF=${{ inputs.dbt-common-ref }}
           fi
-          echo "dbt-core-ref=$dbt-core-ref" >> $GITHUB_OUTPUT
-          echo "dbt-common-ref=$dbt-common-ref" >> $GITHUB_OUTPUT
+          echo "dbt-core-ref=$DBT_CORE_REF" >> $GITHUB_OUTPUT
+          echo "dbt-common-ref=$DBT_COMMON_REF" >> $GITHUB_OUTPUT
 
       - name: "Display Refs"
         run: |

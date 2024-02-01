@@ -8,12 +8,15 @@
 # This will run when trying to merge a PR into main.
 # It can also be manually triggered.
 
+# This workflow can be skipped by adding the "Skip Core Testing" label to the PR.  This is
+# useful when making a change in both `dbt-core` and `dbt-common` where the changes are dependant
+# and cause the other repository to break.
+
 name: "Test Branches of dbt-core + dbt-common"
 run-name: >-
   ${{ (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call')
   && format('dbt-core@{0} with dbt-common@{1}', inputs.dbt-core-ref, inputs.dbt-common-ref)
   || 'dbt-core@main with dbt-common branch' }}
-
 
 on:
   merge_group:
@@ -142,6 +145,7 @@ jobs:
           python -m pip install pip install git+https://github.com/dbt-labs/dbt-common.git@${{ needs.job-prep.outputs.dbt-common-ref }} --force-reinstall
 
       - name: Run unit tests
+        if: ${{ !contains(github.event.label.name, 'Skip Core Testing')}}
         run: tox
         env:
           TOXENV: unit
@@ -152,7 +156,7 @@ jobs:
   dbt-core-integration-metadata:
     name: integration test metadata generation
     runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'pull_request' }}
+    if: ${{ github.event_name != 'pull_request' }} || ${{ !contains(github.event.label.name, 'Skip Core Testing')}}
     outputs:
       split-groups: ${{ steps.generate-split-groups.outputs.split-groups }}
       include: ${{ steps.generate-include.outputs.include }}
@@ -187,7 +191,7 @@ jobs:
 
   dbt-core-integration-tests:
     name: (${{ matrix.split-group }}) integration test / python ${{ matrix.python-version }} / ${{ matrix.os }}
-    if: ${{ github.event_name != 'pull_request' }}
+    if: ${{ github.event_name != 'pull_request' }} || ${{ !contains(github.event.label.name, 'Skip Core Testing')}}
 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
@@ -256,24 +260,15 @@ jobs:
           DBT_TEST_USER_1: dbt_test_user_1
           DBT_TEST_USER_2: dbt_test_user_2
           DBT_TEST_USER_3: dbt_test_user_3
-          # DD_CIVISIBILITY_AGENTLESS_ENABLED: true
-          # DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
-          # DD_SITE: datadoghq.com
-          # DD_ENV: ci
-          # DD_SERVICE: ${{ github.event.repository.name }}
+          DD_CIVISIBILITY_AGENTLESS_ENABLED: true
+          DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+          DD_SITE: datadoghq.com
+          DD_ENV: ci
+          DD_SERVICE: dbt-core
           PYTEST_ADDOPTS: ${{ format('--splits {0} --group {1}', env.PYTHON_INTEGRATION_TEST_WORKERS, matrix.split-group) }}
-
 
       - name: "Check installed versions"
         run: pip freeze
-
-      # - name: Run tests
-      #   run: |
-      #     python -m pytest {posargs} tests/functional -k "not tests/functional/graph_selection"
-      #     python -m pytest {posargs} tests/functional/graph_selection
-      #     python -m pytest {posargs} tests/adapter
-      #   env:
-      #     PYTEST_ADDOPTS: ${{ format('--splits {0} --group {1}', env.PYTHON_INTEGRATION_TEST_WORKERS, matrix.split-group) }}
 
   integration-report:
     if: ${{ always() }}
@@ -293,7 +288,12 @@ jobs:
         run: |
           echo "::notice title='Integration test suite passed'"
 
-      - name: "Integration Tests Skipped"
-        if: ${{ github.event_name == 'pull_request' }}
+      - name: "Integration Tests Skipped on Pull Request"
+        if: ${{ github.event_name == 'pull_request' ||  contains(github.event.label.name, 'Skip Core Testing')}}
         run: |
           echo "::notice title='Integration test suite skipped on Pull Requests - they will run on merge'"
+
+      - name: "Integration Tests Skipped by Label"
+        if: ${{ contains(github.event.label.name, 'Skip Core Testing')}}
+        run: |
+          echo "::notice title='Integration test suite skipped due to Skip Core Testing label'"

@@ -45,9 +45,11 @@ on:
 
 permissions: read-all
 
-# will cancel previous workflows triggered by the same event and for the same ref for PRs or same SHA otherwise
+# will cancel previous workflows triggered by the same event
+# and for the same ref for PRs/merges or same SHA otherwise
+# and for the same inputs on workflow_dispatch or workflow_call
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{ contains(github.event_name, 'pull_request') && github.event.pull_request.head.ref || github.sha }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ contains(fromJson('["pull_request", "merge_group"]'), github.event_name) && github.event.pull_request.head.ref || github.sha }}-${{ contains(fromJson('["workflow_call", "workflow_dispatch"]'), github.event_name) && github.event.inputs.dbt-core-ref && github.event.inputs.dbt-common-ref || github.sha }}
   cancel-in-progress: true
 
 defaults:
@@ -125,9 +127,9 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: "Install python tools"
+      - name: "Upgrade pip"
         run: |
-          python -m pip install --user --upgrade pip
+          python -m pip install --upgrade pip
           python -m pip --version
 
       # tox takes care of installing the correct version of dbt-core dependencies but we need to
@@ -235,9 +237,9 @@ jobs:
         if: runner.os == 'Windows'
         uses: ./.github/actions/setup-postgres-windows
 
-      - name: "Install python tools"
+      - name: "Upgrade pip"
         run: |
-          python -m pip install --user --upgrade pip
+          python -m pip install --upgrade pip
           python -m pip --version
 
       # tox takes care of installing the correct version of dbt-core dependencies but we need to

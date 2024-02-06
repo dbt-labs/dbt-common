@@ -1,0 +1,6 @@
+kind: Features
+body: Cache static objects between tests to accelerate integration runs.
+time: 2024-01-31T15:29:23.951857-05:00
+custom:
+  Author: peterallenwebb
+  Issue: "55"

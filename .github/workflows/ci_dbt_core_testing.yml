@@ -94,7 +94,7 @@ jobs:
           if [[ -z "${{ inputs.dbt-common-ref }}" ]]; then
             # these will be commits instead of branches
             if [[ "${{ github.event_name }}" == "merge_group" ]]; then
-              REF=${{ github.event.pull_request.merge_commit_sha }}
+              REF=${{ github.event.merge_group.head_sha }}
             else
               REF=${{ github.event.pull_request.base.sha }}
             fi

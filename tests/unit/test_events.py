@@ -44,44 +44,46 @@ class TestEventCodes:
             all_codes.add(code)
 
 
-sample_values = [
-    # N.B. Events instantiated here include the module prefix in order to
-    # avoid having the entire list twice in the code.
-    # M - Deps generation ======================
-    types.RetryExternalCall(attempt=0, max=0),
-    types.RecordRetryException(exc=""),
-    # Z - misc ======================
-    types.SystemCouldNotWrite(path="", reason="", exc=""),
-    types.SystemExecutingCmd(cmd=[""]),
-    types.SystemStdOut(bmsg=str(b"")),
-    types.SystemStdErr(bmsg=str(b"")),
-    types.SystemReportReturnCode(returncode=0),
-    types.Formatting(),
-    types.Note(msg="This is a note."),
-]
-
-
 class TestEventJSONSerialization:
-    # attempts to test that every event is serializable to json.
-    # event types that take `Any` are not possible to test in this way since some will serialize
-    # just fine and others won't.
+    """Attempts to test that every event is serializable to json.
+
+    event types that take `Any` are not possible to test in this way since some will serialize
+    just fine and others won't.
+    """
+
+    SAMPLE_VALUES = [
+        # N.B. Events instantiated here include the module prefix in order to
+        # avoid having the entire list twice in the code.
+        # M - Deps generation ======================
+        types.RetryExternalCall(attempt=0, max=0),
+        types.RecordRetryException(exc=""),
+        # Z - misc ======================
+        types.SystemCouldNotWrite(path="", reason="", exc=""),
+        types.SystemExecutingCmd(cmd=[""]),
+        types.SystemStdOut(bmsg=str(b"")),
+        types.SystemStdErr(bmsg=str(b"")),
+        types.SystemReportReturnCode(returncode=0),
+        types.Formatting(),
+        types.Note(msg="This is a note."),
+    ]
+
     def test_all_serializable(self):
         all_non_abstract_events = set(
             get_all_subclasses(BaseEvent),
         )
-        all_event_values_list = list(map(lambda x: x.__class__, sample_values))
+        all_event_values_list = list(map(lambda x: x.__class__, self.SAMPLE_VALUES))
         diff = all_non_abstract_events.difference(set(all_event_values_list))
         assert (
             not diff
-        ), f"{diff}test is missing concrete values in `sample_values`. Please add the values for the aforementioned event classes"
+        ), f"{diff}test is missing concrete values in `SAMPLE_VALUES`. Please add the values for the aforementioned event classes"
 
         # make sure everything in the list is a value not a type
-        for event in sample_values:
+        for event in self.SAMPLE_VALUES:
             assert not isinstance(event, type)
 
         # if we have everything we need to test, try to serialize everything
         count = 0
-        for event in sample_values:
+        for event in self.SAMPLE_VALUES:
             msg = msg_from_base_event(event)
             print(f"--- msg: {msg.info.name}")
             # Serialize to dictionary

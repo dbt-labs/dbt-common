@@ -280,6 +280,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [dbt-core-integration-tests]
     steps:
+      - name: Force failure for testing purposes!
+        run: exit 1
+
       - name: "Integration Tests Failed"
         if: ${{ contains(needs.dbt-core-integration-tests.result, 'failure') || contains(needs.dbt-core-integration-tests.result, 'cancelled') }}
         # when this is true the next step won't execute

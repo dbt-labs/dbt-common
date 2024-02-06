@@ -280,8 +280,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [dbt-core-integration-tests]
     steps:
-      - name: Force failure for testing purposes!
-        run: exit 1
 
       - name: "Integration Tests Failed"
         if: ${{ contains(needs.dbt-core-integration-tests.result, 'failure') || contains(needs.dbt-core-integration-tests.result, 'cancelled') }}
@@ -304,3 +302,7 @@ jobs:
         if: ${{ contains(github.event.label.name, 'Skip Core Testing')}}
         run: |
           echo "::notice title='dbt-core test suite skipped due to Skip Core Testing label'"
+
+      - name: "Force failure for testing purposes!"
+        if: ${{ github.event_name == 'merge_gropu' &&  !contains(github.event.label.name, 'Skip Core Testing')}}
+        run: exit 1

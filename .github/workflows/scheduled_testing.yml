@@ -12,7 +12,7 @@
 # Mainly on a schedule of 9:00, 13:00, 18:00 UTC everyday.
 # Manual trigger can also test on demand
 
-name: Scheduled Testing [ placeholders]
+name: Scheduled Testing
 
 on:
   schedule:

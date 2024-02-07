@@ -6,7 +6,7 @@ from ast import literal_eval
 from collections import ChainMap
 from contextlib import contextmanager
 from itertools import chain, islice
-from typing import Any, Callable, Dict, Iterator, List, Mapping, Optional, Union, Set, Type
+from typing import Any, Callable, Dict, Iterator, List, Mapping, Optional, Union, Set, Type, Literal
 from typing_extensions import Protocol
 
 import jinja2  # type: ignore
@@ -34,7 +34,7 @@ from dbt_common.exceptions import (
     UndefinedCompilationError,
 )
 from dbt_common.exceptions.macros import MacroReturn, UndefinedMacroError, CaughtMacroError
-
+from dbt_common.utils.importer import import_from_string
 
 SUPPORTED_LANG_ARG = jinja2.nodes.Name("supported_languages", "param")
 
@@ -461,6 +461,14 @@ TEXT_FILTERS: Dict[str, Callable[[Any], Any]] = {
 }
 
 
+def import_user_defined_code(code: Literal['MACROS', 'FILTERS']) -> dict[str, Callable] | None:
+    module_path = os.environ.get(f"DBT_USER_DEFINED_{code}")
+    user_defined_code = None
+    if module_path:
+        user_defined_code = import_from_string(module_path)
+    return user_defined_code
+
+
 def get_environment(
     node=None,
     capture_macros: bool = False,
@@ -487,6 +495,16 @@ def get_environment(
 
     env = env_cls(**args)
     env.filters.update(filters)
+
+    # Add any user defined items. Safe to edit globals as long as no templates are rendered yet.
+    # https://jinja.palletsprojects.com/en/3.0.x/api/#jinja2.Environment.globals
+    user_defined_macros = import_user_defined_code('MACROS')
+    if user_defined_macros:
+        env.globals.update(user_defined_macros)
+
+    user_defined_filters = import_user_defined_code('FILTERS')
+    if user_defined_filters:
+        env.filters.update(user_defined_filters)
 
     return env
 

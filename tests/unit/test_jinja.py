@@ -1,7 +1,11 @@
+import os
 import unittest
 
-from dbt_common.clients.jinja import extract_toplevel_blocks
+from dbt_common.clients.jinja import extract_toplevel_blocks, get_environment
 from dbt_common.exceptions import CompilationError
+
+dbt_macros = {"universe_number": lambda: 42}
+dbt_filters = {"multiply": lambda x, y: x * y}
 
 
 class TestBlockLexer(unittest.TestCase):
@@ -16,6 +20,19 @@ class TestBlockLexer(unittest.TestCase):
         self.assertEqual(blocks[0].block_name, "foo")
         self.assertEqual(blocks[0].contents, body)
         self.assertEqual(blocks[0].full_block, block_data)
+
+    def test_env(self):
+        os.environ['DBT_USER_DEFINED_MACROS'] = 'tests.unit.test_jinja:dbt_macros'
+        os.environ['DBT_USER_DEFINED_FILTERS'] = 'tests.unit.test_jinja:dbt_filters'
+
+        body = (
+            "{% set name = 'potato' %}"
+            "{{ name }} - {{ universe_number() | multiply(2) }}"
+        )
+        env = get_environment(None, capture_macros=True)
+        template = env.from_string(body)
+        render = template.render({})
+        self.assertEqual(render, "potato - 84")
 
     def test_multiple(self):
         body_one = '{{ config(foo="bar") }}\r\nselect * from this.that\r\n'
@@ -432,7 +449,6 @@ complex_snapshot_file = (
     + bar_block
     + x_block
 )
-
 
 if_you_do_this_you_are_awful = """
 {#} here is a comment with a block inside {% block x %} asdf {% endblock %} {#}

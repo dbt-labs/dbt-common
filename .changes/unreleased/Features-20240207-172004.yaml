@@ -1,0 +1,6 @@
+kind: Features
+body: Enable User Defined macros & filters in Jinja templating
+time: 2024-02-07T17:20:04.295019+01:00
+custom:
+  Author: afranzi
+  Issue: "71"

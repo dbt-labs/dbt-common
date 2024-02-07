@@ -22,13 +22,10 @@ class TestBlockLexer(unittest.TestCase):
         self.assertEqual(blocks[0].full_block, block_data)
 
     def test_env(self):
-        os.environ['DBT_USER_DEFINED_MACROS'] = 'tests.unit.test_jinja:dbt_macros'
-        os.environ['DBT_USER_DEFINED_FILTERS'] = 'tests.unit.test_jinja:dbt_filters'
+        os.environ["DBT_USER_DEFINED_MACROS"] = "tests.unit.test_jinja:dbt_macros"
+        os.environ["DBT_USER_DEFINED_FILTERS"] = "tests.unit.test_jinja:dbt_filters"
 
-        body = (
-            "{% set name = 'potato' %}"
-            "{{ name }} - {{ universe_number() | multiply(2) }}"
-        )
+        body = "{% set name = 'potato' %}" "{{ name }} - {{ universe_number() | multiply(2) }}"
         env = get_environment(None, capture_macros=True)
         template = env.from_string(body)
         render = template.render({})

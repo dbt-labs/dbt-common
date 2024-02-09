@@ -1,4 +1,4 @@
-from contextvars import ContextVar
+from contextvars import ContextVar, copy_context
 from typing import List, Mapping, Optional
 
 from dbt_common.constants import SECRET_ENV_PREFIX
@@ -26,10 +26,23 @@ class InvocationContext:
 _INVOCATION_CONTEXT_VAR: ContextVar[InvocationContext] = ContextVar("DBT_INVOCATION_CONTEXT_VAR")
 
 
+def reliably_get_invocation_var() -> ContextVar:
+    invocation_var: Optional[ContextVar] = next(
+        (cv for cv in copy_context() if cv.name == _INVOCATION_CONTEXT_VAR.name), None
+    )
+
+    if invocation_var is None:
+        invocation_var = _INVOCATION_CONTEXT_VAR
+
+    return invocation_var
+
+
 def set_invocation_context(env: Mapping[str, str]) -> None:
-    _INVOCATION_CONTEXT_VAR.set(InvocationContext(env))
+    invocation_var = reliably_get_invocation_var()
+    invocation_var.set(InvocationContext(env))
 
 
 def get_invocation_context() -> InvocationContext:
-    ctx = _INVOCATION_CONTEXT_VAR.get()
+    invocation_var = reliably_get_invocation_var()
+    ctx = invocation_var.get()
     return ctx

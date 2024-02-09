@@ -33,7 +33,7 @@ dependencies = [
   "jsonschema~=4.0",
   "Jinja2~=3.0",
   "mashumaro[msgpack]~=3.9",
-  "pathspec>=0.9,<0.12",
+  "pathspec>=0.9,<0.13",
   "protobuf>=4.0.0",
   "python-dateutil~=2.0",
   "requests<3.0.0",

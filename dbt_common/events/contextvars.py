@@ -58,12 +58,12 @@ def set_task_contextvars(**kwargs: Any) -> Mapping[str, contextvars.Token]:
 def set_contextvars(prefix: str, **kwargs: Any) -> Mapping[str, contextvars.Token]:
     cvar_tokens = {}
     for k, v in kwargs.items():
-        log_key = f"{prefix}{k}"
+        prefix_key = f"{prefix}{k}"
         try:
-            var = _context_vars[log_key]
+            var = _context_vars[prefix_key]
         except KeyError:
-            var = contextvars.ContextVar(log_key, default=Ellipsis)
-            _context_vars[log_key] = var
+            var = contextvars.ContextVar(prefix_key, default=Ellipsis)
+            _context_vars[prefix_key] = var
 
         cvar_tokens[k] = var.set(v)
 
@@ -73,17 +73,17 @@ def set_contextvars(prefix: str, **kwargs: Any) -> Mapping[str, contextvars.Toke
 # reset by Tokens
 def reset_contextvars(prefix: str, **kwargs: contextvars.Token) -> None:
     for k, v in kwargs.items():
-        log_key = f"{prefix}{k}"
-        var = _context_vars[log_key]
+        prefix_key = f"{prefix}{k}"
+        var = _context_vars[prefix_key]
         var.reset(v)
 
 
 # remove from contextvars
 def unset_contextvars(prefix: str, *keys: str) -> None:
     for k in keys:
-        if k in _context_vars:
-            log_key = f"{prefix}{k}"
-            _context_vars[log_key].set(Ellipsis)
+        prefix_key = f"{prefix}{k}"
+        if prefix_key in _context_vars:
+            _context_vars[prefix_key].set(Ellipsis)
 
 
 # Context manager or decorator to set and unset the context vars

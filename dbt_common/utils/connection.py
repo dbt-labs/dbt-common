@@ -8,7 +8,9 @@ import requests
 
 
 def connection_exception_retry(fn, max_attempts: int, attempt: int = 0):
-    """Attempts to run a function that makes an external call, if the call fails
+    """Handle connection retries gracefully.
+
+    Attempts to run a function that makes an external call, if the call fails
     on a Requests exception or decompression issue (ReadError), it will be tried
     up to 5 more times.  All exceptions that Requests explicitly raises inherit from
     requests.exceptions.RequestException.  See https://github.com/dbt-labs/dbt-core/issues/4579

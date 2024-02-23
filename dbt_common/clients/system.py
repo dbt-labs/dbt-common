@@ -41,7 +41,8 @@ def find_matching(
     file_pattern: str,
     ignore_spec: Optional[PathSpec] = None,
 ) -> List[Dict[str, Any]]:
-    """
+    """Return file info from paths and patterns.
+
     Given an absolute `root_path`, a list of relative paths to that
     absolute root path (`relative_paths_to_search`), and a `file_pattern`
     like '*.sql', returns information about the files. For example:
@@ -78,7 +79,9 @@ def find_matching(
                 relative_path_to_root = os.path.join(relative_path_to_search, relative_path)
 
                 modification_time = os.path.getmtime(absolute_path)
-                if reobj.match(local_file) and (not ignore_spec or not ignore_spec.match_file(relative_path_to_root)):
+                if reobj.match(local_file) and (
+                    not ignore_spec or not ignore_spec.match_file(relative_path_to_root)
+                ):
                     matching.append(
                         {
                             "searched_path": relative_path_to_search,
@@ -104,7 +107,8 @@ def load_file_contents(path: str, strip: bool = True) -> str:
 
 @functools.singledispatch
 def make_directory(path=None) -> None:
-    """
+    """Handle directory creation with threading.
+
     Make a directory and any intermediate directories that don't already
     exist. This function handles the case where two threads try to create
     a directory at once.
@@ -133,7 +137,8 @@ def _(path: Path) -> None:
 
 
 def make_file(path: str, contents: str = "", overwrite: bool = False) -> bool:
-    """
+    """Make a file with `contents` at `path`.
+
     Make a file at `path` assuming that the directory it resides in already
     exists. The file is saved with contents `contents`
     """
@@ -147,9 +152,7 @@ def make_file(path: str, contents: str = "", overwrite: bool = False) -> bool:
 
 
 def make_symlink(source: str, link_path: str) -> None:
-    """
-    Create a symlink at `link_path` referring to `source`.
-    """
+    """Create a symlink at `link_path` referring to `source`."""
     if not supports_symlinks():
         # TODO: why not import these at top?
         raise dbt_common.exceptions.SymbolicLinkError()
@@ -209,9 +212,7 @@ def _windows_rmdir_readonly(func: Callable[[str], Any], path: str, exc: Tuple[An
 
 
 def resolve_path_from_base(path_to_resolve: str, base_path: str) -> str:
-    """
-    If path_to_resolve is a relative path, create an absolute path
-    with base_path as the base.
+    """If path_to_resolve is a relative path, create an absolute path with base_path as the base.
 
     If path_to_resolve is an absolute path or a user path (~), just
     resolve it to an absolute path and return.
@@ -220,8 +221,9 @@ def resolve_path_from_base(path_to_resolve: str, base_path: str) -> str:
 
 
 def rmdir(path: str) -> None:
-    """
-    Recursively deletes a directory. Includes an error handler to retry with
+    """Recursively deletes a directory.
+
+    Includes an error handler to retry with
     different permissions on Windows. Otherwise, removing directories (eg.
     cloned via git) can cause rmtree to throw a PermissionError exception
     """
@@ -235,9 +237,7 @@ def rmdir(path: str) -> None:
 
 
 def _win_prepare_path(path: str) -> str:
-    """Given a windows path, prepare it for use by making sure it is absolute
-    and normalized.
-    """
+    """Given a windows path, prepare it for use by making sure it is absolute and normalized."""
     path = os.path.normpath(path)
 
     # if a path starts with '\', splitdrive() on it will return '' for the
@@ -281,7 +281,9 @@ def _supports_long_paths() -> bool:
 
 
 def convert_path(path: str) -> str:
-    """Convert a path that dbt has, which might be >260 characters long, to one
+    """Handle path length for windows.
+
+    Convert a path that dbt has, which might be >260 characters long, to one
     that will be writable/readable on Windows.
 
     On other platforms, this is a no-op.
@@ -387,14 +389,18 @@ def _handle_windows_error(exc: OSError, cwd: str, cmd: List[str]) -> NoReturn:
     cls: Type[dbt_common.exceptions.DbtBaseException] = dbt_common.exceptions.base.CommandError
     if exc.errno == errno.ENOENT:
         message = (
-            "Could not find command, ensure it is in the user's PATH " "and that the user has permissions to run it"
+            "Could not find command, ensure it is in the user's PATH "
+            "and that the user has permissions to run it"
         )
         cls = dbt_common.exceptions.ExecutableError
     elif exc.errno == errno.ENOEXEC:
         message = "Command was not executable, ensure it is valid"
         cls = dbt_common.exceptions.ExecutableError
     elif exc.errno == errno.ENOTDIR:
-        message = "Unable to cd: path does not exist, user does not have" " permissions, or not a directory"
+        message = (
+            "Unable to cd: path does not exist, user does not have"
+            " permissions, or not a directory"
+        )
         cls = dbt_common.exceptions.WorkingDirectoryError
     else:
         message = 'Unknown error: {} (errno={}: "{}")'.format(
@@ -415,7 +421,9 @@ def _interpret_oserror(exc: OSError, cwd: str, cmd: List[str]) -> NoReturn:
         _handle_posix_error(exc, cwd, cmd)
 
     # this should not be reachable, raise _something_ at least!
-    raise dbt_common.exceptions.DbtInternalError("Unhandled exception in _interpret_oserror: {}".format(exc))
+    raise dbt_common.exceptions.DbtInternalError(
+        "Unhandled exception in _interpret_oserror: {}".format(exc)
+    )
 
 
 def run_cmd(cwd: str, cmd: List[str], env: Optional[Dict[str, Any]] = None) -> Tuple[bytes, bytes]:
@@ -434,7 +442,9 @@ def run_cmd(cwd: str, cmd: List[str], env: Optional[Dict[str, Any]] = None) -> T
         exe_pth = shutil.which(cmd[0])
         if exe_pth:
             cmd = [os.path.abspath(exe_pth)] + list(cmd[1:])
-        proc = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=full_env)
+        proc = subprocess.Popen(
+            cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=full_env
+        )
 
         out, err = proc.communicate()
     except OSError as exc:
@@ -450,7 +460,9 @@ def run_cmd(cwd: str, cmd: List[str], env: Optional[Dict[str, Any]] = None) -> T
     return out, err
 
 
-def download_with_retries(url: str, path: str, timeout: Optional[Union[float, tuple]] = None) -> None:
+def download_with_retries(
+    url: str, path: str, timeout: Optional[Union[float, tuple]] = None
+) -> None:
     download_fn = functools.partial(download, url, path, timeout)
     connection_exception_retry(download_fn, 5)
 
@@ -496,6 +508,7 @@ def untar_package(tar_path: str, dest_dir: str, rename_to: Optional[str] = None)
 
 def chmod_and_retry(func, path, exc_info):
     """Define an error handler to pass to shutil.rmtree.
+
     On Windows, when a file is marked read-only as git likes to do, rmtree will
     fail. To handle that, on errors try to make the file writable.
     We want to retry most operations here, but listdir is one that we know will
@@ -513,7 +526,9 @@ def _absnorm(path):
 
 
 def move(src, dst):
-    """A re-implementation of shutil.move that properly removes the source
+    """A re-implementation of shutil.move for windows fun.
+
+    A re-implementation of shutil.move that properly removes the source
     directory on windows when it has read-only files in it and the move is
     between two drives.
 
@@ -541,7 +556,9 @@ def move(src, dst):
         if os.path.isdir(src):
             if _absnorm(dst + "\\").startswith(_absnorm(src + "\\")):
                 # dst is inside src
-                raise EnvironmentError("Cannot move a directory '{}' into itself '{}'".format(src, dst))
+                raise EnvironmentError(
+                    "Cannot move a directory '{}' into itself '{}'".format(src, dst)
+                )
             shutil.copytree(src, dst, symlinks=True)
             rmtree(src)
         else:
@@ -550,8 +567,9 @@ def move(src, dst):
 
 
 def rmtree(path):
-    """Recursively remove the path. On permissions errors on windows, try to remove
-    the read-only flag and try again.
+    """Recursively remove the path.
+
+    On permissions errors on windows, try to remove the read-only flag and try again.
     """
     path = convert_path(path)
     return shutil.rmtree(path, onerror=chmod_and_retry)

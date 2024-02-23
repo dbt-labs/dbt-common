@@ -1,6 +1,9 @@
 import concurrent.futures
 from contextlib import contextmanager
+from contextvars import ContextVar
 from typing import Protocol, Optional
+
+from dbt_common.context import get_invocation_context, reliably_get_invocation_var
 
 
 class ConnectingExecutor(concurrent.futures.Executor):
@@ -20,9 +23,13 @@ class SingleThreadedExecutor(ConnectingExecutor):
         if len(args) >= 2:
             self, fn, *args = args
         elif not args:
-            raise TypeError("descriptor 'submit' of 'SingleThreadedExecutor' object needs an argument")
+            raise TypeError(
+                "descriptor 'submit' of 'SingleThreadedExecutor' object needs an argument"
+            )
         else:
-            raise TypeError("submit expected at least 1 positional argument, got %d" % (len(args) - 1))
+            raise TypeError(
+                "submit expected at least 1 positional argument, got %d" % (len(args) - 1)
+            )
         fut = concurrent.futures.Future()
         try:
             result = fn(*args, **kwargs)
@@ -56,8 +63,17 @@ class HasThreadingConfig(Protocol):
     threads: Optional[int]
 
 
+def _thread_initializer(invocation_context: ContextVar) -> None:
+    invocation_var = reliably_get_invocation_var()
+    invocation_var.set(invocation_context)
+
+
 def executor(config: HasThreadingConfig) -> ConnectingExecutor:
     if config.args.single_threaded:
         return SingleThreadedExecutor()
     else:
-        return MultiThreadedExecutor(max_workers=config.threads)
+        return MultiThreadedExecutor(
+            max_workers=config.threads,
+            initializer=_thread_initializer,
+            initargs=(get_invocation_context(),),
+        )

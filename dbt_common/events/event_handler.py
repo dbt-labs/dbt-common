@@ -17,7 +17,8 @@ _log_level_to_event_level_map = {
 
 
 class DbtEventLoggingHandler(logging.Handler):
-    """A logging handler that wraps the EventManager
+    """A logging handler that wraps the EventManager.
+
     This allows non-dbt packages to log to the dbt event stream.
     All logs are generated as "Note" events.
     """

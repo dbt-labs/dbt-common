@@ -92,9 +92,7 @@ class DbtRuntimeError(RuntimeError, DbtBaseException):
         return "Runtime"
 
     def node_to_string(self, node: Any):
-        """
-        Given a node-like object we attempt to create the best identifier we can
-        """
+        """Given a node-like object we attempt to create the best identifier we can."""
         result = ""
         if hasattr(node, "resource_type"):
             result += node.resource_type
@@ -125,8 +123,9 @@ class DbtRuntimeError(RuntimeError, DbtBaseException):
         return lines
 
     def validator_error_message(self, exc: builtins.Exception):
-        """Given a dbt.dataclass_schema.ValidationError (which is basically a
-        jsonschema.ValidationError), return the relevant parts as a string
+        """Given a dbt.dataclass_schema.ValidationError return the relevant parts as a string.
+
+        dbt.dataclass_schema.ValidationError is basically a jsonschema.ValidationError)
         """
         if not isinstance(exc, ValidationError):
             return str(exc)
@@ -175,9 +174,14 @@ class CompilationError(DbtRuntimeError):
 
     def _fix_dupe_msg(self, path_1: str, path_2: str, name: str, type_name: str) -> str:
         if path_1 == path_2:
-            return f"remove one of the {type_name} entries for {name} in this file:\n - {path_1!s}\n"
+            return (
+                f"remove one of the {type_name} entries for {name} in this file:\n - {path_1!s}\n"
+            )
         else:
-            return f"remove the {type_name} entry for {name} in one of these files:\n" f" - {path_1!s}\n{path_2!s}"
+            return (
+                f"remove the {type_name} entry for {name} in one of these files:\n"
+                f" - {path_1!s}\n{path_2!s}"
+            )
 
 
 class RecursionError(DbtRuntimeError):

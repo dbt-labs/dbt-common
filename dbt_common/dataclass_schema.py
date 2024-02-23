@@ -47,7 +47,9 @@ class dbtMashConfig(MashBaseConfig):
 # This class pulls in DataClassDictMixin from Mashumaro. The 'to_dict'
 # and 'from_dict' methods come from Mashumaro.
 class dbtClassMixin(DataClassDictMixin):
-    """The Mixin adds methods to generate a JSON schema and
+    """Convert and validate JSON schemas.
+
+    The Mixin adds methods to generate a JSON schema and
     convert to and from JSON encodable dicts with validation
     against the schema
     """

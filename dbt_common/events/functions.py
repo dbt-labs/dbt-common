@@ -3,7 +3,7 @@ from pathlib import Path
 from dbt_common.events.event_manager_client import get_event_manager
 from dbt_common.invocation import get_invocation_id
 from dbt_common.helper_types import WarnErrorOptions
-from dbt_common.utils import ForgivingJSONEncoder
+from dbt_common.utils.encoding import ForgivingJSONEncoder
 from dbt_common.events.base_types import BaseEvent, EventLevel, EventMsg
 from dbt_common.events.logger import LoggerConfig, LineFormat
 from dbt_common.exceptions import scrub_secrets, env_secrets
@@ -94,20 +94,27 @@ def msg_to_dict(msg: EventMsg) -> dict:
     msg_dict = dict()
     try:
         msg_dict = MessageToDict(
-            msg, preserving_proto_field_name=True, including_default_value_fields=True  # type: ignore
+            msg,
+            preserving_proto_field_name=True,
+            including_default_value_fields=True,  # type: ignore
         )
     except Exception as exc:
         event_type = type(msg).__name__
-        fire_event(Note(msg=f"type {event_type} is not serializable. {str(exc)}"), level=EventLevel.WARN)
+        fire_event(
+            Note(msg=f"type {event_type} is not serializable. {str(exc)}"), level=EventLevel.WARN
+        )
     # We don't want an empty NodeInfo in output
-    if "data" in msg_dict and "node_info" in msg_dict["data"] and msg_dict["data"]["node_info"]["node_name"] == "":
+    if (
+        "data" in msg_dict
+        and "node_info" in msg_dict["data"]
+        and msg_dict["data"]["node_info"]["node_name"] == ""
+    ):
         del msg_dict["data"]["node_info"]
     return msg_dict
 
 
 def warn_or_error(event, node=None) -> None:
     if WARN_ERROR or WARN_ERROR_OPTIONS.includes(type(event).__name__):
-
         # TODO: resolve this circular import when at top
         from dbt_common.exceptions import EventCompilationError
 
@@ -118,14 +125,11 @@ def warn_or_error(event, node=None) -> None:
 
 # an alternative to fire_event which only creates and logs the event value
 # if the condition is met. Does nothing otherwise.
-def fire_event_if(conditional: bool, lazy_e: Callable[[], BaseEvent], level: Optional[EventLevel] = None) -> None:
+def fire_event_if(
+    conditional: bool, lazy_e: Callable[[], BaseEvent], level: Optional[EventLevel] = None
+) -> None:
     if conditional:
         fire_event(lazy_e(), level=level)
-
-
-# a special case of fire_event_if, to only fire events in our unit/functional tests
-def fire_event_if_test(lazy_e: Callable[[], BaseEvent], level: Optional[EventLevel] = None) -> None:
-    fire_event_if(conditional=("pytest" in sys.modules), lazy_e=lazy_e, level=level)
 
 
 # top-level method for accessing the new eventing system
@@ -138,9 +142,11 @@ def fire_event(e: BaseEvent, level: Optional[EventLevel] = None) -> None:
 
 def get_metadata_vars() -> Dict[str, str]:
     global metadata_vars
-    if not metadata_vars:
+    if metadata_vars is None:
         metadata_vars = {
-            k[len(_METADATA_ENV_PREFIX) :]: v for k, v in os.environ.items() if k.startswith(_METADATA_ENV_PREFIX)
+            k[len(_METADATA_ENV_PREFIX) :]: v
+            for k, v in os.environ.items()
+            if k.startswith(_METADATA_ENV_PREFIX)
         }
     return metadata_vars
 

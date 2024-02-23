@@ -3,25 +3,27 @@ import linecache
 import os
 import tempfile
 from ast import literal_eval
+from collections import ChainMap
 from contextlib import contextmanager
 from itertools import chain, islice
-from typing import List, Union, Set, Optional, Dict, Any, Iterator, Type, Callable
+from typing import Any, Callable, Dict, Iterator, List, Mapping, Optional, Union, Set, Type
 from typing_extensions import Protocol
 
-import jinja2
-import jinja2.ext
+import jinja2  # type: ignore
+import jinja2.ext  # type: ignore
 import jinja2.nativetypes  # type: ignore
-import jinja2.nodes
-import jinja2.parser
-import jinja2.sandbox
+import jinja2.nodes  # type: ignore
+import jinja2.parser  # type: ignore
+import jinja2.sandbox  # type: ignore
 
-from dbt_common.utils import (
+from dbt_common.tests import test_caching_enabled
+from dbt_common.utils.jinja import (
     get_dbt_macro_name,
     get_docs_macro_name,
     get_materialization_macro_name,
     get_test_macro_name,
 )
-from dbt_common.clients._jinja_blocks import BlockIterator, BlockData, BlockTag
+from dbt_common.clients._jinja_blocks import BlockIterator, BlockData, BlockTag, TagIterator
 
 from dbt_common.exceptions import (
     CompilationError,
@@ -85,7 +87,13 @@ class MacroFuzzEnvironment(jinja2.sandbox.SandboxedEnvironment):
         return MacroFuzzParser(self, source, name, filename).parse()
 
     def _compile(self, source, filename):
-        """Override jinja's compilation to stash the rendered source inside
+        """
+
+
+
+
+
+        Override jinja's compilation. Use to stash the rendered source inside
         the python linecache for debugging when the appropriate environment
         variable is set.
 
@@ -99,21 +107,59 @@ class MacroFuzzEnvironment(jinja2.sandbox.SandboxedEnvironment):
         return super()._compile(source, filename)  # type: ignore
 
 
+class MacroFuzzTemplate(jinja2.nativetypes.NativeTemplate):
+    environment_class = MacroFuzzEnvironment
+
+    def new_context(
+        self,
+        vars: Optional[Dict[str, Any]] = None,
+        shared: bool = False,
+        locals: Optional[Mapping[str, Any]] = None,
+    ) -> jinja2.runtime.Context:
+        # This custom override makes the assumption that the locals and shared
+        # parameters are not used, so enforce that.
+        if shared or locals:
+            raise Exception(
+                "The MacroFuzzTemplate.new_context() override cannot use the "
+                "shared or locals parameters."
+            )
+
+        parent = ChainMap(vars, self.globals) if self.globals else vars
+
+        return self.environment.context_class(self.environment, parent, self.name, self.blocks)
+
+    def render(self, *args: Any, **kwargs: Any) -> Any:
+        if kwargs or len(args) != 1:
+            raise Exception(
+                "The MacroFuzzTemplate.render() override requires exactly one argument."
+            )
+
+        ctx = self.new_context(args[0])
+
+        try:
+            return self.environment_class.concat(  # type: ignore
+                self.root_render_func(ctx)  # type: ignore
+            )
+        except Exception:
+            return self.environment.handle_exception()
+
+
+MacroFuzzEnvironment.template_class = MacroFuzzTemplate
+
+
 class NativeSandboxEnvironment(MacroFuzzEnvironment):
     code_generator_class = jinja2.nativetypes.NativeCodeGenerator
 
 
 class TextMarker(str):
-    """A special native-env marker that indicates a value is text and is
-    not to be evaluated. Use this to prevent your numbery-strings from becoming
-    numbers!
+    """A special native-env marker that indicates a value is text and is not to be evaluated.
+
+    Use this to prevent your numbery-strings from becoming numbers!
     """
 
 
 class NativeMarker(str):
-    """A special native-env marker that indicates the field should be passed to
-    literal_eval.
-    """
+    """A special native-env marker that indicates the field should be passed to literal_eval."""
 
 
 class BoolMarker(NativeMarker):
@@ -129,7 +175,9 @@ def _is_number(value) -> bool:
 
 
 def quoted_native_concat(nodes):
-    """This is almost native_concat from the NativeTemplate, except in the
+    """Handle special case for native_concat from the NativeTemplate.
+
+    This is almost native_concat from the NativeTemplate, except in the
     special case of a single argument that is a quoted string and returns a
     string, the quotes are re-inserted.
     """
@@ -165,13 +213,14 @@ class NativeSandboxTemplate(jinja2.nativetypes.NativeTemplate):  # mypy: ignore
     environment_class = NativeSandboxEnvironment  # type: ignore
 
     def render(self, *args, **kwargs):
-        """Render the template to produce a native Python type. If the
-        result is a single node, its value is returned. Otherwise, the
-        nodes are concatenated as strings. If the result can be parsed
+        """Render the template to produce a native Python type.
+
+        If the result is a single node, its value is returned. Otherwise,
+        the nodes are concatenated as strings. If the result can be parsed
         with :func:`ast.literal_eval`, the parsed value is returned.
         Otherwise, the string is returned.
         """
-        vars = dict(*args, **kwargs)
+        vars = args[0]
 
         try:
             return quoted_native_concat(self.root_render_func(self.new_context(vars)))
@@ -226,7 +275,7 @@ class BaseMacroGenerator:
         # make_module is in jinja2.environment. It returns a TemplateModule
         module = template.make_module(vars=self.context, shared=False)
         macro = module.__dict__[get_dbt_macro_name(name)]
-        module.__dict__.update(self.context)
+
         return macro
 
     @contextmanager
@@ -379,7 +428,9 @@ def create_undefined(node=None):
 
         def __getattr__(self, name):
             if name == "name" or _is_dunder_name(name):
-                raise AttributeError("'{}' object has no attribute '{}'".format(type(self).__name__, name))
+                raise AttributeError(
+                    "'{}' object has no attribute '{}'".format(type(self).__name__, name)
+                )
 
             self.name = name
 
@@ -427,7 +478,6 @@ def get_environment(
     args["extensions"].append(TestExtension)
 
     env_cls: Type[jinja2.Environment]
-    text_filter: Type
     if native:
         env_cls = NativeSandboxEnvironment
         filters = NATIVE_FILTERS
@@ -455,9 +505,19 @@ def catch_jinja(node=None) -> Iterator[None]:
         raise
 
 
+_TESTING_PARSE_CACHE: Dict[str, jinja2.Template] = {}
+
+
 def parse(string):
+    str_string = str(string)
+    if test_caching_enabled() and str_string in _TESTING_PARSE_CACHE:
+        return _TESTING_PARSE_CACHE[str_string]
+
     with catch_jinja():
-        return get_environment().parse(str(string))
+        parsed = get_environment().parse(str(string))
+        if test_caching_enabled():
+            _TESTING_PARSE_CACHE[str_string] = parsed
+        return parsed
 
 
 def get_template(
@@ -479,15 +539,25 @@ def render_template(template, ctx: Dict[str, Any], node=None) -> str:
         return template.render(ctx)
 
 
+_TESTING_BLOCKS_CACHE: Dict[int, List[Union[BlockData, BlockTag]]] = {}
+
+
+def _get_blocks_hash(text: str, allowed_blocks: Optional[Set[str]], collect_raw_data: bool) -> int:
+    """Provides a hash function over the arguments to extract_toplevel_blocks, in order to support caching."""
+    allowed_tuple = tuple(sorted(allowed_blocks) or [])
+    return text.__hash__() + allowed_tuple.__hash__() + collect_raw_data.__hash__()
+
+
 def extract_toplevel_blocks(
-    data: str,
+    text: str,
     allowed_blocks: Optional[Set[str]] = None,
     collect_raw_data: bool = True,
 ) -> List[Union[BlockData, BlockTag]]:
-    """Extract the top-level blocks with matching block types from a jinja
-    file, with some special handling for block nesting.
+    """Extract the top-level blocks with matching block types from a jinja file.
 
-    :param data: The data to extract blocks from.
+    Includes some special handling for block nesting.
+
+    :param text: The data to extract blocks from.
     :param allowed_blocks: The names of the blocks to extract from the file.
         They may not be nested within if/for blocks. If None, use the default
         values.
@@ -498,4 +568,19 @@ def extract_toplevel_blocks(
     :return: A list of `BlockTag`s matching the allowed block types and (if
         `collect_raw_data` is `True`) `BlockData` objects.
     """
-    return BlockIterator(data).lex_for_blocks(allowed_blocks=allowed_blocks, collect_raw_data=collect_raw_data)
+
+    if test_caching_enabled():
+        hash = _get_blocks_hash(text, allowed_blocks, collect_raw_data)
+        if hash in _TESTING_BLOCKS_CACHE:
+            return _TESTING_BLOCKS_CACHE[hash]
+
+    tag_iterator = TagIterator(text)
+    blocks = BlockIterator(tag_iterator).lex_for_blocks(
+        allowed_blocks=allowed_blocks, collect_raw_data=collect_raw_data
+    )
+
+    if test_caching_enabled():
+        hash = _get_blocks_hash(text, allowed_blocks, collect_raw_data)
+        _TESTING_BLOCKS_CACHE[hash] = blocks
+
+    return blocks

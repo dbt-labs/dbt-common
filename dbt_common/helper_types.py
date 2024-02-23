@@ -68,10 +68,30 @@ class WarnErrorOptions(IncludeExclude):
         self,
         include: Union[str, List[str]],
         exclude: Optional[List[str]] = None,
+        silence: Optional[List[str]] = None,
         valid_error_names: Optional[Set[str]] = None,
     ):
+        self.silence = silence or []
         self._valid_error_names: Set[str] = valid_error_names or set()
         super().__init__(include=include, exclude=(exclude or []))
+
+    def __post_init__(self):
+        super().__post_init__()
+        if isinstance(self.silence, list):
+            self._validate_items(self.silence)
+
+        intersections = list(
+            (set(self.include) & set(self.exclude))
+            | (set(self.include) & set(self.silence))
+            | (set(self.exclude) & set(self.silence))
+        )
+        if intersections:
+            raise ValidationError(
+                f"In WARN_ERROR_OPTIONS, warnings specified in multiple places: {intersections}"
+            )
+
+    def includes(self, item_name: str):
+        return super().includes(item_name) and item_name not in self.silence
 
     def _validate_items(self, items: List[str]):
         for item in items:

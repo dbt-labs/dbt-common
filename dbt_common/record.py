@@ -241,7 +241,12 @@ def record_function(record_type):
         @functools.wraps(func_to_record)
         def record_replay_wrapper(*args, **kwargs):
 
-            recorder: Recorder = get_invocation_context().recorder
+            recorder: Recorder = None
+            try:
+                recorder = get_invocation_context().recorder
+            except LookupError:
+                pass
+
             if recorder is None:
                 return func_to_record(*args, **kwargs)
 

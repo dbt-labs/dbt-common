@@ -25,7 +25,9 @@ from dbt_common.events.types import (
     SystemReportReturnCode,
 )
 from dbt_common.exceptions import DbtInternalError
+from dbt_common.record import record_function, LoadFileRecord
 from dbt_common.utils.connection import connection_exception_retry
+
 from pathspec import PathSpec  # type: ignore
 
 if sys.platform == "win32":
@@ -34,7 +36,7 @@ else:
     WinDLL = None
     c_bool = None
 
-
+# @record_function(record.FindMatchingRecord)
 def find_matching(
     root_path: str,
     relative_paths_to_search: List[str],
@@ -94,6 +96,7 @@ def find_matching(
     return matching
 
 
+@record_function(LoadFileRecord)
 def load_file_contents(path: str, strip: bool = True) -> str:
     path = convert_path(path)
     with open(path, "rb") as handle:

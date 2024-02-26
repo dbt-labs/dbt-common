@@ -8,6 +8,7 @@ class InvocationContext:
     def __init__(self, env: Mapping[str, str]):
         self._env = env
         self._env_secrets: Optional[List[str]] = None
+        self.recorder = None
         # This class will also eventually manage the invocation_id, flags, event manager, etc.
 
     @property

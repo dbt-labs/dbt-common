@@ -9,7 +9,7 @@ import functools
 import dataclasses
 import json
 from enum import Enum
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, Dict, List, Mapping, Optional, Type
 
 from dbt_common.context import get_invocation_context
 
@@ -18,6 +18,7 @@ class Record:
     """An instance of this abstract Record class represents a request made by dbt
     to an external process or the operating system. The 'params' are the arguments
     to the request, and the 'result' is what is returned."""
+
     params_cls: type
     result_cls: Optional[type]
 
@@ -44,8 +45,8 @@ class RecorderMode(Enum):
 
 
 class Recorder:
-    _record_cls_by_name = {}
-    _record_name_by_params_type = {}
+    _record_cls_by_name: Dict[str, Type] = {}
+    _record_name_by_params_type: Dict[type, str] = {}
 
     def __init__(self, mode: RecorderMode, recording_path: Optional[str] = None) -> None:
         self.mode = mode
@@ -53,7 +54,6 @@ class Recorder:
 
         if recording_path is not None:
             self._records_by_type = self.load(recording_path)
-
 
     @classmethod
     def register_record_type(cls, rec_type) -> Any:
@@ -108,7 +108,6 @@ class Recorder:
         return records_by_type
 
     def expect_record(self, params: Any) -> Any:
-
         record = self.recording.pop_record(params)
 
         if record is None:
@@ -135,7 +134,10 @@ class LoadFileParams:
     def _include(self, path: str, strip: bool = True):
         # Do not record or replay file reads that were performed against files
         # which are actually part of dbt's implementation.
-        return "dbt/include/global_project" not in path and "/plugins/postgres/dbt/include/" not in path
+        return (
+            "dbt/include/global_project" not in path
+            and "/plugins/postgres/dbt/include/" not in path
+        )
 
 
 @dataclasses.dataclass
@@ -146,6 +148,7 @@ class LoadFileResult:
 @Recorder.register_record_type
 class LoadFileRecord(Record):
     """Record of file load operation"""
+
     params_cls = LoadFileParams
     result_cls = LoadFileResult
 
@@ -158,12 +161,16 @@ class WriteFileParams:
     def _include(self, path: str, contents: str):
         # Do not record or replay file reads that were performed against files
         # which are actually part of dbt's implementation.
-        return "dbt/include/global_project" not in path and "/plugins/postgres/dbt/include/" not in path
+        return (
+            "dbt/include/global_project" not in path
+            and "/plugins/postgres/dbt/include/" not in path
+        )
 
 
 @Recorder.register_record_type
 class WriteFileRecord(Record):
     """Record of a file write operation."""
+
     params_cls = WriteFileParams
     result_cls = None
 
@@ -175,15 +182,30 @@ class FindMatchingParams:
     file_pattern: str
     # ignore_spec: Optional[PathSpec] = None
 
-    def __init__(self, root_path: str, relative_paths_to_search: List[str], file_pattern: str, ignore_spec: Optional[Any] = None):
+    def __init__(
+        self,
+        root_path: str,
+        relative_paths_to_search: List[str],
+        file_pattern: str,
+        ignore_spec: Optional[Any] = None,
+    ):
         self.root_path = root_path
         self.relative_paths_to_search = relative_paths_to_search
         self.file_pattern = file_pattern
 
-    def _include(self, root_path: str, relative_paths_to_search: List[str], file_pattern: str, ignore_spec: Optional[Any] = None):
+    def _include(
+        self,
+        root_path: str,
+        relative_paths_to_search: List[str],
+        file_pattern: str,
+        ignore_spec: Optional[Any] = None,
+    ):
         # Do not record or replay filesystem searches that were performed against
         # files which are actually part of dbt's implementation.
-        return "dbt/include/global_project" not in root_path and "/plugins/postgres/dbt/include/" not in root_path
+        return (
+            "dbt/include/global_project" not in root_path
+            and "/plugins/postgres/dbt/include/" not in root_path
+        )
 
 
 @dataclasses.dataclass
@@ -194,6 +216,7 @@ class FindMatchingResult:
 @Recorder.register_record_type
 class FindMatchingRecord(Record):
     """Record of calls to the directory search function find_matching()"""
+
     params_cls = FindMatchingParams
     result_cls = FindMatchingResult
 
@@ -206,6 +229,7 @@ class GetEnvParams:
 @dataclasses.dataclass
 class GetEnvResult:
     env: Dict[str, str]
+
 
 @Recorder.register_record_type
 class GetEnvRecord(Record):
@@ -240,7 +264,6 @@ def record_function(record_type):
     def record_function_inner(func_to_record):
         @functools.wraps(func_to_record)
         def record_replay_wrapper(*args, **kwargs):
-
             recorder: Recorder = None
             try:
                 recorder = get_invocation_context().recorder

@@ -25,7 +25,7 @@ from dbt_common.events.types import (
     SystemReportReturnCode,
 )
 from dbt_common.exceptions import DbtInternalError
-from dbt_common.record import record_function, LoadFileRecord
+from dbt_common.record import record_function, FindMatchingRecord, LoadFileRecord
 from dbt_common.utils.connection import connection_exception_retry
 
 from pathspec import PathSpec  # type: ignore
@@ -36,7 +36,8 @@ else:
     WinDLL = None
     c_bool = None
 
-# @record_function(record.FindMatchingRecord)
+
+@record_function(FindMatchingRecord)
 def find_matching(
     root_path: str,
     relative_paths_to_search: List[str],

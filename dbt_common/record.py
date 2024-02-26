@@ -132,6 +132,11 @@ class LoadFileParams:
     path: str
     strip: bool = True
 
+    def _include(self, path: str, strip: bool = True):
+        # Do not record or replay file reads that were performed against files
+        # which are actually part of dbt's implementation.
+        return "dbt/include/global_project" not in path and "/plugins/postgres/dbt/include/" not in path
+
 
 @dataclasses.dataclass
 class LoadFileResult:
@@ -150,6 +155,12 @@ class WriteFileParams:
     path: str
     contents: str
 
+    def _include(self, path: str, contents: str):
+        # Do not record or replay file reads that were performed against files
+        # which are actually part of dbt's implementation.
+        return "dbt/include/global_project" not in path and "/plugins/postgres/dbt/include/" not in path
+
+
 @Recorder.register_record_type
 class WriteFileRecord(Record):
     """Record of a file write operation."""
@@ -163,6 +174,16 @@ class FindMatchingParams:
     relative_paths_to_search: List[str]
     file_pattern: str
     # ignore_spec: Optional[PathSpec] = None
+
+    def __init__(self, root_path: str, relative_paths_to_search: List[str], file_pattern: str, ignore_spec: Optional[Any] = None):
+        self.root_path = root_path
+        self.relative_paths_to_search = relative_paths_to_search
+        self.file_pattern = file_pattern
+
+    def _include(self, root_path: str, relative_paths_to_search: List[str], file_pattern: str, ignore_spec: Optional[Any] = None):
+        # Do not record or replay filesystem searches that were performed against
+        # files which are actually part of dbt's implementation.
+        return "dbt/include/global_project" not in root_path and "/plugins/postgres/dbt/include/" not in root_path
 
 
 @dataclasses.dataclass
@@ -215,16 +236,23 @@ class UnexpectedFileWriteDiff(Diff):
     contents: str
 
 
-def record_function(record_type, inclusion_predicate=None):
+def record_function(record_type):
     def record_function_inner(func_to_record):
         @functools.wraps(func_to_record)
         def record_replay_wrapper(*args, **kwargs):
 
             recorder: Recorder = get_invocation_context().recorder
-            if recorder is None or inclusion_predicate is not None and not inclusion_predicate(*args, **kwargs):
+            if recorder is None:
                 return func_to_record(*args, **kwargs)
 
             params = record_type.params_cls(*args, **kwargs)
+
+            include = True
+            if hasattr(params, "_include"):
+                include = params._include(*args, **kwargs)
+
+            if not include:
+                return func_to_record(*args, **kwargs)
 
             if recorder.mode == RecorderMode.REPLAY:
                 return recorder.expect_record(params)

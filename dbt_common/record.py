@@ -8,6 +8,7 @@ record/replay mechanism in several interesting test and debugging scenarios.
 import functools
 import dataclasses
 import json
+import os
 from enum import Enum
 from typing import Any, Dict, List, Mapping, Optional, Type
 
@@ -49,6 +50,12 @@ class Record:
         return cls(params=p, result=r)
 
 
+class Diff:
+    """Marker class for diffs?"""
+
+    pass
+
+
 class RecorderMode(Enum):
     RECORD = 1
     REPLAY = 2
@@ -69,7 +76,7 @@ class Recorder:
     @classmethod
     def register_record_type(cls, rec_type) -> Any:
         cls._record_cls_by_name[rec_type.__name__] = rec_type
-        cls._record_name_by_params_type[rec_type.params_cls.__name__] = rec_type.__name__
+        cls._record_name_by_params_name[rec_type.params_cls.__name__] = rec_type.__name__
         return rec_type
 
     def add_record(self, record: Record) -> None:
@@ -79,7 +86,7 @@ class Recorder:
         self._records_by_type[rec_cls_name].append(record)
 
     def pop_matching_record(self, params: Any) -> Optional[Record]:
-        rec_type_name = self._record_name_by_params_type[type(params).__name__]
+        rec_type_name = self._record_name_by_params_name[type(params).__name__]
         records = self._records_by_type[rec_type_name]
         match: Optional[Record] = None
         for rec in records:
@@ -139,8 +146,25 @@ class Recorder:
         print(repr(self._replay_diffs))
 
 
+def get_record_mode_from_env() -> Optional[RecorderMode]:
+    replay_val = os.environ.get("DBT_REPLAY")
+    if replay_val is not None and replay_val != "0" and replay_val.lower() != "false":
+        return RecorderMode.REPLAY
+
+    record_val = os.environ.get("DBT_RECORD")
+    if record_val is not None and record_val != "0" and record_val.lower() != "false":
+        return RecorderMode.RECORD
+
+    return None
+
+
 def record_function(record_type, method=False, tuple_result=False):
     def record_function_inner(func_to_record):
+        # To avoid runtime overhead and other unpleasantness, we only apply the
+        # record/replay decorator if a relevant env var is set.
+        if get_record_mode_from_env() is None:
+            return func_to_record
+
         @functools.wraps(func_to_record)
         def record_replay_wrapper(*args, **kwargs):
             recorder: Recorder = None
@@ -160,7 +184,7 @@ def record_function(record_type, method=False, tuple_result=False):
 
             include = True
             if hasattr(params, "_include"):
-                include = params._include(*args, **kwargs)
+                include = params._include()
 
             if not include:
                 return func_to_record(*args, **kwargs)
@@ -169,146 +193,16 @@ def record_function(record_type, method=False, tuple_result=False):
                 return recorder.expect_record(params)
 
             r = func_to_record(*args, **kwargs)
-            result = record_type.result_cls(*r) if tuple_result else record_type.result_cls(r)
+            result = (
+                None
+                if r is None or record_type.result_cls is None
+                else record_type.result_cls(*r)
+                if tuple_result
+                else record_type.result_cls(r)
+            )
             recorder.add_record(record_type(params=params, result=result))
             return r
 
         return record_replay_wrapper
 
     return record_function_inner
-
-
-@dataclasses.dataclass
-class LoadFileParams:
-    path: str
-    strip: bool = True
-
-    def _include(self, path: str, strip: bool = True):
-        # Do not record or replay file reads that were performed against files
-        # which are actually part of dbt's implementation.
-        return (
-            "dbt/include/global_project" not in path
-            and "/plugins/postgres/dbt/include/" not in path
-        )
-
-
-@dataclasses.dataclass
-class LoadFileResult:
-    contents: str
-
-
-@Recorder.register_record_type
-class LoadFileRecord(Record):
-    """Record of file load operation"""
-
-    params_cls = LoadFileParams
-    result_cls = LoadFileResult
-
-
-@dataclasses.dataclass
-class WriteFileParams:
-    path: str
-    contents: str
-
-    def _include(self, path: str, contents: str):
-        # Do not record or replay file reads that were performed against files
-        # which are actually part of dbt's implementation.
-        return (
-            "dbt/include/global_project" not in path
-            and "/plugins/postgres/dbt/include/" not in path
-        )
-
-
-@Recorder.register_record_type
-class WriteFileRecord(Record):
-    """Record of a file write operation."""
-
-    params_cls = WriteFileParams
-    result_cls = None
-
-
-@dataclasses.dataclass
-class FindMatchingParams:
-    root_path: str
-    relative_paths_to_search: List[str]
-    file_pattern: str
-    # ignore_spec: Optional[PathSpec] = None
-
-    def __init__(
-        self,
-        root_path: str,
-        relative_paths_to_search: List[str],
-        file_pattern: str,
-        ignore_spec: Optional[Any] = None,
-    ):
-        self.root_path = root_path
-        rps = list(relative_paths_to_search)
-        rps.sort()
-        self.relative_paths_to_search = rps
-        self.file_pattern = file_pattern
-
-    def _include(
-        self,
-        root_path: str,
-        relative_paths_to_search: List[str],
-        file_pattern: str,
-        ignore_spec: Optional[Any] = None,
-    ):
-        # Do not record or replay filesystem searches that were performed against
-        # files which are actually part of dbt's implementation.
-        return (
-            "dbt/include/global_project" not in root_path
-            and "/plugins/postgres/dbt/include/" not in root_path
-        )
-
-
-@dataclasses.dataclass
-class FindMatchingResult:
-    matches: List[Dict[str, Any]]
-
-
-@Recorder.register_record_type
-class FindMatchingRecord(Record):
-    """Record of calls to the directory search function find_matching()"""
-
-    params_cls = FindMatchingParams
-    result_cls = FindMatchingResult
-
-
-@dataclasses.dataclass
-class GetEnvParams:
-    pass
-
-
-@dataclasses.dataclass
-class GetEnvResult:
-    env: Dict[str, str]
-
-
-@Recorder.register_record_type
-class GetEnvRecord(Record):
-    params_cls = GetEnvParams
-    result_cls = GetEnvResult
-
-
-class Diff:
-    pass
-
-
-@dataclasses.dataclass
-class UnexpectedQueryDiff(Diff):
-    sql: str
-    node_unique_id: str
-
-
-@dataclasses.dataclass
-class FileWriteDiff(Diff):
-    path: str
-    recorded_contents: str
-    replay_contents: str
-
-
-@dataclasses.dataclass
-class UnexpectedFileWriteDiff(Diff):
-    path: str
-    contents: str

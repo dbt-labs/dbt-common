@@ -28,14 +28,24 @@ class Record:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            "params": self.params.to_dict() if hasattr(self.params, "to_dict") else dataclasses.asdict(self.params),  # type: ignore
-            "result": self.result.to_dict() if hasattr(self.result, "to_dict") else dataclasses.asdict(self.result) if self.result is not None else None,  # type: ignore
+            "params": self.params._to_dict() if hasattr(self.params, "_to_dict") else dataclasses.asdict(self.params),  # type: ignore
+            "result": self.result._to_dict() if hasattr(self.result, "_to_dict") else dataclasses.asdict(self.result) if self.result is not None else None,  # type: ignore
         }
 
     @classmethod
     def from_dict(cls, dct: Mapping) -> "Record":
-        p = cls.params_cls(**dct["params"])
-        r = cls.result_cls(**dct["result"]) if cls.result_cls is not None else None
+        p = (
+            cls.params_cls._from_dict(dct["params"])
+            if hasattr(cls.params_cls, "_from_dict")
+            else cls.params_cls(**dct["params"])
+        )
+        r = (
+            cls.result_cls._from_dict(dct["result"])  # type: ignore
+            if hasattr(cls.result_cls, "_from_dict")
+            else cls.result_cls(**dct["result"])
+            if cls.result_cls is not None
+            else None
+        )
         return cls(params=p, result=r)
 
 
@@ -46,20 +56,20 @@ class RecorderMode(Enum):
 
 class Recorder:
     _record_cls_by_name: Dict[str, Type] = {}
-    _record_name_by_params_type: Dict[type, str] = {}
+    _record_name_by_params_name: Dict[str, str] = {}
 
     def __init__(self, mode: RecorderMode, recording_path: Optional[str] = None) -> None:
         self.mode = mode
         self._records_by_type: Dict[str, List[Record]] = {}
+        self._replay_diffs: List["Diff"] = []
 
         if recording_path is not None:
             self._records_by_type = self.load(recording_path)
 
     @classmethod
     def register_record_type(cls, rec_type) -> Any:
-        rec_name = rec_type.__name__
-        cls._record_cls_by_name[rec_name] = rec_type
-        cls._record_name_by_params_type[rec_name] = rec_type.params_cls
+        cls._record_cls_by_name[rec_type.__name__] = rec_type
+        cls._record_name_by_params_type[rec_type.params_cls.__name__] = rec_type.__name__
         return rec_type
 
     def add_record(self, record: Record) -> None:
@@ -68,15 +78,17 @@ class Recorder:
             self._records_by_type[rec_cls_name] = []
         self._records_by_type[rec_cls_name].append(record)
 
-    def pop_record(self, params: Any) -> Optional[Record]:
-        rec_type_name = self._record_name_by_params_type[type(params)]
+    def pop_matching_record(self, params: Any) -> Optional[Record]:
+        rec_type_name = self._record_name_by_params_type[type(params).__name__]
         records = self._records_by_type[rec_type_name]
-        if len(records) > 0 and records[0].params == params:
-            r = records[0]
-            records.pop(0)
-            return r
-        else:
-            return None
+        match: Optional[Record] = None
+        for rec in records:
+            if rec.params == params:
+                match = rec
+                records.remove(match)
+                break
+
+        return match
 
     def write(self, file_name) -> None:
         with open(file_name, "w") as file:
@@ -102,28 +114,68 @@ class Recorder:
             record_cls = cls._record_cls_by_name[record_type_name]
             rec_list = []
             for record_dct in loaded_dct[record_type_name]:
-                rec_list.append(record_cls.from_dict(record_dct))  # type: ignore
+                rec = record_cls.from_dict(record_dct)
+                rec_list.append(rec)  # type: ignore
             records_by_type[record_type_name] = rec_list
 
         return records_by_type
 
     def expect_record(self, params: Any) -> Any:
-        record = self.recording.pop_record(params)
+        record = self.pop_matching_record(params)
 
         if record is None:
             raise Exception()
 
-        return record.result.contents
+        result_tuple = dataclasses.astuple(record.result)
+        return result_tuple[0] if len(result_tuple) == 1 else result_tuple
 
     def write_diffs(self, diff_file_name) -> None:
         json.dump(
-            self._diffs,
+            self._replay_diffs,
             open(diff_file_name, "w"),
         )
-        self.print_diffs()
 
     def print_diffs(self) -> None:
-        print(repr(self._diffs))
+        print(repr(self._replay_diffs))
+
+
+def record_function(record_type, method=False, tuple_result=False):
+    def record_function_inner(func_to_record):
+        @functools.wraps(func_to_record)
+        def record_replay_wrapper(*args, **kwargs):
+            recorder: Recorder = None
+            try:
+                recorder = get_invocation_context().recorder
+            except LookupError:
+                pass
+
+            if recorder is None:
+                return func_to_record(*args, **kwargs)
+
+            # For methods, peel off the 'self' argument before calling the
+            # params constructor.
+            param_args = args[1:] if method else args
+
+            params = record_type.params_cls(*param_args, **kwargs)
+
+            include = True
+            if hasattr(params, "_include"):
+                include = params._include(*args, **kwargs)
+
+            if not include:
+                return func_to_record(*args, **kwargs)
+
+            if recorder.mode == RecorderMode.REPLAY:
+                return recorder.expect_record(params)
+
+            r = func_to_record(*args, **kwargs)
+            result = record_type.result_cls(*r) if tuple_result else record_type.result_cls(r)
+            recorder.add_record(record_type(params=params, result=result))
+            return r
+
+        return record_replay_wrapper
+
+    return record_function_inner
 
 
 @dataclasses.dataclass
@@ -190,7 +242,9 @@ class FindMatchingParams:
         ignore_spec: Optional[Any] = None,
     ):
         self.root_path = root_path
-        self.relative_paths_to_search = relative_paths_to_search
+        rps = list(relative_paths_to_search)
+        rps.sort()
+        self.relative_paths_to_search = rps
         self.file_pattern = file_pattern
 
     def _include(
@@ -258,38 +312,3 @@ class FileWriteDiff(Diff):
 class UnexpectedFileWriteDiff(Diff):
     path: str
     contents: str
-
-
-def record_function(record_type):
-    def record_function_inner(func_to_record):
-        @functools.wraps(func_to_record)
-        def record_replay_wrapper(*args, **kwargs):
-            recorder: Recorder = None
-            try:
-                recorder = get_invocation_context().recorder
-            except LookupError:
-                pass
-
-            if recorder is None:
-                return func_to_record(*args, **kwargs)
-
-            params = record_type.params_cls(*args, **kwargs)
-
-            include = True
-            if hasattr(params, "_include"):
-                include = params._include(*args, **kwargs)
-
-            if not include:
-                return func_to_record(*args, **kwargs)
-
-            if recorder.mode == RecorderMode.REPLAY:
-                return recorder.expect_record(params)
-
-            r = func_to_record(*args, **kwargs)
-            result = record_type.result_cls(r)
-            recorder.add_record(record_type(params=params, result=result))
-            return r
-
-        return record_replay_wrapper
-
-    return record_function_inner

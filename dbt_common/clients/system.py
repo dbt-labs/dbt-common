@@ -1,4 +1,5 @@
 import dbt_common.exceptions.base
+import dataclasses
 import errno
 import fnmatch
 import functools
@@ -25,7 +26,9 @@ from dbt_common.events.types import (
     SystemReportReturnCode,
 )
 from dbt_common.exceptions import DbtInternalError
+from dbt_common.record import record_function, Recorder, Record
 from dbt_common.utils.connection import connection_exception_retry
+
 from pathspec import PathSpec  # type: ignore
 
 if sys.platform == "win32":
@@ -35,6 +38,49 @@ else:
     c_bool = None
 
 
+@dataclasses.dataclass
+class FindMatchingParams:
+    root_path: str
+    relative_paths_to_search: List[str]
+    file_pattern: str
+    # ignore_spec: Optional[PathSpec] = None
+
+    def __init__(
+        self,
+        root_path: str,
+        relative_paths_to_search: List[str],
+        file_pattern: str,
+        ignore_spec: Optional[Any] = None,
+    ):
+        self.root_path = root_path
+        rps = list(relative_paths_to_search)
+        rps.sort()
+        self.relative_paths_to_search = rps
+        self.file_pattern = file_pattern
+
+    def _include(self) -> bool:
+        # Do not record or replay filesystem searches that were performed against
+        # files which are actually part of dbt's implementation.
+        return (
+            "dbt/include/global_project" not in self.root_path
+            and "/plugins/postgres/dbt/include/" not in self.root_path
+        )
+
+
+@dataclasses.dataclass
+class FindMatchingResult:
+    matches: List[Dict[str, Any]]
+
+
+@Recorder.register_record_type
+class FindMatchingRecord(Record):
+    """Record of calls to the directory search function find_matching()"""
+
+    params_cls = FindMatchingParams
+    result_cls = FindMatchingResult
+
+
+@record_function(FindMatchingRecord)
 def find_matching(
     root_path: str,
     relative_paths_to_search: List[str],
@@ -94,6 +140,34 @@ def find_matching(
     return matching
 
 
+@dataclasses.dataclass
+class LoadFileParams:
+    path: str
+    strip: bool = True
+
+    def _include(self) -> bool:
+        # Do not record or replay file reads that were performed against files
+        # which are actually part of dbt's implementation.
+        return (
+            "dbt/include/global_project" not in self.path
+            and "/plugins/postgres/dbt/include/" not in self.path
+        )
+
+
+@dataclasses.dataclass
+class LoadFileResult:
+    contents: str
+
+
+@Recorder.register_record_type
+class LoadFileRecord(Record):
+    """Record of file load operation"""
+
+    params_cls = LoadFileParams
+    result_cls = LoadFileResult
+
+
+@record_function(LoadFileRecord)
 def load_file_contents(path: str, strip: bool = True) -> str:
     path = convert_path(path)
     with open(path, "rb") as handle:
@@ -164,6 +238,29 @@ def supports_symlinks() -> bool:
     return getattr(os, "symlink", None) is not None
 
 
+@dataclasses.dataclass
+class WriteFileParams:
+    path: str
+    contents: str
+
+    def _include(self) -> bool:
+        # Do not record or replay file reads that were performed against files
+        # which are actually part of dbt's implementation.
+        return (
+            "dbt/include/global_project" not in self.path
+            and "/plugins/postgres/dbt/include/" not in self.path
+        )
+
+
+@Recorder.register_record_type
+class WriteFileRecord(Record):
+    """Record of a file write operation."""
+
+    params_cls = WriteFileParams
+    result_cls = None
+
+
+@record_function(WriteFileRecord)
 def write_file(path: str, contents: str = "") -> bool:
     path = convert_path(path)
     try:
@@ -573,3 +670,24 @@ def rmtree(path):
     """
     path = convert_path(path)
     return shutil.rmtree(path, onerror=chmod_and_retry)
+
+
+@dataclasses.dataclass
+class GetEnvParams:
+    pass
+
+
+@dataclasses.dataclass
+class GetEnvResult:
+    env: Dict[str, str]
+
+
+@Recorder.register_record_type
+class GetEnvRecord(Record):
+    params_cls = GetEnvParams
+    result_cls = GetEnvResult
+
+
+@record_function(GetEnvRecord)
+def get_env() -> Dict[str, str]:
+    return dict(os.environ)

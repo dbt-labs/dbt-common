@@ -1,4 +1,4 @@
-from typing import ClassVar, cast, get_type_hints, List, Tuple, Dict, Any, Optional
+from typing import ClassVar, cast, get_type_hints, List, Tuple, Dict, Any, Optional, final
 import re
 import jsonschema
 from dataclasses import fields, Field
@@ -9,6 +9,9 @@ from dateutil.parser import parse
 # type: ignore
 from mashumaro import DataClassDictMixin
 from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig as MashBaseConfig
+from mashumaro.core.meta.mixin import compile_mixin_packer, compile_mixin_unpacker
+from mashumaro.mixins.msgpack import default_encoder as msgpack_default_encoder
+from mashumaro.mixins.yaml import default_encoder as yaml_default_encoder
 from mashumaro.types import SerializableType, SerializationStrategy
 from mashumaro.jsonschema import build_json_schema
 
@@ -55,6 +58,46 @@ class dbtClassMixin(DataClassDictMixin):
     """
 
     _mapped_fields: ClassVar[Optional[Dict[Any, List[Tuple[Field, str]]]]] = None
+
+    def __init_subclass__(cls, **kwargs):
+        def to_dict_stub(self, **kwargs2):
+            for ancestor in cls.__mro__[-1:0:-1]:
+                builder_params_ = f"_{ancestor.__name__}__mashumaro_builder_params"
+                builder_params = getattr(ancestor, builder_params_, None)
+                if builder_params:
+                    compile_mixin_packer(cls, **builder_params["packer"])
+            return self.to_dict(**kwargs2)
+
+        def to_msgpack_stub(self, encoder=msgpack_default_encoder, **kwargs2):
+            for ancestor in cls.__mro__[-1:0:-1]:
+                builder_params_ = f"_{ancestor.__name__}__mashumaro_builder_params"
+                builder_params = getattr(ancestor, builder_params_, None)
+                if builder_params:
+                    compile_mixin_packer(cls, **builder_params["packer"])
+            return self.to_msgpack(encoder, **kwargs2)
+
+        @classmethod
+        def from_dict_stub(cls, d, **kwargs3):
+            for ancestor in cls.__mro__[-1:0:-1]:
+                builder_params_ = f"_{ancestor.__name__}__mashumaro_builder_params"
+                builder_params = getattr(ancestor, builder_params_, None)
+                if builder_params:
+                    compile_mixin_unpacker(cls, **builder_params["unpacker"])
+            return cls.from_dict(d, **kwargs3)
+
+        @classmethod
+        def from_msgpack_stub(cls, d, **kwargs3):
+            for ancestor in cls.__mro__[-1:0:-1]:
+                builder_params_ = f"_{ancestor.__name__}__mashumaro_builder_params"
+                builder_params = getattr(ancestor, builder_params_, None)
+                if builder_params:
+                    compile_mixin_unpacker(cls, **builder_params["unpacker"])
+            return cls.from_msgpack(d, **kwargs3)
+
+        setattr(cls, 'to_dict', to_dict_stub)
+        setattr(cls, 'from_dict', from_dict_stub)
+        setattr(cls, 'to_msgpack', to_msgpack_stub)
+        setattr(cls, 'from_msgpack', from_msgpack_stub)
 
     # Config class used by Mashumaro
     class Config(dbtMashConfig):

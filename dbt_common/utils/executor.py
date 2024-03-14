@@ -74,6 +74,6 @@ def executor(config: HasThreadingConfig) -> ConnectingExecutor:
     else:
         return MultiThreadedExecutor(
             max_workers=config.threads,
-            initializer=_thread_initializer,
-            initargs=(get_invocation_context(),),
+            initializer=_thread_initializer,  # type: ignore
+            initargs=(get_invocation_context(),),  # type: ignore
         )

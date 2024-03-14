@@ -292,11 +292,28 @@ def write_file(path: str, contents: str = "") -> bool:
 
 
 def read_json(path: str) -> Dict[str, Any]:
-    return json.loads(load_file_contents(path))
+    path = convert_path(path)
+    with open(path, "rb") as f:
+        return json.load(f)
 
 
 def write_json(path: str, data: Dict[str, Any]) -> bool:
-    return write_file(path, json.dumps(data, cls=dbt_common.utils.encoding.JSONEncoder))
+    path = convert_path(path)
+    try:
+        make_directory(os.path.dirname(path))
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, cls=dbt_common.utils.encoding.JSONEncoder)
+    except Exception as exc:
+        # See write_file() for an explanation of this error handling.
+        if os.name == "nt":
+            if getattr(exc, "winerror", 0) == 3:
+                reason = "Path was too long"
+            else:
+                reason = "Path was possibly too long"
+            fire_event(SystemCouldNotWrite(path=path, reason=reason, exc=str(exc)))
+        else:
+            raise
+    return True
 
 
 def _windows_rmdir_readonly(func: Callable[[str], Any], path: str, exc: Tuple[Any, OSError, Any]):

@@ -293,7 +293,7 @@ def write_file(path: str, contents: str = "") -> bool:
 
 def read_json(path: str) -> Dict[str, Any]:
     path = convert_path(path)
-    with open(path, "rb") as f:
+    with open(path, "r") as f:
         return json.load(f)
 
 

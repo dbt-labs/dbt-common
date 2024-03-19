@@ -42,6 +42,7 @@ class dbtMashConfig(MashBaseConfig):
         "additionalProperties": False,
     }
     serialize_by_alias = True
+    lazy_compilation = True
 
 
 # This class pulls in DataClassDictMixin from Mashumaro. The 'to_dict'

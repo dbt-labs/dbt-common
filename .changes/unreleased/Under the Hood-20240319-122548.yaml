@@ -1,0 +1,6 @@
+kind: Under the Hood
+body: Improve startup performance by lazy-compiling mashumaro serialization functions
+time: 2024-03-19T12:25:48.615365-04:00
+custom:
+  Author: peterallenwebb
+  Issue: "97"

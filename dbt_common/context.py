@@ -8,11 +8,7 @@ class InvocationContext:
     def __init__(self, env: Mapping[str, str]):
         self._env = {k: v for k, v in env.items() if not k.startswith(PRIVATE_ENV_PREFIX)}
         self._env_secrets: Optional[List[str]] = None
-        self._env_private = {
-            k[len(PRIVATE_ENV_PREFIX) :]: v
-            for k, v in env.items()
-            if k.startswith(PRIVATE_ENV_PREFIX)
-        }
+        self._env_private = {k: v for k, v in env.items() if k.startswith(PRIVATE_ENV_PREFIX)}
         self.recorder = None
         # This class will also eventually manage the invocation_id, flags, event manager, etc.
 

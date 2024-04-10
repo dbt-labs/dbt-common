@@ -29,5 +29,9 @@ def test_invocation_context_private():
     }
     ic = InvocationContext(env=test_env)
     assert ic.env_secrets == []
-    assert ic.env_private == {"_VAR_1": "private1", "VAR_2": "private2", "": "private3"}
+    assert ic.env_private == {
+        f"{PRIVATE_ENV_PREFIX}_VAR_1": "private1",
+        f"{PRIVATE_ENV_PREFIX}VAR_2": "private2",
+        f"{PRIVATE_ENV_PREFIX}": "private3",
+    }
     assert ic.env == {"NON_PRIVATE": "non-private-1", f"foo{PRIVATE_ENV_PREFIX}": "non-private-2"}

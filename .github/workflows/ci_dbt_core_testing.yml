@@ -94,6 +94,7 @@ jobs:
           if [[ -z "${{ inputs.dbt-common-ref }}" ]]; then
             # these will be commits instead of branches
             if [[ "${{ github.event_name }}" == "merge_group" ]]; then
+              # TODO: what sha should this be??
               REF=${{ github.event.merge_group.head_sha }}
             else
               REF=${{ github.event.pull_request.base.sha }}
@@ -105,8 +106,28 @@ jobs:
 
       - name: "Final Refs"
         run: |
+          # variables set
           echo "dbt-core-ref=${{ steps.core-ref.outputs.ref }}"
           echo "dbt-common-ref=${{ steps.common-ref.outputs.ref }}"
+          # debugging values for dbt-common merge_group values
+          echo "merge queue values"
+          echo "github.event.merge_group.head_sha=${{ github.event.merge_group.head_sha }}"
+          echo "github.event.merge_group.head_ref=${{ github.event.merge_group.head_ref }}"
+          echo "github.event.merge_group.base_sha=${{ github.event.merge_group.base_sha }}"
+          echo "github.event.merge_group.base_ref=${{ github.event.merge_group.base_ref }}"
+          echo "github.event.merge_group.head_commit.id=${{ github.event.merge_group.head_commit.id }}"
+          echo "github.event.merge_commit_sha=${{ github.event.merge_commit_sha }}"
+          echo "GITHUB_SHA=$GITHUB_SHA"
+          echo "PR values"
+          echo "github.event.pull_request.base.sha=${{ github.event.pull_request.base.sha }}"
+          echo "github.event.pull_request.head.sha=${{ github.event.pull_request.head.sha }}"
+          echo "github.event.pull_request.merge_commit_sha=${{ github.event.pull_request.merge_commit_sha}}"
+
+      # TODO: remove before final changes
+      - name: "Fail when it's a merge_queue event for debugging"
+        if: ${{ github.event_name == 'merge_group' }}
+        run: |
+          exit 1
 
   dbt-core-unit-test:
     name: "dbt-core unit tests"

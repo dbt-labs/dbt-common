@@ -1,0 +1,6 @@
+kind: Features
+body: Add `error_tag` util to the `ui` module
+time: 2024-04-12T10:52:45.887334-07:00
+custom:
+  Author: QMalcolm
+  Issue: "107"

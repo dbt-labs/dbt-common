@@ -119,7 +119,7 @@ def warn_or_error(event, node=None) -> None:
         from dbt_common.exceptions import EventCompilationError
 
         raise EventCompilationError(event.message(), node)
-    else:
+    elif not WARN_ERROR_OPTIONS.silenced(type(event).__name__):
         fire_event(event)
 
 

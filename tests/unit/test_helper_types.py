@@ -57,3 +57,18 @@ class TestWarnErrorOptions:
         )
         assert warn_error_options.include == "*"
         assert warn_error_options.exclude == ["ValidError"]
+
+    def test_init_default_silence(self):
+        my_options = WarnErrorOptions(include="*")
+        assert my_options.silence == []
+
+    def test_init_invalid_silence_event(self):
+        with pytest.raises(ValidationError):
+            WarnErrorOptions(include="*", silence=["InvalidError"])
+
+    def test_init_valid_silence_event(self):
+        all_events = ["MySilencedEvent"]
+        my_options = WarnErrorOptions(
+            include="*", silence=all_events, valid_error_names=all_events
+        )
+        assert my_options.silence == all_events

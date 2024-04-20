@@ -20,7 +20,14 @@ from dbt_common.events.functions import msg_to_dict, msg_to_json
 def get_all_subclasses(cls):
     all_subclasses = []
     for subclass in cls.__subclasses__():
-        if subclass not in [TestLevel, DebugLevel, WarnLevel, InfoLevel, ErrorLevel, DynamicLevel]:
+        if subclass not in [
+            TestLevel,
+            DebugLevel,
+            WarnLevel,
+            InfoLevel,
+            ErrorLevel,
+            DynamicLevel,
+        ] and not subclass.__module__.startswith("test_"):
             all_subclasses.append(subclass)
         all_subclasses.extend(get_all_subclasses(subclass))
     return set(all_subclasses)

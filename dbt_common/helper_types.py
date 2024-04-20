@@ -57,10 +57,15 @@ class IncludeExclude(dbtClassMixin):
 
         self._validate_items(self.silence)
 
-    def includes(self, item_name: str):
+    def includes(self, item_name: str) -> bool:
         return (
-            item_name in self.include or self.include in self.INCLUDE_ALL
-        ) and item_name not in self.exclude
+            (item_name in self.include or self.include in self.INCLUDE_ALL)
+            and item_name not in self.exclude
+            and not self.silenced(item_name)
+        )
+
+    def silenced(self, item_name: str) -> bool:
+        return item_name in self.silence
 
     def _validate_items(self, items: List[str]):
         pass

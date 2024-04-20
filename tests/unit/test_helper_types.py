@@ -13,19 +13,27 @@ class TestIncludeExclude:
             IncludeExclude(include=["ItemA"], exclude=["ItemB"])
 
     @pytest.mark.parametrize(
-        "include,exclude,expected_includes",
+        "include,exclude,silence,expected_includes",
         [
-            ("all", [], True),
-            ("*", [], True),
-            ("*", ["ItemA"], False),
-            (["ItemA"], [], True),
-            (["ItemA", "ItemB"], [], True),
+            ("all", [], [], True),
+            ("*", [], [], True),
+            ("*", ["ItemA"], [], False),
+            (["ItemA"], [], [], True),
+            (["ItemA", "ItemB"], [], [], True),
+            (["ItemA"], [], ["ItemA"], False),
+            ("*", [], ["ItemA"], False),
+            ("*", [], ["ItemB"], True),
         ],
     )
-    def test_includes(self, include, exclude, expected_includes):
-        include_exclude = IncludeExclude(include=include, exclude=exclude)
+    def test_includes(self, include, exclude, silence, expected_includes):
+        include_exclude = IncludeExclude(include=include, exclude=exclude, silence=silence)
 
         assert include_exclude.includes("ItemA") == expected_includes
+
+    def test_silenced(self):
+        my_options = IncludeExclude(include="*", silence=["ItemA"])
+        assert my_options.silenced("ItemA")
+        assert not my_options.silenced("ItemB")
 
 
 class TestWarnErrorOptions:

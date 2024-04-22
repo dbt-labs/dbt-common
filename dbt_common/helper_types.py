@@ -36,7 +36,6 @@ class IncludeExclude(dbtClassMixin):
 
     include: Union[str, List[str]]
     exclude: List[str] = field(default_factory=list)
-    silence: List[str] = field(default_factory=list)
 
     def __post_init__(self):
         if isinstance(self.include, str) and self.include not in self.INCLUDE_ALL:
@@ -55,17 +54,10 @@ class IncludeExclude(dbtClassMixin):
         if isinstance(self.exclude, list):
             self._validate_items(self.exclude)
 
-        self._validate_items(self.silence)
-
     def includes(self, item_name: str) -> bool:
         return (
-            (item_name in self.include or self.include in self.INCLUDE_ALL)
-            and item_name not in self.exclude
-            and not self.silenced(item_name)
-        )
-
-    def silenced(self, item_name: str) -> bool:
-        return item_name in self.silence
+            item_name in self.include or self.include in self.INCLUDE_ALL
+        ) and item_name not in self.exclude
 
     def _validate_items(self, items: List[str]):
         pass
@@ -79,8 +71,19 @@ class WarnErrorOptions(IncludeExclude):
         valid_error_names: Optional[Set[str]] = None,
         silence: Optional[List[str]] = None,
     ):
+        self.silence = silence or []
         self._valid_error_names: Set[str] = valid_error_names or set()
-        super().__init__(include=include, exclude=(exclude or []), silence=(silence or []))
+        super().__init__(include=include, exclude=(exclude or []))
+
+    def __post_init__(self):
+        super().__post_init__()
+        self._validate_items(self.silence)
+
+    def includes(self, item_name: str) -> bool:
+        return super().includes(item_name) and not self.silenced(item_name)
+
+    def silenced(self, item_name: str) -> bool:
+        return item_name in self.silence
 
     def _validate_items(self, items: List[str]):
         for item in items:

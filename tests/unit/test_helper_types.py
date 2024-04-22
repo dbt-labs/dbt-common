@@ -13,27 +13,19 @@ class TestIncludeExclude:
             IncludeExclude(include=["ItemA"], exclude=["ItemB"])
 
     @pytest.mark.parametrize(
-        "include,exclude,silence,expected_includes",
+        "include,exclude,expected_includes",
         [
-            ("all", [], [], True),
-            ("*", [], [], True),
-            ("*", ["ItemA"], [], False),
-            (["ItemA"], [], [], True),
-            (["ItemA", "ItemB"], [], [], True),
-            (["ItemA"], [], ["ItemA"], False),
-            ("*", [], ["ItemA"], False),
-            ("*", [], ["ItemB"], True),
+            ("all", [], True),
+            ("*", [], True),
+            ("*", ["ItemA"], False),
+            (["ItemA"], [], True),
+            (["ItemA", "ItemB"], [], True),
         ],
     )
-    def test_includes(self, include, exclude, silence, expected_includes):
-        include_exclude = IncludeExclude(include=include, exclude=exclude, silence=silence)
+    def test_includes(self, include, exclude, expected_includes):
+        include_exclude = IncludeExclude(include=include, exclude=exclude)
 
         assert include_exclude.includes("ItemA") == expected_includes
-
-    def test_silenced(self):
-        my_options = IncludeExclude(include="*", silence=["ItemA"])
-        assert my_options.silenced("ItemA")
-        assert not my_options.silenced("ItemB")
 
 
 class TestWarnErrorOptions:
@@ -80,3 +72,23 @@ class TestWarnErrorOptions:
             include="*", silence=all_events, valid_error_names=all_events
         )
         assert my_options.silence == all_events
+
+    @pytest.mark.parametrize(
+        "include,silence,expected_includes",
+        [
+            (["ItemA"], ["ItemA"], False),
+            ("*", ["ItemA"], False),
+            ("*", ["ItemB"], True),
+        ],
+    )
+    def test_includes(self, include, silence, expected_includes):
+        include_exclude = WarnErrorOptions(
+            include=include, silence=silence, valid_error_names={"ItemA", "ItemB"}
+        )
+
+        assert include_exclude.includes("ItemA") == expected_includes
+
+    def test_silenced(self):
+        my_options = WarnErrorOptions(include="*", silence=["ItemA"], valid_error_names={"ItemA"})
+        assert my_options.silenced("ItemA")
+        assert not my_options.silenced("ItemB")

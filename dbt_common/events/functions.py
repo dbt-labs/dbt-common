@@ -114,12 +114,13 @@ def msg_to_dict(msg: EventMsg) -> dict:
 
 
 def warn_or_error(event, node=None) -> None:
-    if WARN_ERROR or WARN_ERROR_OPTIONS.includes(type(event).__name__):
+    event_name = type(event).__name__
+    if WARN_ERROR or WARN_ERROR_OPTIONS.includes(event_name):
         # TODO: resolve this circular import when at top
         from dbt_common.exceptions import EventCompilationError
 
         raise EventCompilationError(event.message(), node)
-    elif not WARN_ERROR_OPTIONS.silenced(type(event).__name__):
+    elif not WARN_ERROR_OPTIONS.silenced(event_name):
         fire_event(event)
 
 

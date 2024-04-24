@@ -94,7 +94,6 @@ jobs:
           if [[ -z "${{ inputs.dbt-common-ref }}" ]]; then
             # these will be commits instead of branches
             if [[ "${{ github.event_name }}" == "merge_group" ]]; then
-              # TODO: what sha should this be??
               REF=${{ github.event.merge_group.head_sha }}
             else
               REF=${{ github.event.pull_request.base.sha }}
@@ -103,31 +102,6 @@ jobs:
             REF=${{ inputs.dbt-common-ref }}
           fi
           echo "ref=$REF" >> $GITHUB_OUTPUT
-
-      - name: "Final Refs"
-        run: |
-          # variables set
-          echo "dbt-core-ref=${{ steps.core-ref.outputs.ref }}"
-          echo "dbt-common-ref=${{ steps.common-ref.outputs.ref }}"
-          # debugging values for dbt-common merge_group values
-          echo "merge queue values"
-          echo "github.event.merge_group.head_sha=${{ github.event.merge_group.head_sha }}"
-          echo "github.event.merge_group.head_ref=${{ github.event.merge_group.head_ref }}"
-          echo "github.event.merge_group.base_sha=${{ github.event.merge_group.base_sha }}"
-          echo "github.event.merge_group.base_ref=${{ github.event.merge_group.base_ref }}"
-          echo "github.event.merge_group.head_commit.id=${{ github.event.merge_group.head_commit.id }}"
-          echo "github.event.merge_commit_sha=${{ github.event.merge_commit_sha }}"
-          echo "GITHUB_SHA=$GITHUB_SHA"
-          echo "PR values"
-          echo "github.event.pull_request.base.sha=${{ github.event.pull_request.base.sha }}"
-          echo "github.event.pull_request.head.sha=${{ github.event.pull_request.head.sha }}"
-          echo "github.event.pull_request.merge_commit_sha=${{ github.event.pull_request.merge_commit_sha}}"
-
-      # TODO: remove before final changes
-      - name: "Fail when it's a merge_queue event for debugging"
-        if: ${{ github.event_name == 'merge_group' }}
-        run: |
-          exit 1
 
   dbt-core-unit-test:
     name: "dbt-core unit tests"
@@ -153,19 +127,9 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip --version
 
-      # tox takes care of installing the correct version of dbt-core dependencies but we need to
-      # install them first s that we can override the dbt-common branch
-      - name: "Manually install dbt-core dependencies"
+      - name: "Update dbt-common dependency to ${{ needs.job-prep.outputs.dbt-common-ref }}"
         run: |
-          python -m pip uninstall dbt-common -y
-          python -m pip install -r dev-requirements.txt -r editable-requirements.txt
-
-      # Since the dbt-common dependency is pinned in dev-requirements.txt we need to force update it
-      # Since tox installs dependencies but doesn't force update, it won't get overridden in the next
-      # step since the requirements will already be met
-      - name: "Force update the version of dbt-common@${{ needs.job-prep.outputs.dbt-common-ref }}"
-        run: |
-          python -m pip install pip install git+https://github.com/dbt-labs/dbt-common.git@${{ needs.job-prep.outputs.dbt-common-ref }} --force-reinstall
+          ./.github/scripts/update_dev_packages.sh ${{ needs.job-prep.outputs.dbt-common-ref }}
 
       - name: "Run unit tests"
         # Doing the check here instead of the top level because this is job a required check, the
@@ -263,19 +227,9 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip --version
 
-      # tox takes care of installing the correct version of dbt-core dependencies but we need to
-      # install them first s that we can override the dbt-common branch
-      - name: "Manually install dbt-core dependencies"
+      - name: "Update dbt-common dependency to ${{ needs.job-prep.outputs.dbt-common-ref }}"
         run: |
-          python -m pip install -r dev-requirements.txt -r editable-requirements.txt
-
-      # Since the dbt-common dependency is pinned in dev-requirements.txt we need to force update it
-      # Since tox installs dependencies but doesn't force update, it won't get overridden in the next
-      # step since the requirements will already be met
-      - name: "Force update the version of dbt-common@${{ needs.job-prep.outputs.dbt-common-ref }}"
-        run: |
-          python -m pip uninstall dbt-common -y
-          python -m pip install pip install git+https://github.com/dbt-labs/dbt-common.git@${{ needs.job-prep.outputs.dbt-common-ref }} --force-reinstall
+          ./.github/scripts/update_dev_packages.sh ${{ needs.job-prep.outputs.dbt-common-ref }}
 
       - name: "Run Functional tests"
         run: tox -- --ddtrace

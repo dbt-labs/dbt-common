@@ -103,6 +103,11 @@ jobs:
           fi
           echo "ref=$REF" >> $GITHUB_OUTPUT
 
+      - name: "Final Refs"
+        run: |
+          echo "dbt-core-ref=${{ steps.core-ref.outputs.ref }}"
+          echo "dbt-common-ref=${{ steps.common-ref.outputs.ref }}"
+
   dbt-core-unit-test:
     name: "dbt-core unit tests"
     needs: [job-prep]

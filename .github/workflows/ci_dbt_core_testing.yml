@@ -127,24 +127,16 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: "Upgrade pip"
+      - name: "Upgrade pip, install tox"
         run: |
           python -m pip install --upgrade pip
           python -m pip --version
+          python -m pip install tox
+          tox --version
 
-      # tox takes care of installing the correct version of dbt-core dependencies but we need to
-      # install them first s that we can override the dbt-common branch
-      - name: "Manually install dbt-core dependencies"
+      - name: "Update dbt-common dependency to ${{ needs.job-prep.outputs.dbt-common-ref }}"
         run: |
-          python -m pip uninstall dbt-common -y
-          python -m pip install -r dev-requirements.txt -r editable-requirements.txt
-
-      # Since the dbt-common dependency is pinned in dev-requirements.txt we need to force update it
-      # Since tox installs dependencies but doesn't force update, it won't get overridden in the next
-      # step since the requirements will already be met
-      - name: "Force update the version of dbt-common@${{ needs.job-prep.outputs.dbt-common-ref }}"
-        run: |
-          python -m pip install pip install git+https://github.com/dbt-labs/dbt-common.git@${{ needs.job-prep.outputs.dbt-common-ref }} --force-reinstall
+          ./scripts/update_dev_packages.sh ${{ github.repository.name}} ${{ needs.job-prep.outputs.dbt-common-ref }}
 
       - name: "Run unit tests"
         # Doing the check here instead of the top level because this is job a required check, the
@@ -237,24 +229,16 @@ jobs:
         if: runner.os == 'Windows'
         uses: ./.github/actions/setup-postgres-windows
 
-      - name: "Upgrade pip"
+      - name: "Upgrade pip, install tox"
         run: |
           python -m pip install --upgrade pip
           python -m pip --version
+          python -m pip install tox
+          tox --version
 
-      # tox takes care of installing the correct version of dbt-core dependencies but we need to
-      # install them first s that we can override the dbt-common branch
-      - name: "Manually install dbt-core dependencies"
+      - name: "Update dbt-common dependency to ${{ needs.job-prep.outputs.dbt-common-ref }}"
         run: |
-          python -m pip install -r dev-requirements.txt -r editable-requirements.txt
-
-      # Since the dbt-common dependency is pinned in dev-requirements.txt we need to force update it
-      # Since tox installs dependencies but doesn't force update, it won't get overridden in the next
-      # step since the requirements will already be met
-      - name: "Force update the version of dbt-common@${{ needs.job-prep.outputs.dbt-common-ref }}"
-        run: |
-          python -m pip uninstall dbt-common -y
-          python -m pip install pip install git+https://github.com/dbt-labs/dbt-common.git@${{ needs.job-prep.outputs.dbt-common-ref }} --force-reinstall
+          ./scripts/update_dev_packages.sh ${{ github.repository.name}} ${{ needs.job-prep.outputs.dbt-common-ref }}
 
       - name: "Run Functional tests"
         run: tox -- --ddtrace

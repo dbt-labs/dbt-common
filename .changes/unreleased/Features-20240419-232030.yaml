@@ -1,0 +1,6 @@
+kind: Features
+body: Add ability to silence warnings via `WarnErrorOptions`
+time: 2024-04-19T23:20:30.014054-07:00
+custom:
+  Author: QMalcolm
+  Issue: "111"

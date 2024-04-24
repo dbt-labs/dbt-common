@@ -129,7 +129,7 @@ jobs:
 
       - name: "Update dbt-common dependency to ${{ needs.job-prep.outputs.dbt-common-ref }}"
         run: |
-          ./.github/scripts/update_dev_packages.sh ${{ needs.job-prep.outputs.dbt-common-ref }}
+          ./scripts/update_dev_packages.sh ${{ github.repository.name}} ${{ needs.job-prep.outputs.dbt-common-ref }}
 
       - name: "Run unit tests"
         # Doing the check here instead of the top level because this is job a required check, the
@@ -229,7 +229,7 @@ jobs:
 
       - name: "Update dbt-common dependency to ${{ needs.job-prep.outputs.dbt-common-ref }}"
         run: |
-          ./.github/scripts/update_dev_packages.sh ${{ needs.job-prep.outputs.dbt-common-ref }}
+          ./scripts/update_dev_packages.sh ${{ github.repository.name}} ${{ needs.job-prep.outputs.dbt-common-ref }}
 
       - name: "Run Functional tests"
         run: tox -- --ddtrace

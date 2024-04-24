@@ -80,3 +80,7 @@ def line_wrap_message(msg: str, subtract: int = 0, dedent: bool = True, prefix: 
 
 def warning_tag(msg: str) -> str:
     return f'[{yellow("WARNING")}]: {msg}'
+
+
+def error_tag(msg: str) -> str:
+    return f'[{red("ERROR")}]: {msg}'

@@ -1,0 +1,6 @@
+kind: Dependencies
+body: Pin agate `>=1.7.0,<1.8`
+time: 2024-04-25T11:27:04.91767-05:00
+custom:
+  Author: emmyoop
+  PR: "119"

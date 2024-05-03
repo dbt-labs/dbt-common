@@ -7,10 +7,16 @@ from datetime import datetime
 from dateutil.parser import parse
 
 # type: ignore
-from mashumaro import DataClassDictMixin
-from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig as MashBaseConfig
+from mashumaro.config import (
+    TO_DICT_ADD_OMIT_NONE_FLAG,
+    ADD_SERIALIZATION_CONTEXT,
+    BaseConfig as MashBaseConfig,
+)
 from mashumaro.types import SerializableType, SerializationStrategy
 from mashumaro.jsonschema import build_json_schema
+
+# following includes DataClassDictMixin
+from mashumaro.mixins.msgpack import DataClassMessagePackMixin
 
 import functools
 
@@ -34,6 +40,7 @@ class DateTimeSerialization(SerializationStrategy):
 class dbtMashConfig(MashBaseConfig):
     code_generation_options = [
         TO_DICT_ADD_OMIT_NONE_FLAG,
+        ADD_SERIALIZATION_CONTEXT,
     ]
     serialization_strategy = {
         datetime: DateTimeSerialization(),
@@ -47,7 +54,8 @@ class dbtMashConfig(MashBaseConfig):
 
 # This class pulls in DataClassDictMixin from Mashumaro. The 'to_dict'
 # and 'from_dict' methods come from Mashumaro.
-class dbtClassMixin(DataClassDictMixin):
+# Note: DataClassMessagePackMixin inherits from DataClassDictMixin
+class dbtClassMixin(DataClassMessagePackMixin):
     """Convert and validate JSON schemas.
 
     The Mixin adds methods to generate a JSON schema and
@@ -73,7 +81,7 @@ class dbtClassMixin(DataClassDictMixin):
     # This is called by the mashumaro to_dict in order to handle
     # nested classes. We no longer do any munging here, but leaving here
     # so that subclasses can leave super() in place for possible future needs.
-    def __post_serialize__(self, data):
+    def __post_serialize__(self, data, context: Optional[Dict]):
         return data
 
     @classmethod

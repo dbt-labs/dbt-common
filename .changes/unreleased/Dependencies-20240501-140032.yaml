@@ -1,0 +1,6 @@
+kind: Dependencies
+body: update pathspec upper version limitation
+time: 2024-05-01T14:00:32.257513+10:00
+custom:
+  Author: jerry153fish
+  PR: "120"

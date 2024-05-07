@@ -1,10 +1,10 @@
 from dataclasses import dataclass, field
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
-from dbt_common.dataclass_schema import ExtensibleDbtClassMixin
+from dbt_common.dataclass_schema import ExtensibleDbtClassMixin, dbtClassMixin
 
 
-class AdditionalPropertiesMixin:
+class AdditionalPropertiesMixin(dbtClassMixin):
     """Make this class an extensible property.
 
     The underlying class definition must include a type definition for a field
@@ -41,8 +41,8 @@ class AdditionalPropertiesMixin:
         data = super().__pre_deserialize__(data)
         return data
 
-    def __post_serialize__(self, dct):
-        data = super().__post_serialize__(dct)
+    def __post_serialize__(self, dct: Dict, context: Optional[Dict] = None):
+        data = super().__post_serialize__(dct, context)
         data.update(self.extra)
         if "_extra" in data:
             del data["_extra"]

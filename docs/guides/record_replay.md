@@ -37,4 +37,4 @@ We are aware of the potential limitations of this mechanism, since it makes seve
 2. Every important interaction can be recoreded without creating an impractically large output file.  
 3. The recorded functions do not have important side effects within dbt itself which would not be duplicated during replay.
 
-Nonetheless, we are excited to see how far the experiement takes us and how we can apply it to automatically detect changes in dbt's behavior during testing and upgrades.  
+Nonetheless, we are excited to see how far the experiement takes us and how we can apply it to automatically detect changes in dbt's behavior during testing and upgrades.

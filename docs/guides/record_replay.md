@@ -1,5 +1,7 @@
 # The Record/Replay Subsystem
-The `dbt_common.record` module provides a semi-experimental mechanism for recording dbt's interaction with external systems during a command invocation. The recording can be used as a record of how dbt behaved during an invocation, or it "replayed" later by a different version of dbt to compare its behavior to the original, without actually interacting with a data warehouse, the filesystem, or any other external process. 
+The `dbt_common.record` module provides a semi-experimental mechanism for recording dbt's interaction with external systems during a command invocation. The recording can be used as a record of how dbt behaved during an invocation, or it "replayed" later by a different version of dbt to compare its behavior to the original, without actually interacting with a data warehouse, the filesystem, or any other external process.
+
+For now, this mechanism should be regarded as an unstable preview. Details of how it works, which functions are annotated, and how annotations are made, are subject to arbitrary changes.
 
 If dbt's internal behavior is sufficiently deterministic, we will be able to use the record/replay mechanism in several interesting test and debugging scenarios, but our plan is to start by developing a robust record capability, since it would immediately support the testing scenarios we are most interested in. 
 

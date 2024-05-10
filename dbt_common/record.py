@@ -2,8 +2,8 @@
 external systems during a command invocation, so that the command can be re-run
 later with the recording 'replayed' to dbt.
 
-If dbt behaves sufficiently deterministically, we will be able to use the
-record/replay mechanism in several interesting test and debugging scenarios.
+The rationale for and architecture of this module is described in detail in the
+docs/guides/record_replay.md document in this repository.
 """
 import functools
 import dataclasses

@@ -119,3 +119,13 @@ message NoteMsg {
     EventInfo info = 1;
     Note data = 2;
 }
+
+// Z051
+message PrintEvent {
+    string msg = 1;
+}
+
+message PrintEventMsg {
+    EventInfo info = 1;
+    PrintEvent data = 2;
+}

@@ -13,6 +13,8 @@ from dbt_common.events.base_types import EventLevel, EventMsg
 from dbt_common.events.format import timestamp_to_datetime_string
 from dbt_common.utils.encoding import ForgivingJSONEncoder
 
+from dbt_common.events.types_pb2 import PrintEvent
+
 # A Filter is a function which takes a BaseEvent and returns True if the event
 # should be logged, False otherwise.
 Filter = Callable[[EventMsg], bool]
@@ -120,7 +122,11 @@ class _Logger:
     def write_line(self, msg: EventMsg):
         line = self.create_line(msg)
         if self._python_logger is not None:
-            send_to_logger(self._python_logger, msg.info.level, line)
+            if isinstance(msg.data, PrintEvent):
+                level = "error"
+            else:
+                level = msg.info.level
+            send_to_logger(self._python_logger, level, line)
 
     def flush(self):
         if self._python_logger is not None:
@@ -138,8 +144,11 @@ class _TextLogger(_Logger):
         return self.create_debug_line(msg) if self.use_debug_format else self.create_info_line(msg)
 
     def create_info_line(self, msg: EventMsg) -> str:
-        ts: str = datetime.utcnow().strftime("%H:%M:%S")
         scrubbed_msg: str = self.scrubber(msg.info.msg)  # type: ignore
+        if isinstance(msg.data, PrintEvent):
+            return scrubbed_msg
+
+        ts: str = datetime.utcnow().strftime("%H:%M:%S")
         return f"{self._get_color_tag()}{ts}  {scrubbed_msg}"
 
     def create_debug_line(self, msg: EventMsg) -> str:

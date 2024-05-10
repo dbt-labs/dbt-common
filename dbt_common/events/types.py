@@ -125,3 +125,13 @@ class Note(InfoLevel):
 
     def message(self) -> str:
         return self.msg
+
+
+
+# used to skip any timestamp formatting
+class PrintEvent(InfoLevel):
+    def code(self) -> str:
+        return "Z051"
+
+    def message(self) -> str:
+        return self.msg

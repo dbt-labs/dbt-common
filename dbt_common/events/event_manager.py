@@ -37,6 +37,9 @@ class EventManager:
         )
         self.loggers.append(logger)
 
+    def add_callback(self, callback: Callable[[EventMsg], None]) -> None:
+        self.callbacks.append(callback)
+
     def flush(self) -> None:
         for logger in self.loggers:
             logger.flush()
@@ -50,6 +53,9 @@ class IEventManager(Protocol):
         ...
 
     def add_logger(self, config: LoggerConfig) -> None:
+        ...
+
+    def add_callback(self, callback: Callable[[EventMsg], None]) -> None:
         ...
 
 

@@ -1,13 +1,13 @@
 import pytest
 
-from dataclasses import dataclass, field
 from dbt_common.events import functions
-from dbt_common.events.base_types import EventLevel, EventMsg, WarnLevel
+from dbt_common.events.base_types import EventLevel, WarnLevel
 from dbt_common.events.event_manager import EventManager
 from dbt_common.events.event_manager_client import ctx_set_event_manager
 from dbt_common.exceptions import EventCompilationError
 from dbt_common.helper_types import WarnErrorOptions
-from typing import List, Set
+from tests.unit.utils import EventCatcher
+from typing import Set
 
 
 # Re-implementing `Note` event as a warn event for
@@ -18,14 +18,6 @@ class Note(WarnLevel):
 
     def message(self) -> str:
         return self.msg
-
-
-@dataclass
-class EventCatcher:
-    caught_events: List[EventMsg] = field(default_factory=list)
-
-    def catch(self, event: EventMsg) -> None:
-        self.caught_events.append(event)
 
 
 @pytest.fixture(scope="function")

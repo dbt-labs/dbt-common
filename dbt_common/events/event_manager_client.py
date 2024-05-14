@@ -1,7 +1,9 @@
 # Since dbt-rpc does not do its own log setup, and since some events can
 # currently fire before logs can be configured by setup_event_logger(), we
 # create a default configuration with default settings and no file output.
+from dbt_common.events.base_types import EventMsg
 from dbt_common.events.event_manager import IEventManager, EventManager
+from typing import Callable
 
 _EVENT_MANAGER: IEventManager = EventManager()
 
@@ -14,6 +16,11 @@ def get_event_manager() -> IEventManager:
 def add_logger_to_manager(logger) -> None:
     global _EVENT_MANAGER
     _EVENT_MANAGER.add_logger(logger)
+
+
+def add_callback_to_manager(callback: Callable[[EventMsg], None]) -> None:
+    global _EVENT_MANAGER
+    _EVENT_MANAGER.add_callback(callback)
 
 
 def ctx_set_event_manager(event_manager: IEventManager) -> None:

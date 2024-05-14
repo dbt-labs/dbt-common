@@ -1,15 +1,15 @@
 import os
 import traceback
-from typing import Callable, List, Optional, Protocol, Tuple
+from typing import List, Optional, Protocol, Tuple
 
-from dbt_common.events.base_types import BaseEvent, EventLevel, msg_from_base_event, EventMsg
+from dbt_common.events.base_types import BaseEvent, EventLevel, msg_from_base_event, TCallback
 from dbt_common.events.logger import LoggerConfig, _Logger, _TextLogger, _JsonLogger, LineFormat
 
 
 class EventManager:
     def __init__(self) -> None:
         self.loggers: List[_Logger] = []
-        self.callbacks: List[Callable[[EventMsg], None]] = []
+        self.callbacks: List[TCallback] = []
 
     def fire_event(self, e: BaseEvent, level: Optional[EventLevel] = None) -> None:
         msg = msg_from_base_event(e, level=level)
@@ -37,7 +37,7 @@ class EventManager:
         )
         self.loggers.append(logger)
 
-    def add_callback(self, callback: Callable[[EventMsg], None]) -> None:
+    def add_callback(self, callback: TCallback) -> None:
         self.callbacks.append(callback)
 
     def flush(self) -> None:
@@ -46,7 +46,7 @@ class EventManager:
 
 
 class IEventManager(Protocol):
-    callbacks: List[Callable[[EventMsg], None]]
+    callbacks: List[TCallback]
     loggers: List[_Logger]
 
     def fire_event(self, e: BaseEvent, level: Optional[EventLevel] = None) -> None:
@@ -55,7 +55,7 @@ class IEventManager(Protocol):
     def add_logger(self, config: LoggerConfig) -> None:
         ...
 
-    def add_callback(self, callback: Callable[[EventMsg], None]) -> None:
+    def add_callback(self, callback: TCallback) -> None:
         ...
 
 

@@ -72,6 +72,7 @@ class TestEventJSONSerialization:
         types.SystemReportReturnCode(returncode=0),
         types.Formatting(),
         types.Note(msg="This is a note."),
+        types.PrintEvent(msg="This is a print event."),
     ]
 
     def test_all_serializable(self):

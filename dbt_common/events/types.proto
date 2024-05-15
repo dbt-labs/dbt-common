@@ -120,7 +120,7 @@ message NoteMsg {
     Note data = 2;
 }
 
-// Z051
+// Z052
 message PrintEvent {
     string msg = 1;
 }

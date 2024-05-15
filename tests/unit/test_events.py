@@ -27,7 +27,7 @@ def get_all_subclasses(cls):
             InfoLevel,
             ErrorLevel,
             DynamicLevel,
-        ] and not subclass.__module__.startswith("test_"):
+        ] and not subclass.__module__.startswith("tests."):
             all_subclasses.append(subclass)
         all_subclasses.extend(get_all_subclasses(subclass))
     return set(all_subclasses)

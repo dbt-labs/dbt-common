@@ -1,0 +1,6 @@
+kind: Features
+body: Support adding callbacks to the event manager
+time: 2024-05-14T16:20:52.120336-07:00
+custom:
+  Author: QMalcolm
+  Issue: "131"

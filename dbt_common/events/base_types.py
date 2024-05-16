@@ -10,10 +10,7 @@ from typing import Callable, Optional
 
 from dbt_common.invocation import get_invocation_id
 
-if sys.version_info >= (3, 8):
-    from typing import Protocol
-else:
-    from typing_extensions import Protocol
+from typing import Protocol
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #

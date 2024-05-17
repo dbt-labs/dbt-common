@@ -59,6 +59,7 @@ class Diff:
 class RecorderMode(Enum):
     RECORD = 1
     REPLAY = 2
+    RECORD_QUERIES = 3
 
 
 class Recorder:
@@ -155,6 +156,10 @@ def get_record_mode_from_env() -> Optional[RecorderMode]:
     if record_val is not None and record_val != "0" and record_val.lower() != "false":
         return RecorderMode.RECORD
 
+    record_val = os.environ.get("DBT_RECORD_QUERIES")
+    if record_val is not None and record_val != "0" and record_val.lower() != "false":
+        return RecorderMode.RECORD_QUERIES
+
     return None
 
 
@@ -174,6 +179,12 @@ def record_function(record_type, method=False, tuple_result=False):
                 pass
 
             if recorder is None:
+                return func_to_record(*args, **kwargs)
+
+            if (
+                recorder.mode == RecorderMode.RECORD_QUERIES
+                and record_type.__name__ != "QueryRecord"
+            ):
                 return func_to_record(*args, **kwargs)
 
             # For methods, peel off the 'self' argument before calling the

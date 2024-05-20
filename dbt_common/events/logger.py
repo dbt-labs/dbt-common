@@ -122,6 +122,9 @@ class _Logger:
     def write_line(self, msg: EventMsg):
         line = self.create_line(msg)
         if self._python_logger is not None:
+            # We send PrintEvent to logger as error so it goes to stdout
+            # when --quiet flag is set.
+            # --quiet flag will filter out all events lower than ERROR.
             if isinstance(msg.data, PrintEvent):
                 level = "error"
             else:

@@ -125,3 +125,14 @@ class Note(InfoLevel):
 
     def message(self) -> str:
         return self.msg
+
+
+class PrintEvent(InfoLevel):
+    # Use this event to skip any formatting and just print a message
+    # This event will get to stdout even if the logger is set to ERROR
+    # This is to support commands that want --quiet option but also log something to stdout
+    def code(self) -> str:
+        return "Z052"
+
+    def message(self) -> str:
+        return self.msg

@@ -13,7 +13,12 @@ from dbt_common.events.base_types import EventLevel, EventMsg
 from dbt_common.events.format import timestamp_to_datetime_string
 from dbt_common.utils.encoding import ForgivingJSONEncoder
 
-from dbt_common.events.types_pb2 import PrintEvent
+PRINT_EVENT_NAME = "PrintEvent"
+
+
+def _is_print_event(msg: EventMsg) -> bool:
+    return msg.info.name == PRINT_EVENT_NAME
+
 
 # A Filter is a function which takes a BaseEvent and returns True if the event
 # should be logged, False otherwise.
@@ -125,7 +130,7 @@ class _Logger:
             # We send PrintEvent to logger as error so it goes to stdout
             # when --quiet flag is set.
             # --quiet flag will filter out all events lower than ERROR.
-            if isinstance(msg.data, PrintEvent):
+            if _is_print_event(msg):
                 level = "error"
             else:
                 level = msg.info.level
@@ -148,9 +153,9 @@ class _TextLogger(_Logger):
 
     def create_info_line(self, msg: EventMsg) -> str:
         scrubbed_msg: str = self.scrubber(msg.info.msg)  # type: ignore
-        if isinstance(msg.data, PrintEvent):
+        if _is_print_event(msg):
+            # PrintEvent is a special case, we don't want to add a timestamp
             return scrubbed_msg
-
         ts: str = datetime.utcnow().strftime("%H:%M:%S")
         return f"{self._get_color_tag()}{ts}  {scrubbed_msg}"
 

@@ -66,8 +66,11 @@ class Recorder:
     _record_cls_by_name: Dict[str, Type] = {}
     _record_name_by_params_name: Dict[str, str] = {}
 
-    def __init__(self, mode: RecorderMode, recording_path: Optional[str] = None) -> None:
+    def __init__(
+        self, mode: RecorderMode, types: Optional[List], recording_path: Optional[str] = None
+    ) -> None:
         self.mode = mode
+        self.types = types
         self._records_by_type: Dict[str, List[Record]] = {}
         self._replay_diffs: List["Diff"] = []
 
@@ -148,19 +151,56 @@ class Recorder:
 
 
 def get_record_mode_from_env() -> Optional[RecorderMode]:
-    replay_val = os.environ.get("DBT_REPLAY")
-    if replay_val is not None and replay_val != "0" and replay_val.lower() != "false":
+    """
+    Get the record mode from the environment variables.
+
+    If the mode is not set to 'RECORD' or 'REPLAY', return None.
+    Expected format: 'DBT_RECORDER_MODE=RECORD'
+    """
+    record_mode = os.environ.get("DBT_RECORDER_MODE")
+
+    if record_mode is None:
+        return None
+
+    if record_mode.lower() == "record":
+        return RecorderMode.RECORD
+    elif record_mode.lower() == "replay":
         return RecorderMode.REPLAY
 
-    record_val = os.environ.get("DBT_RECORD")
-    if record_val is not None and record_val != "0" and record_val.lower() != "false":
-        return RecorderMode.RECORD
-
-    record_val = os.environ.get("DBT_RECORD_QUERIES")
-    if record_val is not None and record_val != "0" and record_val.lower() != "false":
-        return RecorderMode.RECORD_QUERIES
-
+    # if you don't specify record/replay it's a noop
     return None
+
+
+def get_record_types_from_env() -> Optional[List]:
+    """
+    Get the record subset from the environment variables.
+
+    If no types are provided, there will be no filtering.
+    Invalid types will be ignored.
+    Expected format: 'DBT_RECORDER_TYPES=QueryRecord,FileLoadRecord,OtherRecord'
+    """
+    record_types_str = os.environ.get("DBT_RECORDER_TYPES")
+
+    # if all is specified we don't want any type filtering
+    if record_types_str is None or record_types_str.lower == "all":
+        return None
+
+    record_types = record_types_str.split(",")
+
+    for type in record_types:
+        # Types not defined in common are not in the record_types list yet
+        # TODO: is there a better way to do this without hardcoding? We can't just
+        # wait for later because if it's QueryRecord (not defined in common) we don't
+        # want to remove it to ensure everything else is filtered out....
+        if type not in Recorder._record_cls_by_name and type != "QueryRecord":
+            print(f"Invalid record type: {type}")  # TODO: remove after testing
+            record_types.remove(type)
+
+    # if everything is invalid we don't want any type filtering
+    if len(record_types) == 0:
+        return None
+
+    return record_types
 
 
 def record_function(record_type, method=False, tuple_result=False):
@@ -181,10 +221,7 @@ def record_function(record_type, method=False, tuple_result=False):
             if recorder is None:
                 return func_to_record(*args, **kwargs)
 
-            if (
-                recorder.mode == RecorderMode.RECORD_QUERIES
-                and record_type.__name__ != "QueryRecord"
-            ):
+            if recorder.types is not None and record_type.__name__ not in recorder.types:
                 return func_to_record(*args, **kwargs)
 
             # For methods, peel off the 'self' argument before calling the

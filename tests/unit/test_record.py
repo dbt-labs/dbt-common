@@ -25,9 +25,9 @@ class TestRecord(Record):
 
 
 def test_decorator_records():
-    prev = os.environ.get("DBT_RECORD", None)
+    prev = os.environ.get("DBT_RECORDER_MODE", None)
     try:
-        os.environ["DBT_RECORD"] = "True"
+        os.environ["DBT_RECORDER_MODE"] = "Record"
         recorder = Recorder(RecorderMode.RECORD)
         set_invocation_context({})
         get_invocation_context().recorder = recorder
@@ -47,15 +47,15 @@ def test_decorator_records():
 
     finally:
         if prev is None:
-            os.environ.pop("DBT_RECORD", None)
+            os.environ.pop("DBT_RECORDER_MODE", None)
         else:
-            os.environ["DBT_RECORD"] = prev
+            os.environ["DBT_RECORDER_MODE"] = prev
 
 
 def test_decorator_replays():
-    prev = os.environ.get("DBT_RECORD", None)
+    prev = os.environ.get("DBT_RECORDER_MODE", None)
     try:
-        os.environ["DBT_RECORD"] = "True"
+        os.environ["DBT_RECORDER_MODE"] = "Replay"
         recorder = Recorder(RecorderMode.REPLAY)
         set_invocation_context({})
         get_invocation_context().recorder = recorder
@@ -76,6 +76,6 @@ def test_decorator_replays():
 
     finally:
         if prev is None:
-            os.environ.pop("DBT_RECORD", None)
+            os.environ.pop("DBT_RECORDER_MODE", None)
         else:
-            os.environ["DBT_RECORD"] = prev
+            os.environ["DBT_RECORDER_MODE"] = prev

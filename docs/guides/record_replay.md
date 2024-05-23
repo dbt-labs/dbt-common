@@ -35,10 +35,14 @@ If `DBT_RECORDER_MODE` is not `replay` or `record`, case insensitive, this is a 
 
 `DBT_RECODER_TYPES` is optional.  It indicates which types to filter the results by and expects a list of strings values for the `Record` subclasses.  Any invalid types will be ignored.  `all` is a valid type and behaves the same as not populating the env var.
 
-example
 
 ```bash
 DBT_RECORDER_MODE=record DBT_RECODER_TYPES=QueryRecord,GetEnvRecord dbt run
+```
+
+replay need the file to replay
+```bash
+DBT_RECORDER_MODE=replay DBT_RECORDER_REPLAY_PATH=recording.json dbt run
 ```
 
 ## Final Thoughts

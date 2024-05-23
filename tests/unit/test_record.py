@@ -28,7 +28,7 @@ def test_decorator_records():
     prev = os.environ.get("DBT_RECORDER_MODE", None)
     try:
         os.environ["DBT_RECORDER_MODE"] = "Record"
-        recorder = Recorder(RecorderMode.RECORD)
+        recorder = Recorder(RecorderMode.RECORD, None)
         set_invocation_context({})
         get_invocation_context().recorder = recorder
 
@@ -56,7 +56,7 @@ def test_decorator_replays():
     prev = os.environ.get("DBT_RECORDER_MODE", None)
     try:
         os.environ["DBT_RECORDER_MODE"] = "Replay"
-        recorder = Recorder(RecorderMode.REPLAY)
+        recorder = Recorder(RecorderMode.REPLAY, None)
         set_invocation_context({})
         get_invocation_context().recorder = recorder
 

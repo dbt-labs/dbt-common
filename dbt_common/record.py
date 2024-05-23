@@ -122,6 +122,9 @@ class Recorder:
         records_by_type: Dict[str, List[Record]] = {}
 
         for record_type_name in loaded_dct:
+            # TODO: this break with QueryRecord on replay since it's
+            # not in common so isn't part of cls._record_cls_by_name yet
+
             record_cls = cls._record_cls_by_name[record_type_name]
             rec_list = []
             for record_dct in loaded_dct[record_type_name]:
@@ -164,7 +167,8 @@ def get_record_mode_from_env() -> Optional[RecorderMode]:
 
     if record_mode.lower() == "record":
         return RecorderMode.RECORD
-    elif record_mode.lower() == "replay":
+    # replaying requires a file path, otherwise treat as noop
+    elif record_mode.lower() == "replay" and os.environ["DBT_RECORDER_REPLAY_PATH"] is not None:
         return RecorderMode.REPLAY
 
     # if you don't specify record/replay it's a noop
@@ -191,7 +195,8 @@ def get_record_types_from_env() -> Optional[List]:
         # Types not defined in common are not in the record_types list yet
         # TODO: is there a better way to do this without hardcoding? We can't just
         # wait for later because if it's QueryRecord (not defined in common) we don't
-        # want to remove it to ensure everything else is filtered out....
+        # want to remove it to ensure everything else is filtered out.... This is also
+        # a problem with replaying QueryRecords generally
         if type not in Recorder._record_cls_by_name and type != "QueryRecord":
             print(f"Invalid record type: {type}")  # TODO: remove after testing
             record_types.remove(type)

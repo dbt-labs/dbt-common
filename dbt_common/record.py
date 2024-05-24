@@ -122,7 +122,7 @@ class Recorder:
         records_by_type: Dict[str, List[Record]] = {}
 
         for record_type_name in loaded_dct:
-            # TODO: this break with QueryRecord on replay since it's
+            # TODO: this breaks with QueryRecord on replay since it's
             # not in common so isn't part of cls._record_cls_by_name yet
 
             record_cls = cls._record_cls_by_name[record_type_name]

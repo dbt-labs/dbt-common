@@ -1,0 +1,45 @@
+# **what?**
+# Runs a check to detect whether one of `release_type:major`, `release_type:minor`, 
+#or `release_type:patch` labels has been applied to a PR prior to merging.
+
+# **why?**
+# Encourage more intentional semver releasing of dbt-common, and to give the person
+# releasing dbt-common a clear way to determine how to release a batch of changes.
+
+# **when?**
+# This will run for all PRs, when code is pushed to main, and when manually triggered.
+
+name: "Check release_type label"
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+  merge_group:
+    types: [checks_requested]
+  workflow_dispatch:
+
+permissions: read-all
+
+# will cancel previous workflows triggered by the same event and for the same ref for PRs or same SHA otherwise
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ contains(github.event_name, 'pull_request') && github.event.pull_request.head.ref || github.sha }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check-release-type-tag:
+    name: "Check for 'release_type' tag"
+    runs-on: ubuntu-latest
+    if: ${{ !contains(fromJson('["release_type:major", "release_type:minor", "release_type:patch"]'), github.event.pull_request.labels.*.name,) }}
+
+    steps:
+      - name: Fail CI if missing release_type label
+        run: |
+          echo "CI failure: Missing a 'release_type' label."
+          echo "To pass this check, add one of: 'release_type:major', 'release_type:minor', or 'release_type:patch' labels to the PR."
+          exit 1

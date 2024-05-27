@@ -1,6 +1,6 @@
 # **what?**
-# Runs a check to detect whether one of `release_type:major`, `release_type:minor`, 
-#or `release_type:patch` labels has been applied to a PR prior to merging.
+# Runs a check to detect whether one of `release_type:major`, `release_type:minor`,
+# or `release_type:patch` labels has been applied to a PR prior to merging.
 
 # **why?**
 # Encourage more intentional semver releasing of dbt-common, and to give the person

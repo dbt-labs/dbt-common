@@ -189,22 +189,7 @@ def get_record_types_from_env() -> Optional[List]:
     if record_types_str is None or record_types_str.lower == "all":
         return None
 
-    record_types = record_types_str.split(",")
-
-    for type in record_types:
-        # Types not defined in common are not in the record_types list yet
-        # TODO: This is related to a problem with replay noted above.  Will solve
-        # at a future date. Leaving it hardcoded for now to unblock.  Will remove
-        # after resolving MNTL-308.
-        if type not in Recorder._record_cls_by_name and type != "QueryRecord":
-            print(f"Invalid record type: {type}")  # TODO: remove after testing
-            record_types.remove(type)
-
-    # if everything is invalid we don't want any type filtering
-    if len(record_types) == 0:
-        return None
-
-    return record_types
+    return record_types_str.split(",")
 
 
 def record_function(record_type, method=False, tuple_result=False):

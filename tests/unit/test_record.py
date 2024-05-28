@@ -54,8 +54,10 @@ def test_decorator_records():
 
 def test_decorator_replays():
     prev = os.environ.get("DBT_RECORDER_MODE", None)
+    prev_path = os.environ.get("DBT_RECORDER_REPLAY_PATH", None)
     try:
         os.environ["DBT_RECORDER_MODE"] = "Replay"
+        os.environ["DBT_RECORDER_REPLAY_PATH"] = "record.json"
         recorder = Recorder(RecorderMode.REPLAY, None)
         set_invocation_context({})
         get_invocation_context().recorder = recorder
@@ -79,3 +81,7 @@ def test_decorator_replays():
             os.environ.pop("DBT_RECORDER_MODE", None)
         else:
             os.environ["DBT_RECORDER_MODE"] = prev
+        if prev_path is None:
+            os.environ.pop("DBT_RECORDER_REPLAY_PATH", None)
+        else:
+            os.environ["DBT_RECORDER_REPLAY_PATH"] = prev_path

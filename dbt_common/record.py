@@ -124,14 +124,12 @@ class Recorder:
         for record_type_name in loaded_dct:
             # TODO: this breaks with QueryRecord on replay since it's
             # not in common so isn't part of cls._record_cls_by_name yet
-
             record_cls = cls._record_cls_by_name[record_type_name]
             rec_list = []
             for record_dct in loaded_dct[record_type_name]:
                 rec = record_cls.from_dict(record_dct)
                 rec_list.append(rec)  # type: ignore
             records_by_type[record_type_name] = rec_list
-
         return records_by_type
 
     def expect_record(self, params: Any) -> Any:
@@ -168,7 +166,9 @@ def get_record_mode_from_env() -> Optional[RecorderMode]:
     if record_mode.lower() == "record":
         return RecorderMode.RECORD
     # replaying requires a file path, otherwise treat as noop
-    elif record_mode.lower() == "replay" and os.environ["DBT_RECORDER_REPLAY_PATH"] is not None:
+    elif (
+        record_mode.lower() == "replay" and os.environ.get("DBT_RECORDER_REPLAY_PATH") is not None
+    ):
         return RecorderMode.REPLAY
 
     # if you don't specify record/replay it's a noop
@@ -193,10 +193,9 @@ def get_record_types_from_env() -> Optional[List]:
 
     for type in record_types:
         # Types not defined in common are not in the record_types list yet
-        # TODO: is there a better way to do this without hardcoding? We can't just
-        # wait for later because if it's QueryRecord (not defined in common) we don't
-        # want to remove it to ensure everything else is filtered out.... This is also
-        # a problem with replaying QueryRecords generally
+        # TODO: This is related to a problem with replay noted above.  Will solve
+        # at a future date. Leaving it hardcoded for now to unblock.  Will remove
+        # after resolving MNTL-308.
         if type not in Recorder._record_cls_by_name and type != "QueryRecord":
             print(f"Invalid record type: {type}")  # TODO: remove after testing
             record_types.remove(type)

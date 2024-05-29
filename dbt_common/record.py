@@ -166,9 +166,6 @@ def get_record_mode_from_env() -> Optional[RecorderMode]:
     if record_mode.lower() == "record":
         return RecorderMode.RECORD
     # replaying requires a file path, otherwise treat as noop
-    elif record_mode.lower() == "diff" and os.environ.get("DBT_RECORDER_FILE_PATH") is not None:
-        return RecorderMode.RECORD
-    # replaying requires a file path, otherwise treat as noop
     elif record_mode.lower() == "replay" and os.environ.get("DBT_RECORDER_FILE_PATH") is not None:
         return RecorderMode.REPLAY
 

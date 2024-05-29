@@ -13,6 +13,13 @@ from dbt_common.events.base_types import EventLevel, EventMsg
 from dbt_common.events.format import timestamp_to_datetime_string
 from dbt_common.utils.encoding import ForgivingJSONEncoder
 
+PRINT_EVENT_NAME = "PrintEvent"
+
+
+def _is_print_event(msg: EventMsg) -> bool:
+    return msg.info.name == PRINT_EVENT_NAME
+
+
 # A Filter is a function which takes a BaseEvent and returns True if the event
 # should be logged, False otherwise.
 Filter = Callable[[EventMsg], bool]
@@ -120,7 +127,14 @@ class _Logger:
     def write_line(self, msg: EventMsg):
         line = self.create_line(msg)
         if self._python_logger is not None:
-            send_to_logger(self._python_logger, msg.info.level, line)
+            # We send PrintEvent to logger as error so it goes to stdout
+            # when --quiet flag is set.
+            # --quiet flag will filter out all events lower than ERROR.
+            if _is_print_event(msg):
+                level = "error"
+            else:
+                level = msg.info.level
+            send_to_logger(self._python_logger, level, line)
 
     def flush(self):
         if self._python_logger is not None:
@@ -138,8 +152,11 @@ class _TextLogger(_Logger):
         return self.create_debug_line(msg) if self.use_debug_format else self.create_info_line(msg)
 
     def create_info_line(self, msg: EventMsg) -> str:
-        ts: str = datetime.utcnow().strftime("%H:%M:%S")
         scrubbed_msg: str = self.scrubber(msg.info.msg)  # type: ignore
+        if _is_print_event(msg):
+            # PrintEvent is a special case, we don't want to add a timestamp
+            return scrubbed_msg
+        ts: str = datetime.utcnow().strftime("%H:%M:%S")
         return f"{self._get_color_tag()}{ts}  {scrubbed_msg}"
 
     def create_debug_line(self, msg: EventMsg) -> str:

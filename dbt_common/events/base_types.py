@@ -6,14 +6,11 @@ import sys
 from google.protobuf.json_format import ParseDict, MessageToDict, MessageToJson
 from google.protobuf.message import Message
 from dbt_common.events.helpers import get_json_string_utcnow
-from typing import Optional
+from typing import Callable, Optional
 
 from dbt_common.invocation import get_invocation_id
 
-if sys.version_info >= (3, 8):
-    from typing import Protocol
-else:
-    from typing_extensions import Protocol
+from typing import Protocol
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -126,6 +123,9 @@ class EventInfo(Protocol):
 class EventMsg(Protocol):
     info: EventInfo
     data: Message
+
+
+TCallback = Callable[[EventMsg], None]
 
 
 def msg_from_base_event(event: BaseEvent, level: Optional[EventLevel] = None):

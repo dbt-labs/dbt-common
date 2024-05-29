@@ -59,7 +59,7 @@ class Diff:
 class RecorderMode(Enum):
     RECORD = 1
     REPLAY = 2
-    RECORD_QUERIES = 3
+    DIFF = 3
 
 
 class Recorder:
@@ -155,7 +155,7 @@ def get_record_mode_from_env() -> Optional[RecorderMode]:
     """
     Get the record mode from the environment variables.
 
-    If the mode is not set to 'RECORD' or 'REPLAY', return None.
+    If the mode is not set to 'RECORD', 'DIFF' or 'REPLAY', return None.
     Expected format: 'DBT_RECORDER_MODE=RECORD'
     """
     record_mode = os.environ.get("DBT_RECORDER_MODE")
@@ -165,6 +165,9 @@ def get_record_mode_from_env() -> Optional[RecorderMode]:
 
     if record_mode.lower() == "record":
         return RecorderMode.RECORD
+    # diffing requires a file path, otherwise treat as noop
+    elif record_mode.lower() == "diff" and os.environ.get("DBT_RECORDER_FILE_PATH") is not None:
+        return RecorderMode.DIFF
     # replaying requires a file path, otherwise treat as noop
     elif record_mode.lower() == "replay" and os.environ.get("DBT_RECORDER_FILE_PATH") is not None:
         return RecorderMode.REPLAY

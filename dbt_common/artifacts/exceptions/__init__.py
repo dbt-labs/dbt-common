@@ -1,0 +1,1 @@
+from dbt_common.artifacts.exceptions.schemas import IncompatibleSchemaError

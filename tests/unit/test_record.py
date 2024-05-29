@@ -48,11 +48,11 @@ def setup():
     # capture the previous state of the environment variables
     prev_mode = os.environ.get("DBT_RECORDER_MODE", None)
     prev_type = os.environ.get("DBT_RECORDER_TYPES", None)
-    prev_fp = os.environ.get("DBT_RECORDER_REPLAY_PATH", None)
+    prev_fp = os.environ.get("DBT_RECORDER_FILE_PATH", None)
     # clear the environment variables
     os.environ.pop("DBT_RECORDER_MODE", None)
     os.environ.pop("DBT_RECORDER_TYPES", None)
-    os.environ.pop("DBT_RECORDER_REPLAY_PATH", None)
+    os.environ.pop("DBT_RECORDER_FILE_PATH", None)
     yield
     # reset the environment variables to their previous state
     if prev_mode is None:
@@ -64,9 +64,9 @@ def setup():
     else:
         os.environ["DBT_RECORDER_TYPES"] = prev_type
     if prev_fp is None:
-        os.environ.pop("DBT_RECORDER_REPLAY_PATH", None)
+        os.environ.pop("DBT_RECORDER_FILE_PATH", None)
     else:
-        os.environ["DBT_RECORDER_REPLAY_PATH"] = prev_fp
+        os.environ["DBT_RECORDER_FILE_PATH"] = prev_fp
 
 
 def test_decorator_records(setup):
@@ -118,7 +118,7 @@ def test_record_types(setup):
 
 def test_decorator_replays(setup):
     os.environ["DBT_RECORDER_MODE"] = "Replay"
-    os.environ["DBT_RECORDER_REPLAY_PATH"] = "record.json"
+    os.environ["DBT_RECORDER_FILE_PATH"] = "record.json"
     recorder = Recorder(RecorderMode.REPLAY, None)
     set_invocation_context({})
     get_invocation_context().recorder = recorder

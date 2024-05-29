@@ -42,7 +42,7 @@ DBT_RECORDER_MODE=record DBT_RECODER_TYPES=QueryRecord,GetEnvRecord dbt run
 
 replay need the file to replay
 ```bash
-DBT_RECORDER_MODE=replay DBT_RECORDER_REPLAY_PATH=recording.json dbt run
+DBT_RECORDER_MODE=replay DBT_RECORDER_FILE_PATH=recording.json dbt run
 ```
 
 ## Final Thoughts

@@ -3,6 +3,19 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
+      target_branch:
+        description: "The branch to release from"
+        type: string
+        required: true
+      version_number:
+        description: "The release version number (i.e. 1.0.0b1)"
+        type: string
+        required: true
+      test_run:
+        description: "Test run (Publish release as draft)"
+        type: boolean
+        default: true
+        required: false
       deploy-to:
         type: choice
         description: Choose where to publish (test/prod)
@@ -33,30 +46,43 @@ jobs:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
 
     steps:
-      - name: Check out repository
+      - name: Check out target branch
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ${{ inputs.target_branch }}
 
       - name: "Set up Python & Hatch - 3.11"
         uses: ./.github/actions/setup-python-hatch
         with:
           python-version: "3.11"
 
+      - name: Run tests
+        run: hatch test
+        shell: bash
+
       - name: Build artifacts
         run: hatch build
         shell: bash
+
+      - name: Prepare changelog and set new version version_number
+        uses: ./.github/workflows/release-prep.yml
+        with:
+          sha: ${{ github.sha }}
+          version_number: ${{ inputs.version_number }}
+          target_branch: ${{ inputs.target_branch }}
+          test_run: ${{ inputs.test_run }}
 
       - name: Check artifacts
         run: hatch run build:check-all
         shell: bash
 
       - name: Publish artifacts to PyPI Test
-        if: inputs.deploy-to == 'PypiTest'
+        if: inputs.deploy-to == 'PypiTest' && !inputs.test_run
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
 
       - name: Publish artifacts to PyPI Prod
-        if: inputs.deploy-to == 'PypiProd'
+        if: inputs.deploy-to == 'PypiProd' && !inputs.test_run
         uses: pypa/gh-action-pypi-publish@release/v1

@@ -1,0 +1,6 @@
+kind: Under the Hood
+body: Add automation workflow for changelog updates and version bump
+time: 2024-05-31T17:17:38.597489-04:00
+custom:
+  Author: peterallenwebb
+  Issue: "92"

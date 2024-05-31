@@ -54,9 +54,7 @@ jobs:
     name: Test and Build
     needs: [update-version-and-create-changelog]
     runs-on: ubuntu-latest
-    environment:
-      name: ${{ inputs.deploy-to }}
-
+    
     steps:
       - name: Check out target branch
         uses: actions/checkout@v4

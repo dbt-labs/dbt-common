@@ -87,7 +87,8 @@ jobs:
       name: ${{ inputs.deploy-to }}
     permissions:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
-
+      
+    steps:
       - name: Check artifacts
         run: hatch run build:check-all
         shell: bash

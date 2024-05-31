@@ -37,13 +37,26 @@ concurrency:
 
 jobs:
 
-  release:
-    name: PyPI - ${{ inputs.deploy-to }}
+  update-version-and-create-changelog:
+    name: Update Version and Create Changelog
+    secrets: inherit
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.deploy-to }}
-    permissions:
-      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
+    uses: ./.github/workflows/release-prep.yml
+    with:
+      sha: ${{ github.sha }}
+      version_number: ${{ inputs.version_number }}
+      target_branch: ${{ inputs.target_branch }}
+      test_run: ${{ inputs.test_run }}
+
+
+  test-and-build:
+    name: Test and Build
+    needs: [update-version-and-create-changelog]
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.deploy-to }}
 
     steps:
       - name: Check out target branch
@@ -65,13 +78,15 @@ jobs:
         run: hatch build
         shell: bash
 
-      - name: Prepare changelog and set new version version_number
-        uses: ../.github/workflows/release-prep.yml
-        with:
-          sha: ${{ github.sha }}
-          version_number: ${{ inputs.version_number }}
-          target_branch: ${{ inputs.target_branch }}
-          test_run: ${{ inputs.test_run }}
+  publish:
+    name: Publish to PyPI
+    if: ${{ !inputs.test_run }}
+    needs: [test-and-build, update-version-and-create-changelog]
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.deploy-to }}
+    permissions:
+      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
 
       - name: Check artifacts
         run: hatch run build:check-all

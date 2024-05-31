@@ -40,7 +40,6 @@ jobs:
   update-version-and-create-changelog:
     name: Update Version and Create Changelog
     secrets: inherit
-    runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.deploy-to }}
     uses: ./.github/workflows/release-prep.yml
@@ -87,7 +86,7 @@ jobs:
       name: ${{ inputs.deploy-to }}
     permissions:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
-      
+
     steps:
       - name: Check artifacts
         run: hatch run build:check-all

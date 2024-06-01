@@ -334,14 +334,14 @@ jobs:
           python3 -m venv env
           source env/bin/activate
           python -m pip install --upgrade pip
-          
+
       - name: Install Hatch
         uses: pypa/hatch@install
 
       - name: "Bump Version To ${{ inputs.version_number }}"
         if: needs.audit-version-in-code.outputs.up_to_date == 'false'
         run: |
-          hatch ${{ inputs.version_number }} 
+          hatch version ${{ inputs.version_number }} 
           git status
 
       - name: "[Notification] Bump Version To ${{ inputs.version_number }}"

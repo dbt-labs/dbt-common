@@ -39,6 +39,8 @@ jobs:
 
   update-version-and-create-changelog:
     name: Update Version and Create Changelog
+    permissions:
+      contents: write # this is the permission that allows creating a new release
     secrets: inherit
     uses: ./.github/workflows/release-prep.yml
     with:
@@ -51,8 +53,6 @@ jobs:
   test-and-build:
     name: Test and Build
     needs: [update-version-and-create-changelog]
-    permissions:
-      contents: write # this is the permission that allows creating a new release
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.deploy-to }}

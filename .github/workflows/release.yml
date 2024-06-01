@@ -52,7 +52,7 @@ jobs:
     name: Test and Build
     needs: [update-version-and-create-changelog]
     permissions:
-    contents: write # this is the permission that allows creating a new release
+      contents: write # this is the permission that allows creating a new release
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.deploy-to }}

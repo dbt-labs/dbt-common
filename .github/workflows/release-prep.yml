@@ -261,12 +261,6 @@ jobs:
         with:
           ref: ${{ needs.create-temp-branch.outputs.branch_name }}
 
-      - name: "Install Spark Dependencies"
-        if: ${{ contains(github.repository, 'dbt-labs/dbt-spark') }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install libsasl2-dev
-
       - name: "Add Homebrew To PATH"
         run: |
           echo "/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin" >> $GITHUB_PATH

@@ -9,6 +9,9 @@ import functools
 import dataclasses
 import json
 import os
+
+# TODO: using this for now to get things working TBD if we want to keep it
+from deepdiff import DeepDiff  # type: ignore
 from enum import Enum
 from typing import Any, Dict, List, Mapping, Optional, Type
 
@@ -59,7 +62,7 @@ class Diff:
 class RecorderMode(Enum):
     RECORD = 1
     REPLAY = 2
-    DIFF = 3
+    DIFF = 3  # records and does diffing
 
 
 class Recorder:
@@ -67,15 +70,21 @@ class Recorder:
     _record_name_by_params_name: Dict[str, str] = {}
 
     def __init__(
-        self, mode: RecorderMode, types: Optional[List], recording_path: Optional[str] = None
+        self,
+        mode: RecorderMode,
+        types: Optional[List],
+        previous_recording_path: Optional[str] = None,
     ) -> None:
         self.mode = mode
         self.types = types
         self._records_by_type: Dict[str, List[Record]] = {}
         self._replay_diffs: List["Diff"] = []
 
-        if recording_path is not None:
-            self._records_by_type = self.load(recording_path)
+        # TODO: better way to do this?
+        if previous_recording_path is not None and self.mode == RecorderMode.REPLAY:
+            self._records_by_type = self.load(previous_recording_path)
+
+        self.previous_recording_path = previous_recording_path
 
     @classmethod
     def register_record_type(cls, rec_type) -> Any:
@@ -101,7 +110,7 @@ class Recorder:
 
         return match
 
-    def write(self, file_name) -> None:
+    def write(self, file_name: str) -> None:
         with open(file_name, "w") as file:
             json.dump(self._to_dict(), file)
 
@@ -140,6 +149,19 @@ class Recorder:
 
         result_tuple = dataclasses.astuple(record.result)
         return result_tuple[0] if len(result_tuple) == 1 else result_tuple
+
+    def diff_with_previous(self, diff_file_name: str) -> None:
+        # TODO: should we error here?
+        if self.previous_recording_path is None:
+            raise Exception("No previous recording path provided")
+
+        with open(self.previous_recording_path) as previous_recording:
+            previous_dct = json.load(previous_recording)
+
+        diff = DeepDiff(previous_dct, self._to_dict())
+
+        with open(diff_file_name, "w") as file:
+            json.dump(diff.to_dict(), file)
 
     def write_diffs(self, diff_file_name) -> None:
         json.dump(
@@ -191,6 +213,15 @@ def get_record_types_from_env() -> Optional[List]:
         return None
 
     return record_types_str.split(",")
+
+
+def get_record_types_from_dict(fp: str) -> List:
+    """
+    Get the record subset from the dict.
+    """
+    with open(fp) as file:
+        loaded_dct = json.load(file)
+    return list(loaded_dct.keys())
 
 
 def record_function(record_type, method=False, tuple_result=False):

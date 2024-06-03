@@ -67,27 +67,31 @@ def test_validation():
     dct = {"an_attr": "fubar"}
     with pytest.raises(ValidationError) as excinfo:
         SomeObject.validate(dct)
+    # former message: "'name' is a required property"
     assert (
-        excinfo.value.msg
+        excinfo.value.message
         == "Invalid value '{'an_attr': 'fubar'}': data must contain ['name'] properties"
     )
 
     dct = {"name": "testing", "an_int": "some_str"}
     with pytest.raises(ValidationError) as excinfo:
         SomeObject.validate(dct)
-    assert excinfo.value.msg == "Invalid value 'some_str': data.an_int must be integer"
+    # former message: "'some_str' is not of type 'integer'"
+    assert excinfo.value.message == "Invalid value 'some_str': data.an_int must be integer"
 
     # Note: any field with multiple types (such as Optional[...]) will get the
     # "cannot be validated by any definition" message.
     dct = {"name": "testing", "an_enum": "four"}
     with pytest.raises(ValidationError) as excinfo:
         SomeObject.validate(dct)
+    # former message: "'four' is not valid under any of the given schemas"
     assert (
-        excinfo.value.msg
+        excinfo.value.message
         == "Invalid value 'four': data.an_enum cannot be validated by any definition"
     )
 
     dct = {"name": "testing", "a_bool": "True or False"}
     with pytest.raises(ValidationError) as excinfo:
         SomeObject.validate(dct)
-    assert excinfo.value.msg == "Invalid value 'True or False': data.a_bool must be boolean"
+    # former message: "'True or False' is not of type 'boolean'"
+    assert excinfo.value.message == "Invalid value 'True or False': data.a_bool must be boolean"

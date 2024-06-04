@@ -1,0 +1,6 @@
+kind: Under the Hood
+body: Move CatalogKey, ColumnMetadata, ColumnMap, CatalogTable to dbt-common
+time: 2024-06-03T12:36:31.542118+02:00
+custom:
+    Author: aranke
+    Issue: "147"

@@ -63,6 +63,7 @@ class Diff:
 
     def diff_query_records(self, current: List, previous: List) -> Dict[str, Any]:
         # some of the table results are returned as a stringified list of dicts that don't diff because order isn't consistent
+        # convert it into a list of dicts so it can be diffed, ignoring order
         for i in range(len(current)):
             if current[i].get("result").get("table") is not None:
                 current[i] = json.loads(current[i]["result"]["table"])
@@ -89,7 +90,7 @@ class Diff:
         return DeepDiff(current, previous, ignore_order=True, verbose_level=2)
 
     def calculate_diff(self) -> Dict[str, Any]:
-        # TODO: should i convert the files to Records and diff the records?
+        # TODO: should i convert the files to Records and diff the records? blocked on this for now by MNTL-308
 
         with open(self.current_recording_path) as current_recording:
             current_dct = json.load(current_recording)

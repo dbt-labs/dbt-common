@@ -57,35 +57,90 @@ class Diff:
     """Marker class for diffs?"""
 
     def __init__(self, current_recording_path: str, previous_recording_path: str) -> None:
-        # self.diff = diff
         self.current_recording_path = current_recording_path
         self.previous_recording_path = previous_recording_path
 
     def diff_query_records(self, current: List, previous: List) -> Dict[str, Any]:
         # some of the table results are returned as a stringified list of dicts that don't
-        # diff because order isn't consistent convert it into a list of dicts so it can
+        # diff because order isn't consistent. convert it into a list of dicts so it can
         # be diffed ignoring order
 
         for i in range(len(current)):
             if current[i].get("result").get("table") is not None:
                 current[i]["result"]["table"] = json.loads(current[i]["result"]["table"])
+        for i in range(len(previous)):
             if previous[i].get("result").get("table") is not None:
                 previous[i]["result"]["table"] = json.loads(previous[i]["result"]["table"])
 
         return DeepDiff(current, previous, ignore_order=True, verbose_level=2)
 
-    def diff_get_env_records(self, current: List, previous: List) -> Dict[str, Any]:
-        # testing out excluding all the env records from the diff
-        exclude_regex_paths = [
-            r"root\[0\]\['result'\]\['env'\]\['[^']+'\]"  # ignore env vars for diff results
-        ]
+    def diff_load_file_records(self, current: List, previous: List) -> Dict[str, Any]:
+        # TODO: do we want to exclude non-root from the diff to avoid diffing the
+        # contents of macros that were modified externally
+        # maybe this should be a post processing step?
+        # we need the non-root values for replay so we can't always exclude them
+
+        # TODO: stop hardcoding this
+        project_name = "jaffle-shop-private"
+
+        skip_current: List = []
+        for i in range(len(current)):
+            if project_name not in current[i].get("params").get("path"):
+                skip_current.append(i)
+
+        skip_previous: List = []
+        for i in range(len(previous)):
+            if project_name not in previous[i].get("params").get("path"):
+                skip_previous.append(i)
+
+        current = [current[i] for i in range(len(current)) if i not in skip_current]
+        previous = [previous[i] for i in range(len(previous)) if i not in skip_previous]
 
         return DeepDiff(
             current,
             previous,
             ignore_order=True,
             verbose_level=2,
-            exclude_regex_paths=exclude_regex_paths,
+        )
+
+    def diff_env_records(self, current: List, previous: List) -> Dict[str, Any]:
+        # The mode and filepath may change.  Ignore them.
+
+        exclude_paths = [
+            "root[0]['result']['env']['DBT_RECORDER_FILE_PATH']",
+            "root[0]['result']['env']['DBT_RECORDER_MODE']",
+        ]
+
+        return DeepDiff(
+            current, previous, ignore_order=True, verbose_level=2, exclude_paths=exclude_paths
+        )
+
+    def diff_find_matching_records(self, current: List, previous: List) -> Dict[str, Any]:
+        # TODO: do we want to exclude non-root from the diff to avoid diffing the contents
+        # of macros that were modified externally?
+        # we need the non-root values for replay so we can't always exclude them
+
+        # TODO: stop hardcoding this
+        project_name = "jaffle-shop-private"
+
+        skip_current: List = []
+        for i in range(len(current)):
+            if project_name not in current[i].get("params").get("root_path"):
+                skip_current.append(i)
+
+        skip_previous: List = []
+        for i in range(len(previous)):
+            if project_name not in previous[i].get("params").get("root_path"):
+                skip_previous.append(i)
+
+        current = [current[i] for i in range(len(current)) if i not in skip_current]
+        previous = [previous[i] for i in range(len(previous)) if i not in skip_previous]
+
+        return DeepDiff(
+            current,
+            previous,
+            ignore_order=True,
+            verbose_level=2,
         )
 
     def diff_default(self, current: List, previous: List) -> Dict[str, Any]:
@@ -102,12 +157,20 @@ class Diff:
 
         diff = {}
         for record_type in current_dct:
-            if record_type == "GetEnvRecord":
-                diff[record_type] = self.diff_get_env_records(
+            if record_type == "QueryRecord":
+                diff[record_type] = self.diff_query_records(
                     current_dct[record_type], previous_dct[record_type]
                 )
-            elif record_type == "QueryRecord":
-                diff[record_type] = self.diff_query_records(
+            elif record_type == "GetEnvRecord":
+                diff[record_type] = self.diff_env_records(
+                    current_dct[record_type], previous_dct[record_type]
+                )
+            elif record_type == "LoadFileRecord":
+                diff[record_type] = self.diff_load_file_records(
+                    current_dct[record_type], previous_dct[record_type]
+                )
+            elif record_type == "FindMatchingRecord":
+                diff[record_type] = self.diff_find_matching_records(
                     current_dct[record_type], previous_dct[record_type]
                 )
             else:

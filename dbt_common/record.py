@@ -72,7 +72,7 @@ class Diff:
             if previous[i].get("result").get("table") is not None:
                 previous[i]["result"]["table"] = json.loads(previous[i]["result"]["table"])
 
-        return DeepDiff(current, previous, ignore_order=True, verbose_level=2)
+        return DeepDiff(previous, current, ignore_order=True, verbose_level=2)
 
     def diff_load_file_records(self, current: List, previous: List) -> Dict[str, Any]:
         # TODO: do we want to exclude non-root from the diff to avoid diffing the
@@ -97,8 +97,8 @@ class Diff:
         previous = [previous[i] for i in range(len(previous)) if i not in skip_previous]
 
         return DeepDiff(
-            current,
             previous,
+            current,
             ignore_order=True,
             verbose_level=2,
         )
@@ -112,7 +112,7 @@ class Diff:
         ]
 
         return DeepDiff(
-            current, previous, ignore_order=True, verbose_level=2, exclude_paths=exclude_paths
+            previous, current, ignore_order=True, verbose_level=2, exclude_paths=exclude_paths
         )
 
     def diff_find_matching_records(self, current: List, previous: List) -> Dict[str, Any]:
@@ -137,14 +137,14 @@ class Diff:
         previous = [previous[i] for i in range(len(previous)) if i not in skip_previous]
 
         return DeepDiff(
-            current,
             previous,
+            current,
             ignore_order=True,
             verbose_level=2,
         )
 
     def diff_default(self, current: List, previous: List) -> Dict[str, Any]:
-        return DeepDiff(current, previous, ignore_order=True, verbose_level=2)
+        return DeepDiff(previous, current, ignore_order=True, verbose_level=2)
 
     def calculate_diff(self) -> Dict[str, Any]:
         # TODO: should i convert the files to Records and diff the records? - blocked on this for now by MNTL-308

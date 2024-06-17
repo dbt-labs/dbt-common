@@ -205,6 +205,8 @@ class Recorder:
         self.diff: Diff
         self.previous_recording_path = previous_recording_path
         self.current_recording_path = current_recording_path
+        self.dir_path = os.path.join(os.path.dirname(self.current_recording_path), "recordings")
+        os.makedirs(self.dir_path, exist_ok=True)  # Create the directory if it does not exist
 
         # TODO: better way to do this?
         if self.previous_recording_path is not None and self.mode == RecorderMode.REPLAY:
@@ -245,7 +247,8 @@ class Recorder:
         return match
 
     def write(self) -> None:
-        with open(self.current_recording_path, "w") as file:
+        fp = os.path.join(self.dir_path, os.path.basename(self.current_recording_path))
+        with open(fp, "w") as file:
             json.dump(self._to_dict(), file)
 
     def _to_dict(self) -> Dict:
@@ -285,9 +288,10 @@ class Recorder:
         return result_tuple[0] if len(result_tuple) == 1 else result_tuple
 
     def write_diffs(self, diff_file_name) -> None:
+        fp = os.path.join(self.dir_path, os.path.basename(diff_file_name))
         json.dump(
             self.diff.calculate_diff(),
-            open(diff_file_name, "w"),
+            open(fp, "w"),
         )
 
     def print_diffs(self) -> None:

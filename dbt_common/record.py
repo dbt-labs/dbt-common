@@ -131,7 +131,7 @@ class Recorder:
         self.mode = mode
         self.recorded_types = types
         self._records_by_type: Dict[str, List[Record]] = {}
-        self._unprocessed_records_by_type: Dict[str, Dict[str, Any]] = {}
+        self._unprocessed_records_by_type: Dict[str, List[Dict[str, Any]]] = {}
         self._replay_diffs: List["Diff"] = []
         self.diff: Optional[Diff] = None
         self.previous_recording_path = previous_recording_path
@@ -292,7 +292,10 @@ def record_function(record_type, method=False, tuple_result=False):
             if recorder is None:
                 return func_to_record(*args, **kwargs)
 
-            if recorder.recorded_types is not None and record_type.__name__ not in recorder.recorded_types:
+            if (
+                recorder.recorded_types is not None
+                and record_type.__name__ not in recorder.recorded_types
+            ):
                 return func_to_record(*args, **kwargs)
 
             # For methods, peel off the 'self' argument before calling the

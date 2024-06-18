@@ -216,10 +216,12 @@ class Recorder:
         return result_tuple[0] if len(result_tuple) == 1 else result_tuple
 
     def write_diffs(self, diff_file_name) -> None:
+        assert self.diff is not None
         with open(diff_file_name, "w") as f:
             json.dump(self.diff.calculate_diff(), f)
 
     def print_diffs(self) -> None:
+        assert self.diff is not None
         print(repr(self.diff.calculate_diff()))
 
 

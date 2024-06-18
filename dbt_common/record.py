@@ -83,35 +83,6 @@ class Diff:
             previous, current, ignore_order=True, verbose_level=2, exclude_paths=exclude_paths
         )
 
-    def diff_ignore_non_root(self, current: List, previous: List) -> Dict[str, Any]:
-        # TODO: do we want to exclude non-root from the diff to avoid diffing the
-        # contents of macros that were modified externally?  If so we'll need some
-        # metadata like the project name to know what to exclude.
-        # we need the non-root values for replay so we can't always exclude them
-
-        # TODO: stop hardcoding this
-        project_name = "jaffle-shop-private"
-
-        skip_current: List = []
-        for i in range(len(current)):
-            if project_name not in current[i].get("params").get("root_path"):
-                skip_current.append(i)
-
-        skip_previous: List = []
-        for i in range(len(previous)):
-            if project_name not in previous[i].get("params").get("root_path"):
-                skip_previous.append(i)
-
-        current = [current[i] for i in range(len(current)) if i not in skip_current]
-        previous = [previous[i] for i in range(len(previous)) if i not in skip_previous]
-
-        return DeepDiff(
-            previous,
-            current,
-            ignore_order=True,
-            verbose_level=2,
-        )
-
     def diff_default(self, current: List, previous: List) -> Dict[str, Any]:
         return DeepDiff(previous, current, ignore_order=True, verbose_level=2)
 
@@ -130,10 +101,6 @@ class Diff:
                 )
             elif record_type == "GetEnvRecord":
                 diff[record_type] = self.diff_env_records(
-                    current_dct[record_type], previous_dct[record_type]
-                )
-            elif record_type in ["FindMatchingRecord", "LoadFileRecord"]:
-                diff[record_type] = self.diff_ignore_non_root(
                     current_dct[record_type], previous_dct[record_type]
                 )
             else:

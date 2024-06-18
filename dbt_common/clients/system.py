@@ -708,20 +708,3 @@ class GetEnvRecord(Record):
 @record_function(GetEnvRecord)
 def get_env() -> Dict[str, str]:
     return dict(os.environ)
-
-
-# @dataclasses.dataclass
-# class GetProjectParams:
-#     root_path: str
-#     ?
-
-
-# @dataclasses.dataclass
-# class GetProjectResult:
-#     pass
-
-
-# @Recorder.register_record_type
-# class GetProjectRecord(Record):
-#     params_cls = GetProjectParams
-#     result_cls = GetProjectResult

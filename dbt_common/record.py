@@ -10,7 +10,6 @@ import dataclasses
 import json
 import os
 
-# TODO: using this for now to get things working TBD if we want to keep it
 from deepdiff import DeepDiff  # type: ignore
 from enum import Enum
 from typing import Any, Dict, List, Mapping, Optional, Type
@@ -74,35 +73,6 @@ class Diff:
 
         return DeepDiff(previous, current, ignore_order=True, verbose_level=2)
 
-    def diff_load_file_records(self, current: List, previous: List) -> Dict[str, Any]:
-        # TODO: do we want to exclude non-root from the diff to avoid diffing the
-        # contents of macros that were modified externally
-        # maybe this should be a post processing step?
-        # we need the non-root values for replay so we can't always exclude them
-
-        # TODO: stop hardcoding this
-        project_name = "jaffle-shop-private"
-
-        skip_current: List = []
-        for i in range(len(current)):
-            if project_name not in current[i].get("params").get("path"):
-                skip_current.append(i)
-
-        skip_previous: List = []
-        for i in range(len(previous)):
-            if project_name not in previous[i].get("params").get("path"):
-                skip_previous.append(i)
-
-        current = [current[i] for i in range(len(current)) if i not in skip_current]
-        previous = [previous[i] for i in range(len(previous)) if i not in skip_previous]
-
-        return DeepDiff(
-            previous,
-            current,
-            ignore_order=True,
-            verbose_level=2,
-        )
-
     def diff_env_records(self, current: List, previous: List) -> Dict[str, Any]:
         # The mode and filepath may change.  Ignore them.
 
@@ -115,9 +85,10 @@ class Diff:
             previous, current, ignore_order=True, verbose_level=2, exclude_paths=exclude_paths
         )
 
-    def diff_find_matching_records(self, current: List, previous: List) -> Dict[str, Any]:
-        # TODO: do we want to exclude non-root from the diff to avoid diffing the contents
-        # of macros that were modified externally?
+    def diff_ignore_non_root(self, current: List, previous: List) -> Dict[str, Any]:
+        # TODO: do we want to exclude non-root from the diff to avoid diffing the
+        # contents of macros that were modified externally?  If so we'll need some
+        # metadata like the project name to know what to exclude.
         # we need the non-root values for replay so we can't always exclude them
 
         # TODO: stop hardcoding this
@@ -147,8 +118,6 @@ class Diff:
         return DeepDiff(previous, current, ignore_order=True, verbose_level=2)
 
     def calculate_diff(self) -> Dict[str, Any]:
-        # TODO: should i convert the files to Records and diff the records? - blocked on this for now by MNTL-308
-
         with open(self.current_recording_path) as current_recording:
             current_dct = json.load(current_recording)
 
@@ -165,12 +134,8 @@ class Diff:
                 diff[record_type] = self.diff_env_records(
                     current_dct[record_type], previous_dct[record_type]
                 )
-            elif record_type == "LoadFileRecord":
-                diff[record_type] = self.diff_load_file_records(
-                    current_dct[record_type], previous_dct[record_type]
-                )
-            elif record_type == "FindMatchingRecord":
-                diff[record_type] = self.diff_find_matching_records(
+            elif record_type in ["FindMatchingRecord", "LoadFileRecord"]:
+                diff[record_type] = self.diff_ignore_non_root(
                     current_dct[record_type], previous_dct[record_type]
                 )
             else:
@@ -206,19 +171,17 @@ class Recorder:
         self.previous_recording_path = previous_recording_path
         self.current_recording_path = current_recording_path
 
-        # TODO: better way to do this?
-        if self.previous_recording_path is not None and self.mode == RecorderMode.REPLAY:
-            self._records_by_type = self.load(self.previous_recording_path)
+        if self.previous_recording_path is not None and self.mode in (
+            RecorderMode.REPLAY,
+            RecorderMode.DIFF,
+        ):
             self.diff = Diff(
                 current_recording_path=self.current_recording_path,
                 previous_recording_path=self.previous_recording_path,
             )
 
-        if self.previous_recording_path is not None and self.mode == RecorderMode.DIFF:
-            self.diff = Diff(
-                current_recording_path=self.current_recording_path,
-                previous_recording_path=self.previous_recording_path,
-            )
+            if self.mode == RecorderMode.REPLAY:
+                self._records_by_type = self.load(self.previous_recording_path)
 
     @classmethod
     def register_record_type(cls, rec_type) -> Any:

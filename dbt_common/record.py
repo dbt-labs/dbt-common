@@ -53,8 +53,6 @@ class Record:
 
 
 class Diff:
-    """Marker class for diffs?"""
-
     def __init__(self, current_recording_path: str, previous_recording_path: str) -> None:
         self.current_recording_path = current_recording_path
         self.previous_recording_path = previous_recording_path

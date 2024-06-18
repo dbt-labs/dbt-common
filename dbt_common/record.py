@@ -9,6 +9,8 @@ import functools
 import dataclasses
 import json
 import os
+
+from deepdiff import DeepDiff  # type: ignore
 from enum import Enum
 from typing import Any, Dict, List, Mapping, Optional, Type
 
@@ -51,15 +53,68 @@ class Record:
 
 
 class Diff:
-    """Marker class for diffs?"""
+    def __init__(self, current_recording_path: str, previous_recording_path: str) -> None:
+        self.current_recording_path = current_recording_path
+        self.previous_recording_path = previous_recording_path
 
-    pass
+    def diff_query_records(self, current: List, previous: List) -> Dict[str, Any]:
+        # some of the table results are returned as a stringified list of dicts that don't
+        # diff because order isn't consistent. convert it into a list of dicts so it can
+        # be diffed ignoring order
+
+        for i in range(len(current)):
+            if current[i].get("result").get("table") is not None:
+                current[i]["result"]["table"] = json.loads(current[i]["result"]["table"])
+        for i in range(len(previous)):
+            if previous[i].get("result").get("table") is not None:
+                previous[i]["result"]["table"] = json.loads(previous[i]["result"]["table"])
+
+        return DeepDiff(previous, current, ignore_order=True, verbose_level=2)
+
+    def diff_env_records(self, current: List, previous: List) -> Dict[str, Any]:
+        # The mode and filepath may change.  Ignore them.
+
+        exclude_paths = [
+            "root[0]['result']['env']['DBT_RECORDER_FILE_PATH']",
+            "root[0]['result']['env']['DBT_RECORDER_MODE']",
+        ]
+
+        return DeepDiff(
+            previous, current, ignore_order=True, verbose_level=2, exclude_paths=exclude_paths
+        )
+
+    def diff_default(self, current: List, previous: List) -> Dict[str, Any]:
+        return DeepDiff(previous, current, ignore_order=True, verbose_level=2)
+
+    def calculate_diff(self) -> Dict[str, Any]:
+        with open(self.current_recording_path) as current_recording:
+            current_dct = json.load(current_recording)
+
+        with open(self.previous_recording_path) as previous_recording:
+            previous_dct = json.load(previous_recording)
+
+        diff = {}
+        for record_type in current_dct:
+            if record_type == "QueryRecord":
+                diff[record_type] = self.diff_query_records(
+                    current_dct[record_type], previous_dct[record_type]
+                )
+            elif record_type == "GetEnvRecord":
+                diff[record_type] = self.diff_env_records(
+                    current_dct[record_type], previous_dct[record_type]
+                )
+            else:
+                diff[record_type] = self.diff_default(
+                    current_dct[record_type], previous_dct[record_type]
+                )
+
+        return diff
 
 
 class RecorderMode(Enum):
     RECORD = 1
     REPLAY = 2
-    RECORD_QUERIES = 3
+    DIFF = 3  # records and does diffing
 
 
 class Recorder:
@@ -67,15 +122,31 @@ class Recorder:
     _record_name_by_params_name: Dict[str, str] = {}
 
     def __init__(
-        self, mode: RecorderMode, types: Optional[List], recording_path: Optional[str] = None
+        self,
+        mode: RecorderMode,
+        types: Optional[List],
+        current_recording_path: str = "recording.json",
+        previous_recording_path: Optional[str] = None,
     ) -> None:
         self.mode = mode
         self.types = types
         self._records_by_type: Dict[str, List[Record]] = {}
         self._replay_diffs: List["Diff"] = []
+        self.diff: Diff
+        self.previous_recording_path = previous_recording_path
+        self.current_recording_path = current_recording_path
 
-        if recording_path is not None:
-            self._records_by_type = self.load(recording_path)
+        if self.previous_recording_path is not None and self.mode in (
+            RecorderMode.REPLAY,
+            RecorderMode.DIFF,
+        ):
+            self.diff = Diff(
+                current_recording_path=self.current_recording_path,
+                previous_recording_path=self.previous_recording_path,
+            )
+
+            if self.mode == RecorderMode.REPLAY:
+                self._records_by_type = self.load(self.previous_recording_path)
 
     @classmethod
     def register_record_type(cls, rec_type) -> Any:
@@ -101,8 +172,8 @@ class Recorder:
 
         return match
 
-    def write(self, file_name) -> None:
-        with open(file_name, "w") as file:
+    def write(self) -> None:
+        with open(self.current_recording_path, "w") as file:
             json.dump(self._to_dict(), file)
 
     def _to_dict(self) -> Dict:
@@ -143,19 +214,19 @@ class Recorder:
 
     def write_diffs(self, diff_file_name) -> None:
         json.dump(
-            self._replay_diffs,
+            self.diff.calculate_diff(),
             open(diff_file_name, "w"),
         )
 
     def print_diffs(self) -> None:
-        print(repr(self._replay_diffs))
+        print(repr(self.diff.calculate_diff()))
 
 
 def get_record_mode_from_env() -> Optional[RecorderMode]:
     """
     Get the record mode from the environment variables.
 
-    If the mode is not set to 'RECORD' or 'REPLAY', return None.
+    If the mode is not set to 'RECORD', 'DIFF' or 'REPLAY', return None.
     Expected format: 'DBT_RECORDER_MODE=RECORD'
     """
     record_mode = os.environ.get("DBT_RECORDER_MODE")
@@ -165,6 +236,9 @@ def get_record_mode_from_env() -> Optional[RecorderMode]:
 
     if record_mode.lower() == "record":
         return RecorderMode.RECORD
+    # diffing requires a file path, otherwise treat as noop
+    elif record_mode.lower() == "diff" and os.environ.get("DBT_RECORDER_FILE_PATH") is not None:
+        return RecorderMode.DIFF
     # replaying requires a file path, otherwise treat as noop
     elif record_mode.lower() == "replay" and os.environ.get("DBT_RECORDER_FILE_PATH") is not None:
         return RecorderMode.REPLAY
@@ -188,6 +262,15 @@ def get_record_types_from_env() -> Optional[List]:
         return None
 
     return record_types_str.split(",")
+
+
+def get_record_types_from_dict(fp: str) -> List:
+    """
+    Get the record subset from the dict.
+    """
+    with open(fp) as file:
+        loaded_dct = json.load(file)
+    return list(loaded_dct.keys())
 
 
 def record_function(record_type, method=False, tuple_result=False):

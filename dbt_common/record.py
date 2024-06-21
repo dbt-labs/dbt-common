@@ -162,7 +162,11 @@ class Recorder:
         self._records_by_type[rec_cls_name].append(record)
 
     def pop_matching_record(self, params: Any) -> Optional[Record]:
-        rec_type_name = self._record_name_by_params_name[type(params).__name__]
+        rec_type_name = self._record_name_by_params_name.get(type(params).__name__)
+
+        if rec_type_name is None:
+            raise Exception(f"A record of type {type(params).__name__} was requested, but no such type has been registered.")
+
         self._ensure_records_processed(rec_type_name)
         records = self._records_by_type[rec_type_name]
         match: Optional[Record] = None

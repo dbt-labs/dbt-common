@@ -325,7 +325,7 @@ def record_function(record_type, method: bool = False, tuple_result: bool = Fals
             r = func_to_record(*args, **kwargs)
             result = (
                 None
-                if r is None or record_type.result_cls is None
+                if record_type.result_cls is None
                 else record_type.result_cls(*r)
                 if tuple_result
                 else record_type.result_cls(r)

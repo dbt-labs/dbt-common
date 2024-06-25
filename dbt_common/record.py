@@ -12,7 +12,7 @@ import os
 
 from deepdiff import DeepDiff  # type: ignore
 from enum import Enum
-from typing import Any, Dict, List, Mapping, Optional, Type, Callable
+from typing import Any, Callable, Dict, List, Mapping, Optional, Type
 
 from dbt_common.context import get_invocation_context
 
@@ -165,7 +165,9 @@ class Recorder:
         rec_type_name = self._record_name_by_params_name.get(type(params).__name__)
 
         if rec_type_name is None:
-            raise Exception(f"A record of type {type(params).__name__} was requested, but no such type has been registered.")
+            raise Exception(
+                f"A record of type {type(params).__name__} was requested, but no such type has been registered."
+            )
 
         self._ensure_records_processed(rec_type_name)
         records = self._records_by_type[rec_type_name]
@@ -280,7 +282,12 @@ def get_record_types_from_dict(fp: str) -> List:
     return list(loaded_dct.keys())
 
 
-def record_function(record_type, method: bool = False, tuple_result: bool = False, id_field_name: str = None) -> Callable:
+def record_function(
+    record_type,
+    method: bool = False,
+    tuple_result: bool = False,
+    id_field_name: Optional[str] = None,
+) -> Callable:
     def record_function_inner(func_to_record):
         # To avoid runtime overhead and other unpleasantness, we only apply the
         # record/replay decorator if a relevant env var is set.
@@ -308,7 +315,7 @@ def record_function(record_type, method: bool = False, tuple_result: bool = Fals
             # params constructor.
             param_args = args[1:] if method else args
             if method and id_field_name is not None:
-                param_args = (getattr(args[0], id_field_name), ) + param_args
+                param_args = (getattr(args[0], id_field_name),) + param_args
 
             params = record_type.params_cls(*param_args, **kwargs)
 

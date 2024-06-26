@@ -12,7 +12,7 @@ import os
 
 from deepdiff import DeepDiff  # type: ignore
 from enum import Enum
-from typing import Any, Dict, List, Mapping, Optional, Type
+from typing import Any, Callable, Dict, List, Mapping, Optional, Type
 
 from dbt_common.context import get_invocation_context
 
@@ -162,7 +162,13 @@ class Recorder:
         self._records_by_type[rec_cls_name].append(record)
 
     def pop_matching_record(self, params: Any) -> Optional[Record]:
-        rec_type_name = self._record_name_by_params_name[type(params).__name__]
+        rec_type_name = self._record_name_by_params_name.get(type(params).__name__)
+
+        if rec_type_name is None:
+            raise Exception(
+                f"A record of type {type(params).__name__} was requested, but no such type has been registered."
+            )
+
         self._ensure_records_processed(rec_type_name)
         records = self._records_by_type[rec_type_name]
         match: Optional[Record] = None
@@ -276,7 +282,12 @@ def get_record_types_from_dict(fp: str) -> List:
     return list(loaded_dct.keys())
 
 
-def record_function(record_type, method=False, tuple_result=False):
+def record_function(
+    record_type,
+    method: bool = False,
+    tuple_result: bool = False,
+    id_field_name: Optional[str] = None,
+) -> Callable:
     def record_function_inner(func_to_record):
         # To avoid runtime overhead and other unpleasantness, we only apply the
         # record/replay decorator if a relevant env var is set.
@@ -303,6 +314,8 @@ def record_function(record_type, method=False, tuple_result=False):
             # For methods, peel off the 'self' argument before calling the
             # params constructor.
             param_args = args[1:] if method else args
+            if method and id_field_name is not None:
+                param_args = (getattr(args[0], id_field_name),) + param_args
 
             params = record_type.params_cls(*param_args, **kwargs)
 
@@ -319,7 +332,7 @@ def record_function(record_type, method=False, tuple_result=False):
             r = func_to_record(*args, **kwargs)
             result = (
                 None
-                if r is None or record_type.result_cls is None
+                if record_type.result_cls is None
                 else record_type.result_cls(*r)
                 if tuple_result
                 else record_type.result_cls(r)

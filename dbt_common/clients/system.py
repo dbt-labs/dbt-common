@@ -62,7 +62,9 @@ class FindMatchingParams:
         # Do not record or replay filesystem searches that were performed against
         # files which are actually part of dbt's implementation.
         return (
-            "dbt/include/global_project" not in self.root_path
+            "dbt/include"
+            not in self.root_path  # TODO: This actually obviates the next two checks but is probably too coarse?
+            and "dbt/include/global_project" not in self.root_path
             and "/plugins/postgres/dbt/include/" not in self.root_path
         )
 

@@ -17,11 +17,11 @@ T = TypeVar("T", bound="BaseConfig")
 @dataclass
 class BaseConfig(AdditionalPropertiesAllowed, Replaceable):
     # enable syntax like: config['key']
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> Any:
         return self.get(key)
 
     # like doing 'get' on a dictionary
-    def get(self, key, default=None):
+    def get(self, key: str, default: Any = None) -> Any:
         if hasattr(self, key):
             return getattr(self, key)
         elif key in self._extra:
@@ -30,13 +30,13 @@ class BaseConfig(AdditionalPropertiesAllowed, Replaceable):
             return default
 
     # enable syntax like: config['key'] = value
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value) -> None:
         if hasattr(self, key):
             setattr(self, key, value)
         else:
             self._extra[key] = value
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: str) -> None:
         if hasattr(self, key):
             msg = (
                 'Error, tried to delete config key "{}": Cannot delete ' "built-in keys"
@@ -60,7 +60,7 @@ class BaseConfig(AdditionalPropertiesAllowed, Replaceable):
     def __iter__(self):
         yield from self._content_iterator(include_condition=lambda f: True)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._get_fields()) + len(self._extra)
 
     @staticmethod
@@ -221,7 +221,7 @@ def _merge_field_value(
     merge_behavior: MergeBehavior,
     self_value: Any,
     other_value: Any,
-):
+) -> Any:
     if merge_behavior == MergeBehavior.Clobber:
         return other_value
     elif merge_behavior == MergeBehavior.Append:

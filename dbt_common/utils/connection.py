@@ -1,4 +1,5 @@
 import time
+from typing import Callable
 
 from dbt_common.events.types import RecordRetryException, RetryExternalCall
 from dbt_common.exceptions import ConnectionError
@@ -7,7 +8,7 @@ from tarfile import ReadError
 import requests
 
 
-def connection_exception_retry(fn, max_attempts: int, attempt: int = 0):
+def connection_exception_retry(fn: Callable, max_attempts: int, attempt: int = 0):
     """Handle connection retries gracefully.
 
     Attempts to run a function that makes an external call, if the call fails

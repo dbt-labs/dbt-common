@@ -3,7 +3,6 @@ from typing import List, Any, Optional
 import os
 
 from dbt_common.constants import SECRET_ENV_PREFIX
-from dbt_common.dataclass_schema import ValidationError
 
 
 def env_secrets() -> List[str]:
@@ -125,12 +124,11 @@ class DbtRuntimeError(RuntimeError, DbtBaseException):
     def validator_error_message(self, exc: builtins.Exception):
         """Given a dbt.dataclass_schema.ValidationError return the relevant parts as a string.
 
-        dbt.dataclass_schema.ValidationError is basically a jsonschema.ValidationError)
+        dbt.dataclass_schema.ValidationError is basically a fastjsonschema.JsonSchemaValueException)
         """
-        if not isinstance(exc, ValidationError):
-            return str(exc)
-        path = "[%s]" % "][".join(map(repr, exc.relative_path))
-        return f"at path {path}: {exc.message}"
+        # This used to do something, but we've changed the dataclass_schema.ValidationError so that
+        # this isn't necessary any more. Leaving here for compatibility.
+        return str(exc)
 
     def __str__(self, prefix: str = "! "):
         node_string = ""

@@ -1,6 +1,6 @@
 from typing import ClassVar, cast, get_type_hints, List, Tuple, Dict, Any, Optional
 import re
-import jsonschema
+import fastjsonschema
 from dataclasses import fields, Field
 from enum import Enum
 from datetime import datetime
@@ -21,8 +21,24 @@ from mashumaro.mixins.msgpack import DataClassMessagePackMixin
 import functools
 
 
-class ValidationError(jsonschema.ValidationError):
-    pass
+class ValidationError(fastjsonschema.JsonSchemaValueException):
+    def __init__(self, exc):
+        if isinstance(exc, fastjsonschema.JsonSchemaValueException):
+            # Copy parts of JsonSchemaValueException into ValidationError
+            self.message = f"Invalid value '{exc.value}': {exc.message}"
+            self.msg = self.message
+            self.value = exc.value
+            self.name = exc.name
+            self.definition = exc.definition
+            self.rule = exc.rule
+        else:
+            self.msg = str(exc)
+            self.message = self.msg
+
+    def __str__(self):
+        # If we don't provide our own string handler, it will return the stringified
+        # version of the params passed in, i.e. stringified JsonSchemaValueException
+        return self.msg
 
 
 class DateTimeSerialization(SerializationStrategy):
@@ -92,12 +108,22 @@ class dbtClassMixin(DataClassMessagePackMixin):
         return json_schema
 
     @classmethod
-    def validate(cls, data):
+    @functools.lru_cache
+    def jsonschema_validator(cls):
         json_schema = cls.json_schema()
-        validator = jsonschema.Draft7Validator(json_schema)
-        error = next(iter(validator.iter_errors(data)), None)
-        if error is not None:
-            raise ValidationError.create_from(error) from error
+        # fastjsonschema.compile(definition, handlers={}, formats={}, use_default=True, use_formats=True)[source]
+        #    use_formats=False because of Path type in SourcePatch
+        #    use_default=True would insert all Optional fields into data dictionary
+        validator = fastjsonschema.compile(json_schema, use_default=False, use_formats=False)
+        return validator
+
+    @classmethod
+    def validate(cls, data):
+        validator = cls.jsonschema_validator()
+        try:
+            validator(data)
+        except fastjsonschema.JsonSchemaValueException as exc:
+            raise ValidationError(exc)
 
     # This method was copied from hologram. Used in model_config.py and relation.py
     @classmethod

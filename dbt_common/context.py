@@ -32,7 +32,7 @@ class InvocationContext:
 _INVOCATION_CONTEXT_VAR: ContextVar[InvocationContext] = ContextVar("DBT_INVOCATION_CONTEXT_VAR")
 
 
-def reliably_get_invocation_var() -> ContextVar:
+def reliably_get_invocation_var() -> ContextVar[InvocationContext]:
     invocation_var: Optional[ContextVar] = next(
         (cv for cv in copy_context() if cv.name == _INVOCATION_CONTEXT_VAR.name), None
     )

@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import Protocol, Optional
 
-from dbt_common.context import get_invocation_context, reliably_get_invocation_var
+from dbt_common.context import get_invocation_context, reliably_get_invocation_var, InvocationContext
 
 
 class ConnectingExecutor(concurrent.futures.Executor):
@@ -63,7 +63,7 @@ class HasThreadingConfig(Protocol):
     threads: Optional[int]
 
 
-def _thread_initializer(invocation_context: ContextVar) -> None:
+def _thread_initializer(invocation_context: InvocationContext) -> None:
     invocation_var = reliably_get_invocation_var()
     invocation_var.set(invocation_context)
 

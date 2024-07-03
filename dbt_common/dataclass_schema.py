@@ -1,4 +1,4 @@
-from typing import ClassVar, cast, get_type_hints, List, Tuple, Dict, Any, Optional
+from typing import Any, cast, ClassVar, Dict, get_type_hints, List, Optional, Tuple, Union
 import re
 import jsonschema
 from dataclasses import fields, Field
@@ -26,7 +26,7 @@ class ValidationError(jsonschema.ValidationError):
 
 
 class DateTimeSerialization(SerializationStrategy):
-    def serialize(self, value) -> str:
+    def serialize(self, value: datetime) -> str:
         out = value.isoformat()
         # Assume UTC if timezone is missing
         if value.tzinfo is None:
@@ -127,7 +127,7 @@ class dbtClassMixin(DataClassMessagePackMixin):
 
     # copied from hologram. Used in tests
     @classmethod
-    def _get_field_names(cls):
+    def _get_field_names(cls) -> List[str]:
         return [element[1] for element in cls._get_fields()]
 
 
@@ -152,7 +152,7 @@ class ValidatedStringMixin(str, SerializableType):
 
 # These classes must be in this order or it doesn't work
 class StrEnum(str, SerializableType, Enum):
-    def __str__(self):
+    def __str__(self) -> str:
         return self.value
 
     # https://docs.python.org/3.6/library/enum.html#using-automatic-values

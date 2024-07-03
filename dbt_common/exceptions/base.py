@@ -1,5 +1,5 @@
 import builtins
-from typing import List, Any, Optional
+from typing import Any, List, Mapping, Optional
 import os
 
 from dbt_common.constants import SECRET_ENV_PREFIX
@@ -37,7 +37,7 @@ class DbtInternalError(DbtBaseException):
         self.msg = scrub_secrets(msg, env_secrets())
 
     @property
-    def type(self):
+    def type(self) -> str:
         return "Internal"
 
     def process_stack(self):
@@ -59,7 +59,7 @@ class DbtInternalError(DbtBaseException):
 
         return lines
 
-    def __str__(self):
+    def __str__(self) -> str:
         if hasattr(self.msg, "split"):
             split_msg = self.msg.split("\n")
         else:

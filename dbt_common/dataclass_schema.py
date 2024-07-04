@@ -1,4 +1,4 @@
-from typing import Any, cast, ClassVar, Dict, get_type_hints, List, Optional, Tuple, Union
+from typing import Any, cast, ClassVar, Dict, get_type_hints, List, Optional, Tuple
 import re
 import jsonschema
 from dataclasses import fields, Field

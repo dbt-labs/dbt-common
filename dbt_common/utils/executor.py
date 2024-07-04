@@ -1,9 +1,12 @@
 import concurrent.futures
 from contextlib import contextmanager
-from contextvars import ContextVar
 from typing import Protocol, Optional
 
-from dbt_common.context import get_invocation_context, reliably_get_invocation_var, InvocationContext
+from dbt_common.context import (
+    get_invocation_context,
+    reliably_get_invocation_var,
+    InvocationContext,
+)
 
 
 class ConnectingExecutor(concurrent.futures.Executor):

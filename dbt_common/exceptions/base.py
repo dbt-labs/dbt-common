@@ -1,5 +1,5 @@
 import builtins
-from typing import Any, List, Mapping, Optional
+from typing import Any, List, Optional
 import os
 
 from dbt_common.constants import SECRET_ENV_PREFIX

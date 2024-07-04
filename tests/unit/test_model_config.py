@@ -30,7 +30,6 @@ def test_merge_behavior_meta() -> None:
 
 
 def test_merge_behavior_from_field() -> None:
-    fields = [f[0] for f in ThingWithMergeBehavior._get_fields()]
     fields2 = {name: f for f, name in ThingWithMergeBehavior._get_fields()}
     assert set(fields2) == {"default_behavior", "appended", "updated", "clobbered", "keysappended"}
     assert MergeBehavior.from_field(fields2["default_behavior"]) == MergeBehavior.Clobber
@@ -58,7 +57,6 @@ def test_show_behavior_meta() -> None:
 
 
 def test_show_behavior_from_field() -> None:
-    fields = [f[0] for f in ThingWithShowBehavior._get_fields()]
     fields2 = {name: f for f, name in ThingWithShowBehavior._get_fields()}
     assert set(fields2) == {"default_behavior", "hidden", "shown"}
     assert ShowBehavior.from_field(fields2["default_behavior"]) == ShowBehavior.Show
@@ -84,7 +82,6 @@ def test_compare_behavior_meta() -> None:
 
 
 def test_compare_behavior_from_field() -> None:
-    fields = [f[0] for f in ThingWithCompareBehavior._get_fields()]
     fields2 = {name: f for f, name in ThingWithCompareBehavior._get_fields()}
     assert set(fields2) == {"default_behavior", "included", "excluded"}
     assert CompareBehavior.from_field(fields2["default_behavior"]) == CompareBehavior.Include

@@ -23,7 +23,9 @@ class TestIncludeExclude:
             (["ItemA", "ItemB"], [], True),
         ],
     )
-    def test_includes(self, include: Union[str, List[str]], exclude: List[str], expected_includes: bool) -> None:
+    def test_includes(
+        self, include: Union[str, List[str]], exclude: List[str], expected_includes: bool
+    ) -> None:
         include_exclude = IncludeExclude(include=include, exclude=exclude)
 
         assert include_exclude.includes("ItemA") == expected_includes
@@ -82,7 +84,9 @@ class TestWarnErrorOptions:
             ("*", ["ItemB"], True),
         ],
     )
-    def test_includes(self, include: Union[str, List[str]], silence: List[str], expected_includes: bool) -> None:
+    def test_includes(
+        self, include: Union[str, List[str]], silence: List[str], expected_includes: bool
+    ) -> None:
         include_exclude = WarnErrorOptions(
             include=include, silence=silence, valid_error_names={"ItemA", "ItemB"}
         )

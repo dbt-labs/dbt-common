@@ -4,6 +4,7 @@ from typing import List, Mapping, Optional
 from dbt_common.constants import PRIVATE_ENV_PREFIX, SECRET_ENV_PREFIX
 from dbt_common.record import Recorder
 
+
 class InvocationContext:
     def __init__(self, env: Mapping[str, str]):
         self._env = {k: v for k, v in env.items() if not k.startswith(PRIVATE_ENV_PREFIX)}

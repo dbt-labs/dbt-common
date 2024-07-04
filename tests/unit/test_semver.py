@@ -23,7 +23,9 @@ def semver_regex_versioning(versions: List[str]) -> bool:
     return True
 
 
-def create_range(start_version_string: Optional[str], end_version_string: Optional[str]) -> VersionRange:
+def create_range(
+    start_version_string: Optional[str], end_version_string: Optional[str]
+) -> VersionRange:
     start: VersionSpecifier = UnboundedVersionSpecifier()
     end: VersionSpecifier = UnboundedVersionSpecifier()
 

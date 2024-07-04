@@ -297,6 +297,7 @@ def record_function(
             recorder: Optional[Recorder] = None
             try:
                 from dbt_common.context import get_invocation_context
+
                 recorder = get_invocation_context().recorder
             except LookupError:
                 pass

@@ -442,7 +442,9 @@ def find_possible_versions(requested_range, available_versions: Iterable[str]):
     return [v.to_version_string(skip_matcher=True) for v in sorted_versions]
 
 
-def resolve_to_specific_version(requested_range, available_versions: Iterable[str]) -> Optional[str]:
+def resolve_to_specific_version(
+    requested_range, available_versions: Iterable[str]
+) -> Optional[str]:
     max_version = None
     max_version_string = None
 

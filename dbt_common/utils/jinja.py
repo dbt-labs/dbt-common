@@ -17,7 +17,9 @@ def get_dbt_docs_name(name) -> str:
     return f"{DOCS_PREFIX}{name}"
 
 
-def get_materialization_macro_name(materialization_name, adapter_type=None, with_prefix=True) -> str:
+def get_materialization_macro_name(
+    materialization_name, adapter_type=None, with_prefix=True
+) -> str:
     if adapter_type is None:
         adapter_type = "default"
     name = f"materialization_{materialization_name}_{adapter_type}"

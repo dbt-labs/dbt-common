@@ -19,20 +19,23 @@ class TestNoRetries:
         assert result == expected
 
 
-def no_success_fn():
+def no_success_fn() -> str:
     raise RequestException("You'll never pass")
     return "failure"
 
 
 class TestMaxRetries:
-    def test_no_retry(self):
+    def test_no_retry(self) -> None:
         fn_to_retry = functools.partial(no_success_fn)
 
         with pytest.raises(ConnectionError):
             connection_exception_retry(fn_to_retry, 3)
 
 
-def single_retry_fn():
+counter = 0
+
+
+def single_retry_fn() -> str:
     global counter
     if counter == 0:
         counter += 1
@@ -45,7 +48,7 @@ def single_retry_fn():
 
 
 class TestSingleRetry:
-    def test_no_retry(self):
+    def test_no_retry(self) -> None:
         global counter
         counter = 0
 

@@ -1,23 +1,26 @@
 import unittest
 
+from dbt_common.clients._jinja_blocks import BlockTag
 from dbt_common.clients.jinja import extract_toplevel_blocks
 from dbt_common.exceptions import CompilationError
 
 
 class TestBlockLexer(unittest.TestCase):
-    def test_basic(self):
+    def test_basic(self) -> None:
         body = '{{ config(foo="bar") }}\r\nselect * from this.that\r\n'
         block_data = "  \n\r\t{%- mytype foo %}" + body + "{%endmytype -%}"
         blocks = extract_toplevel_blocks(
             block_data, allowed_blocks={"mytype"}, collect_raw_data=False
         )
         self.assertEqual(len(blocks), 1)
-        self.assertEqual(blocks[0].block_type_name, "mytype")
-        self.assertEqual(blocks[0].block_name, "foo")
-        self.assertEqual(blocks[0].contents, body)
-        self.assertEqual(blocks[0].full_block, block_data)
+        b0 = blocks[0]
+        assert isinstance(b0, BlockTag)
+        self.assertEqual(b0.block_type_name, "mytype")
+        self.assertEqual(b0.block_name, "foo")
+        self.assertEqual(b0.contents, body)
+        self.assertEqual(b0.full_block, block_data)
 
-    def test_multiple(self):
+    def test_multiple(self) -> None:
         body_one = '{{ config(foo="bar") }}\r\nselect * from this.that\r\n'
         body_two = (
             "{{ config(bar=1)}}\r\nselect * from {% if foo %} thing "
@@ -37,7 +40,7 @@ class TestBlockLexer(unittest.TestCase):
         )
         self.assertEqual(len(blocks), 2)
 
-    def test_comments(self):
+    def test_comments(self) -> None:
         body = '{{ config(foo="bar") }}\r\nselect * from this.that\r\n'
         comment = "{# my comment #}"
         block_data = "  \n\r\t{%- mytype foo %}" + body + "{%endmytype -%}"
@@ -45,12 +48,14 @@ class TestBlockLexer(unittest.TestCase):
             comment + block_data, allowed_blocks={"mytype"}, collect_raw_data=False
         )
         self.assertEqual(len(blocks), 1)
-        self.assertEqual(blocks[0].block_type_name, "mytype")
-        self.assertEqual(blocks[0].block_name, "foo")
-        self.assertEqual(blocks[0].contents, body)
-        self.assertEqual(blocks[0].full_block, block_data)
+        b0 = blocks[0]
+        assert isinstance(b0, BlockTag)
+        self.assertEqual(b0.block_type_name, "mytype")
+        self.assertEqual(b0.block_name, "foo")
+        self.assertEqual(b0.contents, body)
+        self.assertEqual(b0.full_block, block_data)
 
-    def test_evil_comments(self):
+    def test_evil_comments(self) -> None:
         body = '{{ config(foo="bar") }}\r\nselect * from this.that\r\n'
         comment = (
             "{# external comment {% othertype bar %} select * from "
@@ -61,12 +66,14 @@ class TestBlockLexer(unittest.TestCase):
             comment + block_data, allowed_blocks={"mytype"}, collect_raw_data=False
         )
         self.assertEqual(len(blocks), 1)
-        self.assertEqual(blocks[0].block_type_name, "mytype")
-        self.assertEqual(blocks[0].block_name, "foo")
-        self.assertEqual(blocks[0].contents, body)
-        self.assertEqual(blocks[0].full_block, block_data)
+        b0 = blocks[0]
+        assert isinstance(b0, BlockTag)
+        self.assertEqual(b0.block_type_name, "mytype")
+        self.assertEqual(b0.block_name, "foo")
+        self.assertEqual(b0.contents, body)
+        self.assertEqual(b0.full_block, block_data)
 
-    def test_nested_comments(self):
+    def test_nested_comments(self) -> None:
         body = (
             '{# my comment #} {{ config(foo="bar") }}'
             "\r\nselect * from {# my other comment embedding {% endmytype %} #} this.that\r\n"
@@ -80,33 +87,43 @@ class TestBlockLexer(unittest.TestCase):
             comment + block_data, allowed_blocks={"mytype"}, collect_raw_data=False
         )
         self.assertEqual(len(blocks), 1)
-        self.assertEqual(blocks[0].block_type_name, "mytype")
-        self.assertEqual(blocks[0].block_name, "foo")
-        self.assertEqual(blocks[0].contents, body)
-        self.assertEqual(blocks[0].full_block, block_data)
+        b0 = blocks[0]
+        assert isinstance(b0, BlockTag)
+        self.assertEqual(b0.block_type_name, "mytype")
+        self.assertEqual(b0.block_name, "foo")
+        self.assertEqual(b0.contents, body)
+        self.assertEqual(b0.full_block, block_data)
 
-    def test_complex_file(self):
+    def test_complex_file(self) -> None:
         blocks = extract_toplevel_blocks(
             complex_snapshot_file, allowed_blocks={"mytype", "myothertype"}, collect_raw_data=False
         )
         self.assertEqual(len(blocks), 3)
-        self.assertEqual(blocks[0].block_type_name, "mytype")
-        self.assertEqual(blocks[0].block_name, "foo")
-        self.assertEqual(blocks[0].full_block, "{% mytype foo %} some stuff {% endmytype %}")
-        self.assertEqual(blocks[0].contents, " some stuff ")
-        self.assertEqual(blocks[1].block_type_name, "mytype")
-        self.assertEqual(blocks[1].block_name, "bar")
-        self.assertEqual(blocks[1].full_block, bar_block)
-        self.assertEqual(blocks[1].contents, bar_block[16:-15].rstrip())
-        self.assertEqual(blocks[2].block_type_name, "myothertype")
-        self.assertEqual(blocks[2].block_name, "x")
-        self.assertEqual(blocks[2].full_block, x_block.strip())
+        b0 = blocks[0]
+        assert isinstance(b0, BlockTag)
+        self.assertEqual(b0.block_type_name, "mytype")
+        self.assertEqual(b0.block_name, "foo")
+        self.assertEqual(b0.full_block, "{% mytype foo %} some stuff {% endmytype %}")
+        self.assertEqual(b0.contents, " some stuff ")
+
+        b1 = blocks[1]
+        assert isinstance(b1, BlockTag)
+        self.assertEqual(b1.block_type_name, "mytype")
+        self.assertEqual(b1.block_name, "bar")
+        self.assertEqual(b1.full_block, bar_block)
+        self.assertEqual(b1.contents, bar_block[16:-15].rstrip())
+
+        b2 = blocks[2]
+        assert isinstance(b2, BlockTag)
+        self.assertEqual(b2.block_type_name, "myothertype")
+        self.assertEqual(b2.block_name, "x")
+        self.assertEqual(b2.full_block, x_block.strip())
         self.assertEqual(
-            blocks[2].contents,
+            b2.contents,
             x_block[len("\n{% myothertype x %}") : -len("{% endmyothertype %}\n")],
         )
 
-    def test_peaceful_macro_coexistence(self):
+    def test_peaceful_macro_coexistence(self) -> None:
         body = (
             "{# my macro #} {% macro foo(a, b) %} do a thing "
             "{%- endmacro %} {# my model #} {% a b %} test {% enda %}"
@@ -116,15 +133,22 @@ class TestBlockLexer(unittest.TestCase):
         )
         self.assertEqual(len(blocks), 4)
         self.assertEqual(blocks[0].full_block, "{# my macro #} ")
-        self.assertEqual(blocks[1].block_type_name, "macro")
-        self.assertEqual(blocks[1].block_name, "foo")
-        self.assertEqual(blocks[1].contents, " do a thing")
-        self.assertEqual(blocks[2].full_block, " {# my model #} ")
-        self.assertEqual(blocks[3].block_type_name, "a")
-        self.assertEqual(blocks[3].block_name, "b")
-        self.assertEqual(blocks[3].contents, " test ")
 
-    def test_macro_with_trailing_data(self):
+        b1 = blocks[1]
+        assert isinstance(b1, BlockTag)
+        self.assertEqual(b1.block_type_name, "macro")
+        self.assertEqual(b1.block_name, "foo")
+        self.assertEqual(b1.contents, " do a thing")
+
+        self.assertEqual(blocks[2].full_block, " {# my model #} ")
+
+        b3 = blocks[3]
+        assert isinstance(b3, BlockTag)
+        self.assertEqual(b3.block_type_name, "a")
+        self.assertEqual(b3.block_name, "b")
+        self.assertEqual(b3.contents, " test ")
+
+    def test_macro_with_trailing_data(self) -> None:
         body = (
             "{# my macro #} {% macro foo(a, b) %} do a thing {%- endmacro %} "
             "{# my model #} {% a b %} test {% enda %} raw data so cool"
@@ -134,16 +158,24 @@ class TestBlockLexer(unittest.TestCase):
         )
         self.assertEqual(len(blocks), 5)
         self.assertEqual(blocks[0].full_block, "{# my macro #} ")
-        self.assertEqual(blocks[1].block_type_name, "macro")
-        self.assertEqual(blocks[1].block_name, "foo")
-        self.assertEqual(blocks[1].contents, " do a thing")
+
+        b1 = blocks[1]
+        assert isinstance(b1, BlockTag)
+        self.assertEqual(b1.block_type_name, "macro")
+        self.assertEqual(b1.block_name, "foo")
+        self.assertEqual(b1.contents, " do a thing")
+
         self.assertEqual(blocks[2].full_block, " {# my model #} ")
-        self.assertEqual(blocks[3].block_type_name, "a")
-        self.assertEqual(blocks[3].block_name, "b")
-        self.assertEqual(blocks[3].contents, " test ")
+
+        b3 = blocks[3]
+        assert isinstance(b3, BlockTag)
+        self.assertEqual(b3.block_type_name, "a")
+        self.assertEqual(b3.block_name, "b")
+        self.assertEqual(b3.contents, " test ")
+
         self.assertEqual(blocks[4].full_block, " raw data so cool")
 
-    def test_macro_with_crazy_args(self):
+    def test_macro_with_crazy_args(self) -> None:
         body = (
             """{% macro foo(a, b=asdf("cool this is 'embedded'" * 3) + external_var, c)%}"""
             "cool{# block comment with {% endmacro %} in it #} stuff here "
@@ -151,38 +183,44 @@ class TestBlockLexer(unittest.TestCase):
         )
         blocks = extract_toplevel_blocks(body, allowed_blocks={"macro"}, collect_raw_data=False)
         self.assertEqual(len(blocks), 1)
-        self.assertEqual(blocks[0].block_type_name, "macro")
-        self.assertEqual(blocks[0].block_name, "foo")
+        b0 = blocks[0]
+        assert isinstance(b0, BlockTag)
+        self.assertEqual(b0.block_type_name, "macro")
+        self.assertEqual(b0.block_name, "foo")
         self.assertEqual(
             blocks[0].contents, "cool{# block comment with {% endmacro %} in it #} stuff here "
         )
 
-    def test_materialization_parse(self):
+    def test_materialization_parse(self) -> None:
         body = "{% materialization xxx, default %} ... {% endmaterialization %}"
         blocks = extract_toplevel_blocks(
             body, allowed_blocks={"materialization"}, collect_raw_data=False
         )
         self.assertEqual(len(blocks), 1)
-        self.assertEqual(blocks[0].block_type_name, "materialization")
-        self.assertEqual(blocks[0].block_name, "xxx")
-        self.assertEqual(blocks[0].full_block, body)
+        b0 = blocks[0]
+        assert isinstance(b0, BlockTag)
+        self.assertEqual(b0.block_type_name, "materialization")
+        self.assertEqual(b0.block_name, "xxx")
+        self.assertEqual(b0.full_block, body)
 
         body = '{% materialization xxx, adapter="other" %} ... {% endmaterialization %}'
         blocks = extract_toplevel_blocks(
             body, allowed_blocks={"materialization"}, collect_raw_data=False
         )
+        b0 = blocks[0]
+        assert isinstance(b0, BlockTag)
         self.assertEqual(len(blocks), 1)
-        self.assertEqual(blocks[0].block_type_name, "materialization")
-        self.assertEqual(blocks[0].block_name, "xxx")
-        self.assertEqual(blocks[0].full_block, body)
+        self.assertEqual(b0.block_type_name, "materialization")
+        self.assertEqual(b0.block_name, "xxx")
+        self.assertEqual(b0.full_block, body)
 
-    def test_nested_not_ok(self):
+    def test_nested_not_ok(self) -> None:
         # we don't allow nesting same blocks
         body = "{% myblock a %} {% myblock b %} {% endmyblock %} {% endmyblock %}"
         with self.assertRaises(CompilationError):
             extract_toplevel_blocks(body, allowed_blocks={"myblock"})
 
-    def test_incomplete_block_failure(self):
+    def test_incomplete_block_failure(self) -> None:
         fullbody = "{% myblock foo %} {% endmyblock %}"
         for length in range(len("{% myblock foo %}"), len(fullbody) - 1):
             body = fullbody[:length]
@@ -194,45 +232,45 @@ class TestBlockLexer(unittest.TestCase):
         with self.assertRaises(CompilationError):
             extract_toplevel_blocks(body, allowed_blocks={"myblock", "otherblock"})
 
-    def test_comment_no_end_failure(self):
+    def test_comment_no_end_failure(self) -> None:
         body = "{# "
         with self.assertRaises(CompilationError):
             extract_toplevel_blocks(body)
 
-    def test_comment_only(self):
+    def test_comment_only(self) -> None:
         body = "{# myblock #}"
         blocks = extract_toplevel_blocks(body)
         self.assertEqual(len(blocks), 1)
         blocks = extract_toplevel_blocks(body, collect_raw_data=False)
         self.assertEqual(len(blocks), 0)
 
-    def test_comment_block_self_closing(self):
+    def test_comment_block_self_closing(self) -> None:
         # test the case where a comment start looks a lot like it closes itself
         # (but it doesn't in jinja!)
         body = "{#} {% myblock foo %} {#}"
         blocks = extract_toplevel_blocks(body, collect_raw_data=False)
         self.assertEqual(len(blocks), 0)
 
-    def test_embedded_self_closing_comment_block(self):
+    def test_embedded_self_closing_comment_block(self) -> None:
         body = "{% myblock foo %} {#}{% endmyblock %} {#}{% endmyblock %}"
         blocks = extract_toplevel_blocks(body, allowed_blocks={"myblock"}, collect_raw_data=False)
         self.assertEqual(len(blocks), 1)
         self.assertEqual(blocks[0].full_block, body)
         self.assertEqual(blocks[0].contents, " {#}{% endmyblock %} {#}")
 
-    def test_set_statement(self):
+    def test_set_statement(self) -> None:
         body = "{% set x = 1 %}{% myblock foo %}hi{% endmyblock %}"
         blocks = extract_toplevel_blocks(body, allowed_blocks={"myblock"}, collect_raw_data=False)
         self.assertEqual(len(blocks), 1)
         self.assertEqual(blocks[0].full_block, "{% myblock foo %}hi{% endmyblock %}")
 
-    def test_set_block(self):
+    def test_set_block(self) -> None:
         body = "{% set x %}1{% endset %}{% myblock foo %}hi{% endmyblock %}"
         blocks = extract_toplevel_blocks(body, allowed_blocks={"myblock"}, collect_raw_data=False)
         self.assertEqual(len(blocks), 1)
         self.assertEqual(blocks[0].full_block, "{% myblock foo %}hi{% endmyblock %}")
 
-    def test_crazy_set_statement(self):
+    def test_crazy_set_statement(self) -> None:
         body = (
             '{% set x = (thing("{% myblock foo %}")) %}{% otherblock bar %}x{% endotherblock %}'
             '{% set y = otherthing("{% myblock foo %}") %}'
@@ -244,19 +282,19 @@ class TestBlockLexer(unittest.TestCase):
         self.assertEqual(blocks[0].full_block, "{% otherblock bar %}x{% endotherblock %}")
         self.assertEqual(blocks[0].block_type_name, "otherblock")
 
-    def test_do_statement(self):
+    def test_do_statement(self) -> None:
         body = "{% do thing.update() %}{% myblock foo %}hi{% endmyblock %}"
         blocks = extract_toplevel_blocks(body, allowed_blocks={"myblock"}, collect_raw_data=False)
         self.assertEqual(len(blocks), 1)
         self.assertEqual(blocks[0].full_block, "{% myblock foo %}hi{% endmyblock %}")
 
-    def test_deceptive_do_statement(self):
+    def test_deceptive_do_statement(self) -> None:
         body = "{% do thing %}{% myblock foo %}hi{% endmyblock %}"
         blocks = extract_toplevel_blocks(body, allowed_blocks={"myblock"}, collect_raw_data=False)
         self.assertEqual(len(blocks), 1)
         self.assertEqual(blocks[0].full_block, "{% myblock foo %}hi{% endmyblock %}")
 
-    def test_do_block(self):
+    def test_do_block(self) -> None:
         body = "{% do %}thing.update(){% enddo %}{% myblock foo %}hi{% endmyblock %}"
         blocks = extract_toplevel_blocks(
             body, allowed_blocks={"do", "myblock"}, collect_raw_data=False
@@ -266,7 +304,7 @@ class TestBlockLexer(unittest.TestCase):
         self.assertEqual(blocks[0].block_type_name, "do")
         self.assertEqual(blocks[1].full_block, "{% myblock foo %}hi{% endmyblock %}")
 
-    def test_crazy_do_statement(self):
+    def test_crazy_do_statement(self) -> None:
         body = (
             '{% do (thing("{% myblock foo %}")) %}{% otherblock bar %}x{% endotherblock %}'
             '{% do otherthing("{% myblock foo %}") %}{% myblock x %}hi{% endmyblock %}'
@@ -280,7 +318,7 @@ class TestBlockLexer(unittest.TestCase):
         self.assertEqual(blocks[1].full_block, "{% myblock x %}hi{% endmyblock %}")
         self.assertEqual(blocks[1].block_type_name, "myblock")
 
-    def test_awful_jinja(self):
+    def test_awful_jinja(self) -> None:
         blocks = extract_toplevel_blocks(
             if_you_do_this_you_are_awful,
             allowed_blocks={"snapshot", "materialization"},
@@ -304,63 +342,71 @@ class TestBlockLexer(unittest.TestCase):
         self.assertEqual(blocks[1].block_type_name, "materialization")
         self.assertEqual(blocks[1].contents, "\nhi\n")
 
-    def test_quoted_endblock_within_block(self):
+    def test_quoted_endblock_within_block(self) -> None:
         body = '{% myblock something -%}  {% set x = ("{% endmyblock %}") %}  {% endmyblock %}'
         blocks = extract_toplevel_blocks(body, allowed_blocks={"myblock"}, collect_raw_data=False)
         self.assertEqual(len(blocks), 1)
         self.assertEqual(blocks[0].block_type_name, "myblock")
         self.assertEqual(blocks[0].contents, '{% set x = ("{% endmyblock %}") %}  ')
 
-    def test_docs_block(self):
+    def test_docs_block(self) -> None:
         body = (
             "{% docs __my_doc__ %} asdf {# nope {% enddocs %}} #} {% enddocs %}"
             '{% docs __my_other_doc__ %} asdf "{% enddocs %}'
         )
         blocks = extract_toplevel_blocks(body, allowed_blocks={"docs"}, collect_raw_data=False)
         self.assertEqual(len(blocks), 2)
-        self.assertEqual(blocks[0].block_type_name, "docs")
-        self.assertEqual(blocks[0].contents, " asdf {# nope {% enddocs %}} #} ")
-        self.assertEqual(blocks[0].block_name, "__my_doc__")
-        self.assertEqual(blocks[1].block_type_name, "docs")
-        self.assertEqual(blocks[1].contents, ' asdf "')
-        self.assertEqual(blocks[1].block_name, "__my_other_doc__")
+        b0 = blocks[0]
+        assert isinstance(b0, BlockTag)
+        self.assertEqual(b0.block_type_name, "docs")
+        self.assertEqual(b0.contents, " asdf {# nope {% enddocs %}} #} ")
+        self.assertEqual(b0.block_name, "__my_doc__")
+        b1 = blocks[1]
+        assert isinstance(b1, BlockTag)
+        self.assertEqual(b1.block_type_name, "docs")
+        self.assertEqual(b1.contents, ' asdf "')
+        self.assertEqual(b1.block_name, "__my_other_doc__")
 
-    def test_docs_block_expr(self):
+    def test_docs_block_expr(self) -> None:
         body = '{% docs more_doc %} asdf {{ "{% enddocs %}" ~ "}}" }}{% enddocs %}'
         blocks = extract_toplevel_blocks(body, allowed_blocks={"docs"}, collect_raw_data=False)
         self.assertEqual(len(blocks), 1)
-        self.assertEqual(blocks[0].block_type_name, "docs")
-        self.assertEqual(blocks[0].contents, ' asdf {{ "{% enddocs %}" ~ "}}" }}')
-        self.assertEqual(blocks[0].block_name, "more_doc")
+        b0 = blocks[0]
+        assert isinstance(b0, BlockTag)
+        self.assertEqual(b0.block_type_name, "docs")
+        self.assertEqual(b0.contents, ' asdf {{ "{% enddocs %}" ~ "}}" }}')
+        self.assertEqual(b0.block_name, "more_doc")
 
-    def test_unclosed_model_quotes(self):
+    def test_unclosed_model_quotes(self) -> None:
         # test case for https://github.com/dbt-labs/dbt-core/issues/1533
         body = '{% model my_model -%} select * from "something"."something_else{% endmodel %}'
         blocks = extract_toplevel_blocks(body, allowed_blocks={"model"}, collect_raw_data=False)
         self.assertEqual(len(blocks), 1)
-        self.assertEqual(blocks[0].block_type_name, "model")
-        self.assertEqual(blocks[0].contents, 'select * from "something"."something_else')
-        self.assertEqual(blocks[0].block_name, "my_model")
+        b0 = blocks[0]
+        assert isinstance(b0, BlockTag)
+        self.assertEqual(b0.block_type_name, "model")
+        self.assertEqual(b0.contents, 'select * from "something"."something_else')
+        self.assertEqual(b0.block_name, "my_model")
 
-    def test_if(self):
+    def test_if(self) -> None:
         # if you conditionally define your macros/models, don't
         body = "{% if true %}{% macro my_macro() %} adsf {% endmacro %}{% endif %}"
         with self.assertRaises(CompilationError):
             extract_toplevel_blocks(body)
 
-    def test_if_innocuous(self):
+    def test_if_innocuous(self) -> None:
         body = "{% if true %}{% something %}asdfasd{% endsomething %}{% endif %}"
         blocks = extract_toplevel_blocks(body)
         self.assertEqual(len(blocks), 1)
         self.assertEqual(blocks[0].full_block, body)
 
-    def test_for(self):
+    def test_for(self) -> None:
         # no for-loops over macros.
         body = "{% for x in range(10) %}{% macro my_macro() %} adsf {% endmacro %}{% endfor %}"
         with self.assertRaises(CompilationError):
             extract_toplevel_blocks(body)
 
-    def test_for_innocuous(self):
+    def test_for_innocuous(self) -> None:
         # no for-loops over macros.
         body = (
             "{% for x in range(10) %}{% something my_something %} adsf "
@@ -370,7 +416,7 @@ class TestBlockLexer(unittest.TestCase):
         self.assertEqual(len(blocks), 1)
         self.assertEqual(blocks[0].full_block, body)
 
-    def test_endif(self):
+    def test_endif(self) -> None:
         body = "{% snapshot foo %}select * from thing{% endsnapshot%}{% endif %}"
         with self.assertRaises(CompilationError) as err:
             extract_toplevel_blocks(body)
@@ -382,7 +428,7 @@ class TestBlockLexer(unittest.TestCase):
             str(err.exception),
         )
 
-    def test_if_endfor(self):
+    def test_if_endfor(self) -> None:
         body = "{% if x %}...{% endfor %}{% endif %}"
         with self.assertRaises(CompilationError) as err:
             extract_toplevel_blocks(body)
@@ -391,7 +437,7 @@ class TestBlockLexer(unittest.TestCase):
             str(err.exception),
         )
 
-    def test_if_endfor_newlines(self):
+    def test_if_endfor_newlines(self) -> None:
         body = "{% if x %}\n    ...\n    {% endfor %}\n{% endif %}"
         with self.assertRaises(CompilationError) as err:
             extract_toplevel_blocks(body)

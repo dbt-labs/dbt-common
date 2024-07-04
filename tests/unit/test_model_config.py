@@ -14,7 +14,7 @@ class ThingWithMergeBehavior(dbtClassMixin):
     keysappended: Dict[str, int] = field(metadata={"merge": MergeBehavior.DictKeyAppend})
 
 
-def test_merge_behavior_meta():
+def test_merge_behavior_meta() -> None:
     existing = {"foo": "bar"}
     initial_existing = existing.copy()
     assert set(MergeBehavior) == {
@@ -29,15 +29,15 @@ def test_merge_behavior_meta():
         assert existing == initial_existing
 
 
-def test_merge_behavior_from_field():
+def test_merge_behavior_from_field() -> None:
     fields = [f[0] for f in ThingWithMergeBehavior._get_fields()]
-    fields = {name: f for f, name in ThingWithMergeBehavior._get_fields()}
-    assert set(fields) == {"default_behavior", "appended", "updated", "clobbered", "keysappended"}
-    assert MergeBehavior.from_field(fields["default_behavior"]) == MergeBehavior.Clobber
-    assert MergeBehavior.from_field(fields["appended"]) == MergeBehavior.Append
-    assert MergeBehavior.from_field(fields["updated"]) == MergeBehavior.Update
-    assert MergeBehavior.from_field(fields["clobbered"]) == MergeBehavior.Clobber
-    assert MergeBehavior.from_field(fields["keysappended"]) == MergeBehavior.DictKeyAppend
+    fields2 = {name: f for f, name in ThingWithMergeBehavior._get_fields()}
+    assert set(fields2) == {"default_behavior", "appended", "updated", "clobbered", "keysappended"}
+    assert MergeBehavior.from_field(fields2["default_behavior"]) == MergeBehavior.Clobber
+    assert MergeBehavior.from_field(fields2["appended"]) == MergeBehavior.Append
+    assert MergeBehavior.from_field(fields2["updated"]) == MergeBehavior.Update
+    assert MergeBehavior.from_field(fields2["clobbered"]) == MergeBehavior.Clobber
+    assert MergeBehavior.from_field(fields2["keysappended"]) == MergeBehavior.DictKeyAppend
 
 
 @dataclass
@@ -47,7 +47,7 @@ class ThingWithShowBehavior(dbtClassMixin):
     shown: float = field(metadata={"show_hide": ShowBehavior.Show})
 
 
-def test_show_behavior_meta():
+def test_show_behavior_meta() -> None:
     existing = {"foo": "bar"}
     initial_existing = existing.copy()
     assert set(ShowBehavior) == {ShowBehavior.Hide, ShowBehavior.Show}
@@ -57,13 +57,13 @@ def test_show_behavior_meta():
         assert existing == initial_existing
 
 
-def test_show_behavior_from_field():
+def test_show_behavior_from_field() -> None:
     fields = [f[0] for f in ThingWithShowBehavior._get_fields()]
-    fields = {name: f for f, name in ThingWithShowBehavior._get_fields()}
-    assert set(fields) == {"default_behavior", "hidden", "shown"}
-    assert ShowBehavior.from_field(fields["default_behavior"]) == ShowBehavior.Show
-    assert ShowBehavior.from_field(fields["hidden"]) == ShowBehavior.Hide
-    assert ShowBehavior.from_field(fields["shown"]) == ShowBehavior.Show
+    fields2 = {name: f for f, name in ThingWithShowBehavior._get_fields()}
+    assert set(fields2) == {"default_behavior", "hidden", "shown"}
+    assert ShowBehavior.from_field(fields2["default_behavior"]) == ShowBehavior.Show
+    assert ShowBehavior.from_field(fields2["hidden"]) == ShowBehavior.Hide
+    assert ShowBehavior.from_field(fields2["shown"]) == ShowBehavior.Show
 
 
 @dataclass
@@ -73,7 +73,7 @@ class ThingWithCompareBehavior(dbtClassMixin):
     excluded: str = field(metadata={"compare": CompareBehavior.Exclude})
 
 
-def test_compare_behavior_meta():
+def test_compare_behavior_meta() -> None:
     existing = {"foo": "bar"}
     initial_existing = existing.copy()
     assert set(CompareBehavior) == {CompareBehavior.Include, CompareBehavior.Exclude}
@@ -83,10 +83,10 @@ def test_compare_behavior_meta():
         assert existing == initial_existing
 
 
-def test_compare_behavior_from_field():
+def test_compare_behavior_from_field() -> None:
     fields = [f[0] for f in ThingWithCompareBehavior._get_fields()]
-    fields = {name: f for f, name in ThingWithCompareBehavior._get_fields()}
-    assert set(fields) == {"default_behavior", "included", "excluded"}
-    assert CompareBehavior.from_field(fields["default_behavior"]) == CompareBehavior.Include
-    assert CompareBehavior.from_field(fields["included"]) == CompareBehavior.Include
-    assert CompareBehavior.from_field(fields["excluded"]) == CompareBehavior.Exclude
+    fields2 = {name: f for f, name in ThingWithCompareBehavior._get_fields()}
+    assert set(fields2) == {"default_behavior", "included", "excluded"}
+    assert CompareBehavior.from_field(fields2["default_behavior"]) == CompareBehavior.Include
+    assert CompareBehavior.from_field(fields2["included"]) == CompareBehavior.Include
+    assert CompareBehavior.from_field(fields2["excluded"]) == CompareBehavior.Exclude

@@ -69,7 +69,7 @@ def setup():
         os.environ["DBT_RECORDER_FILE_PATH"] = prev_fp
 
 
-def test_decorator_records(setup):
+def test_decorator_records(setup) -> None:
     os.environ["DBT_RECORDER_MODE"] = "Record"
     recorder = Recorder(RecorderMode.RECORD, None)
     set_invocation_context({})
@@ -116,7 +116,7 @@ def test_record_types(setup):
     assert NotTestRecord not in recorder._records_by_type
 
 
-def test_decorator_replays(setup):
+def test_decorator_replays(setup) -> None:
     os.environ["DBT_RECORDER_MODE"] = "Replay"
     os.environ["DBT_RECORDER_FILE_PATH"] = "record.json"
     recorder = Recorder(RecorderMode.REPLAY, None)

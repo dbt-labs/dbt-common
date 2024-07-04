@@ -5,19 +5,19 @@ MACRO_PREFIX = "dbt_macro__"
 DOCS_PREFIX = "dbt_docs__"
 
 
-def get_dbt_macro_name(name):
+def get_dbt_macro_name(name) -> str:
     if name is None:
         raise DbtInternalError("Got None for a macro name!")
     return f"{MACRO_PREFIX}{name}"
 
 
-def get_dbt_docs_name(name):
+def get_dbt_docs_name(name) -> str:
     if name is None:
         raise DbtInternalError("Got None for a doc name!")
     return f"{DOCS_PREFIX}{name}"
 
 
-def get_materialization_macro_name(materialization_name, adapter_type=None, with_prefix=True):
+def get_materialization_macro_name(materialization_name, adapter_type=None, with_prefix=True) -> str:
     if adapter_type is None:
         adapter_type = "default"
     name = f"materialization_{materialization_name}_{adapter_type}"

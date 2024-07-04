@@ -1,7 +1,7 @@
 # This is useful for proto generated classes in particular, since
 # the default for protobuf for strings is the empty string, so
 # Optional[str] types don't work for generated Python classes.
-from typing import Optional
+from typing import Any, Dict, Optional
 
 
 def cast_to_str(string: Optional[str]) -> str:
@@ -18,8 +18,8 @@ def cast_to_int(integer: Optional[int]) -> int:
         return integer
 
 
-def cast_dict_to_dict_of_strings(dct):
-    new_dct = {}
+def cast_dict_to_dict_of_strings(dct: Dict[Any, Any]) -> Dict[str, str]:
+    new_dct: Dict[str, str] = {}
     for k, v in dct.items():
         new_dct[str(k)] = str(v)
     return new_dct

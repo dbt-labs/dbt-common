@@ -14,8 +14,6 @@ from deepdiff import DeepDiff  # type: ignore
 from enum import Enum
 from typing import Any, Callable, Dict, List, Mapping, Optional, Type
 
-from dbt_common.context import get_invocation_context
-
 
 class Record:
     """An instance of this abstract Record class represents a request made by dbt
@@ -295,9 +293,11 @@ def record_function(
             return func_to_record
 
         @functools.wraps(func_to_record)
-        def record_replay_wrapper(*args, **kwargs):
-            recorder: Recorder = None
+        def record_replay_wrapper(*args, **kwargs) -> Any:
+            recorder: Optional[Recorder] = None
             try:
+                from dbt_common.context import get_invocation_context
+
                 recorder = get_invocation_context().recorder
             except LookupError:
                 pass

@@ -5,7 +5,7 @@ import dbt_common.utils.dict
 
 
 class TestDeepMerge(unittest.TestCase):
-    def test__simple_cases(self):
+    def test__simple_cases(self) -> None:
         cases = [
             {"args": [{}, {"a": 1}], "expected": {"a": 1}, "description": "one key into empty"},
             {
@@ -27,7 +27,7 @@ class TestDeepMerge(unittest.TestCase):
 
 
 class TestMerge(unittest.TestCase):
-    def test__simple_cases(self):
+    def test__simple_cases(self) -> None:
         cases = [
             {"args": [{}, {"a": 1}], "expected": {"a": 1}, "description": "one key into empty"},
             {
@@ -49,7 +49,7 @@ class TestMerge(unittest.TestCase):
 
 
 class TestDeepMap(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.input_value = {
             "foo": {
                 "bar": "hello",
@@ -74,7 +74,7 @@ class TestDeepMap(unittest.TestCase):
         except (TypeError, ValueError):
             return -1
 
-    def test__simple_cases(self):
+    def test__simple_cases(self) -> None:
         expected = {
             "foo": {
                 "bar": -1,
@@ -104,7 +104,7 @@ class TestDeepMap(unittest.TestCase):
         else:
             return value
 
-    def test__keypath(self):
+    def test__keypath(self) -> None:
         expected = {
             "foo": {
                 "bar": "hello",
@@ -128,11 +128,11 @@ class TestDeepMap(unittest.TestCase):
         actual = dbt_common.utils.dict.deep_map_render(self.special_keypath, expected)
         self.assertEqual(actual, expected)
 
-    def test__noop(self):
+    def test__noop(self) -> None:
         actual = dbt_common.utils.dict.deep_map_render(lambda x, _: x, self.input_value)
         self.assertEqual(actual, self.input_value)
 
-    def test_trivial(self):
+    def test_trivial(self) -> None:
         cases = [[], {}, 1, "abc", None, True]
         for case in cases:
             result = dbt_common.utils.dict.deep_map_render(lambda x, _: x, case)

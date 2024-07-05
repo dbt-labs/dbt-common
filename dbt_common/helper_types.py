@@ -19,7 +19,7 @@ Port = NewType("Port", int)
 class NVEnum(StrEnum):
     novalue = "novalue"
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return isinstance(other, NVEnum)
 
 
@@ -59,7 +59,7 @@ class IncludeExclude(dbtClassMixin):
             item_name in self.include or self.include in self.INCLUDE_ALL
         ) and item_name not in self.exclude
 
-    def _validate_items(self, items: List[str]):
+    def _validate_items(self, items: List[str]) -> None:
         pass
 
 

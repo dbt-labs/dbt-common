@@ -39,27 +39,9 @@ class ColumnLevelConstraint(dbtClassMixin):
     to: Optional[str] = None
     to_column: Optional[str] = None
 
-    @classmethod
-    def validate(cls, data):
-        super().validate(data)
-        if data.get("type") is not ConstraintType.foreign_key:
-            if data.get("to") is not None:
-                raise ValidationError(f"Only column-level constraint of type {ConstraintType.foreign_key} can specify a 'to' field.")
-            if data.get("to_column") is not None:
-                raise ValidationError(f"Only column-level constraint of type {ConstraintType.foreign_key} can specify a 'to_column' field.")
-
 
 @dataclass
 class ModelLevelConstraint(ColumnLevelConstraint):
     columns: List[str] = field(default_factory=list)
     to: Optional[str] = None
     to_columns: List[str] = field(default_factory=list)
-
-    @classmethod
-    def validate(cls, data):
-        super().validate(data)
-        if data.get("type") is not ConstraintType.foreign_key:
-            if data.get("to") is not None:
-                raise ValidationError(f"Only model-level constraint of type {ConstraintType.foreign_key} can specify a 'to' field.")
-            if data.get("to_columns") is not None:
-                raise ValidationError(f"Only model-level constraint of type {ConstraintType.foreign_key} can specify a 'to_columns' field.")

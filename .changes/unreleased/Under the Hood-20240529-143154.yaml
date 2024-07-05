@@ -1,0 +1,6 @@
+kind: Under the Hood
+body: Move StatsItem, StatsDict, TableMetadata to dbt-common
+time: 2024-05-29T14:31:54.854468+01:00
+custom:
+    Author: aranke
+    Issue: "141"

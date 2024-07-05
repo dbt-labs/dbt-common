@@ -37,11 +37,9 @@ class ColumnLevelConstraint(dbtClassMixin):
         True  # Warn if constraint is not supported by the platform and won't be in DDL
     )
     to: Optional[str] = None
-    to_column: Optional[str] = None
+    to_columns: List[str] = field(default_factory=list)
 
 
 @dataclass
 class ModelLevelConstraint(ColumnLevelConstraint):
     columns: List[str] = field(default_factory=list)
-    to: Optional[str] = None
-    to_columns: List[str] = field(default_factory=list)

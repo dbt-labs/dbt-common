@@ -24,13 +24,23 @@ class CaseInsensitiveMapping(Mapping):
 class InvocationContext:
     def __init__(self, env: Mapping[str, str]):
         self._env: Mapping[str, str]
+
+        env_public = {}
+        env_private = {}
+
+        for k, v in env.items():
+            if k.startswith(PRIVATE_ENV_PREFIX):
+                env_private[k] = v
+            else:
+                env_public[k] = v
+
         if os.name == "nt":
-            self._env = CaseInsensitiveMapping({k: v for k, v in env.items() if not k.startswith(PRIVATE_ENV_PREFIX)})
+            self._env = CaseInsensitiveMapping(env_public)
         else:
-            self._env = {k: v for k, v in env.items() if not k.startswith(PRIVATE_ENV_PREFIX)}
+            self._env = env_public
 
         self._env_secrets: Optional[List[str]] = None
-        self._env_private = {k: v for k, v in env.items() if k.startswith(PRIVATE_ENV_PREFIX)}
+        self._env_private = env_private
         self.recorder: Optional[Recorder] = None
         # This class will also eventually manage the invocation_id, flags, event manager, etc.
 

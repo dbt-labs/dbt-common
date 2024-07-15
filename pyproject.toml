@@ -126,6 +126,7 @@ ignore = ["E203", "E501", "E741", "W503", "W504"]
 exclude = [
     "dbt_common/events/types_pb2.py",
     "venv",
+    ".venv",
     "env*"
 ]
 per-file-ignores = ["*/__init__.py: F401"]

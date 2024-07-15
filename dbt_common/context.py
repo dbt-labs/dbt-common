@@ -1,13 +1,34 @@
+import os
 from contextvars import ContextVar, copy_context
-from typing import List, Mapping, Optional
+from typing import List, Mapping, Optional, Iterator
 
 from dbt_common.constants import PRIVATE_ENV_PREFIX, SECRET_ENV_PREFIX
 from dbt_common.record import Recorder
 
 
+class CaseInsensitiveMapping(Mapping):
+    def __init__(self, env: Mapping[str, str]):
+        self._env = {k.casefold(): (k, v) for k, v in env.items()}
+
+    def __getitem__(self, key: str) -> str:
+        return self._env[key.casefold()][1]
+
+    def __len__(self) -> int:
+        return len(self._env)
+
+    def __iter__(self) -> Iterator[str]:
+        for item in self._env.items():
+            yield item[0]
+
+
 class InvocationContext:
     def __init__(self, env: Mapping[str, str]):
-        self._env = {k: v for k, v in env.items() if not k.startswith(PRIVATE_ENV_PREFIX)}
+        self._env: Mapping[str, str]
+        if os.name == "nt":
+            self._env = CaseInsensitiveMapping({k: v for k, v in env.items() if not k.startswith(PRIVATE_ENV_PREFIX)})
+        else:
+            self._env = {k: v for k, v in env.items() if not k.startswith(PRIVATE_ENV_PREFIX)}
+
         self._env_secrets: Optional[List[str]] = None
         self._env_private = {k: v for k, v in env.items() if k.startswith(PRIVATE_ENV_PREFIX)}
         self.recorder: Optional[Recorder] = None

@@ -1,11 +1,26 @@
+import os
+
+import pytest
+
 from dbt_common.constants import PRIVATE_ENV_PREFIX, SECRET_ENV_PREFIX
-from dbt_common.context import InvocationContext
+from dbt_common.context import InvocationContext, CaseInsensitiveMapping
 
 
 def test_invocation_context_env() -> None:
     test_env = {"VAR_1": "value1", "VAR_2": "value2"}
     ic = InvocationContext(env=test_env)
     assert ic.env == test_env
+
+
+@pytest.mark.skipif(
+    os.name != "nt", reason="Test for case-insensitive env vars, only run on Windows"
+)
+def test_invocation_context_windows() -> None:
+    test_env = {"var_1": "lowercase", "vAr_2": "mixedcase", "VAR_3": "uppercase"}
+    ic = InvocationContext(env=test_env)
+    assert ic.env == CaseInsensitiveMapping(
+        {"var_1": "lowercase", "var_2": "mixedcase", "var_3": "uppercase"}
+    )
 
 
 def test_invocation_context_secrets() -> None:

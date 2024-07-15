@@ -12,7 +12,9 @@ def test_invocation_context_env() -> None:
     assert ic.env == test_env
 
 
-@pytest.mark.skipif(os.name != "nt")
+@pytest.mark.skipif(
+    os.name != "nt", reason="Test for case-insensitive env vars, only run on Windows"
+)
 def test_invocation_context_windows() -> None:
     test_env = {"var_1": "lowercase", "vAr_2": "mixedcase", "VAR_3": "uppercase"}
     ic = InvocationContext(env=test_env)

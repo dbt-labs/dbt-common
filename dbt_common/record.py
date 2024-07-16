@@ -20,7 +20,8 @@ class Record:
     to the request, and the 'result' is what is returned."""
 
     params_cls: type
-    result_cls: Optional[type]
+    result_cls: Optional[type] = None
+    group: Optional[str] = None
 
     def __init__(self, params, result) -> None:
         self.params = params
@@ -309,9 +310,9 @@ def record_function(
             if recorder is None:
                 return func_to_record(*args, **kwargs)
 
-            if (
-                recorder.recorded_types is not None
-                and record_type.__name__ not in recorder.recorded_types
+            if recorder.recorded_types is not None and not (
+                record_type.__name__ in recorder.recorded_types
+                or record_type.group in recorder.recorded_types
             ):
                 return func_to_record(*args, **kwargs)
 

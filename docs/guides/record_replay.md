@@ -31,13 +31,16 @@ The final detail needed is to define the classes specified by `params_cls` and `
 With these decorators applied and classes defined, dbt is able to record all file access during a run, and mock out the accesses during replay, isolating dbt from actually loading files. At least it would if dbt only used this function for all file access, which is only mostly true. We hope to continue improving the usefulness of this mechanism by adding more recorded functions and routing more operations through them.
 
 ## How to record/replay
-If `DBT_RECORDER_MODE` is not `replay` or `record`, case insensitive, this is a no-op.  Invalid values are ignored and do not throw exceptions.
 
-`DBT_RECODER_TYPES` is optional.  It indicates which types to filter the results by and expects a list of strings values for the `Record` subclasses.  Any invalid types will be ignored.  `all` is a valid type and behaves the same as not populating the env var.
+Record/replay behavior is activated and configured via environment variables. When DBT_RECORDER_MODE is unset, the entire subsystem is disabled, and the decorators described above have no effect at all. This helps isolate the subsystem from core's application code, reducing the risk of performance impact or regressions.
+
+The record/replay subsystem is activated by setting the `DBT_RECORDER_MODE` variable to `replay`, `record`, or `diff`, case insensitive.  Invalid values are ignored and do not throw exceptions.
+
+`DBT_RECODER_TYPES` is optional.  It indicates which types to filter the results by and expects a list of strings values for the `Record` subclasses or groups of such classes. For example, all records of database/DWH interaction performed by adapters belong to the `Database` group. Any invalid type or group name will be ignored.  `all` is a valid value for this variable and has the same effect as not populating the variable.
 
 
 ```bash
-DBT_RECORDER_MODE=record DBT_RECODER_TYPES=QueryRecord,GetEnvRecord dbt run
+DBT_RECORDER_MODE=record DBT_RECODER_TYPES=Database dbt run
 ```
 
 replay need the file to replay

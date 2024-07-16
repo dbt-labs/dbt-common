@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, List
 
-from dbt_common.dataclass_schema import dbtClassMixin, ValidationError
+from dbt_common.dataclass_schema import dbtClassMixin
 
 
 class ConstraintType(str, Enum):

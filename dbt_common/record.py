@@ -11,7 +11,7 @@ import json
 import os
 
 from enum import Enum
-from typing import Any, Callable, Dict, List, Mapping, Optional, Type
+from typing import Any, Callable, Dict, List, Mapping, Optional, Type, Union
 
 
 class Record:
@@ -50,113 +50,56 @@ class Record:
         return cls(params=p, result=r)
 
 
-class Diff:
-    def __init__(self, current_recording_path: str, previous_recording_path: str) -> None:
-        # deepdiff is expensive to import, so we only do it here when we need it
-        from deepdiff import DeepDiff  # type: ignore
+@dataclasses.dataclass
+class MissingBaselineRecord:
+    """Represents a function call made during replay (or, in diff mode, in the
+       comparison recording) which was not present in the baseline recording."""
+    comparison_record: Any
 
-        self.diff = DeepDiff
-
-        self.current_recording_path = current_recording_path
-        self.previous_recording_path = previous_recording_path
-
-    def diff_query_records(self, current: List, previous: List) -> Dict[str, Any]:
-        # some of the table results are returned as a stringified list of dicts that don't
-        # diff because order isn't consistent. convert it into a list of dicts so it can
-        # be diffed ignoring order
-
-        for i in range(len(current)):
-            if current[i].get("result").get("table") is not None:
-                current[i]["result"]["table"] = json.loads(current[i]["result"]["table"])
-        for i in range(len(previous)):
-            if previous[i].get("result").get("table") is not None:
-                previous[i]["result"]["table"] = json.loads(previous[i]["result"]["table"])
-
-        return self.diff(previous, current, ignore_order=True, verbose_level=2)
-
-    def diff_env_records(self, current: List, previous: List) -> Dict[str, Any]:
-        # The mode and filepath may change.  Ignore them.
-
-        exclude_paths = [
-            "root[0]['result']['env']['DBT_RECORDER_FILE_PATH']",
-            "root[0]['result']['env']['DBT_RECORDER_MODE']",
-        ]
-
-        return self.diff(
-            previous, current, ignore_order=True, verbose_level=2, exclude_paths=exclude_paths
-        )
-
-    def diff_default(self, current: List, previous: List) -> Dict[str, Any]:
-        return self.diff(previous, current, ignore_order=True, verbose_level=2)
-
-    def calculate_diff(self) -> Dict[str, Any]:
-        with open(self.current_recording_path) as current_recording:
-            current_dct = json.load(current_recording)
-
-        with open(self.previous_recording_path) as previous_recording:
-            previous_dct = json.load(previous_recording)
-
-        diff = {}
-        for record_type in current_dct:
-            if record_type == "QueryRecord":
-                diff[record_type] = self.diff_query_records(
-                    current_dct[record_type], previous_dct[record_type]
-                )
-            elif record_type == "GetEnvRecord":
-                diff[record_type] = self.diff_env_records(
-                    current_dct[record_type], previous_dct[record_type]
-                )
-            else:
-                diff[record_type] = self.diff_default(
-                    current_dct[record_type], previous_dct[record_type]
-                )
-
-        return diff
+    def to_dict(self) -> Dict[str, Any]:
+        return { 
+            "type": "MissingBaselineRecord", 
+            "comparison_params": self.comparison_record.to_dict() 
+        }
 
 
-class RecorderMode(Enum):
-    RECORD = 1
-    REPLAY = 2
-    DIFF = 3  # records and does diffing
+@dataclasses.dataclass
+class ExtraBaselineRecord:
+    """Represents a function call in the baseline recording which did not match
+       any call made during replay (or, in diff mode, did not match any call in
+       the comparison recording)."""
+    baseline_record: Record
+
+    def to_dict(self) -> Dict[str, Any]:
+        return { 
+            "type": "ExtraBaselineRecord", 
+            "baseline_record": self.baseline_record.to_dict() 
+        }
 
 
-class Recorder:
-    _record_cls_by_name: Dict[str, Type] = {}
-    _record_name_by_params_name: Dict[str, str] = {}
+@dataclasses.dataclass
+class DifferentResult:
+    """In diff mode only, indicates that a function called during the baseline
+       recording was also called in the comparison recording, but that the
+       result of the call was different."""
+    comparison_record: Record
+    baseline_record: Record
 
-    def __init__(
-        self,
-        mode: RecorderMode,
-        types: Optional[List],
-        current_recording_path: str = "recording.json",
-        previous_recording_path: Optional[str] = None,
-    ) -> None:
-        self.mode = mode
-        self.recorded_types = types
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "type": "DifferentResult",
+            "baseline_record": self.baseline_record.to_dict(),
+            "comparison_record": self.comparison_record.to_dict()
+        }
+
+
+Diff = Union[MissingBaselineRecord, ExtraBaselineRecord, DifferentResult]
+
+
+class Recording:
+    def __init__(self) -> None:
         self._records_by_type: Dict[str, List[Record]] = {}
         self._unprocessed_records_by_type: Dict[str, List[Dict[str, Any]]] = {}
-        self._replay_diffs: List["Diff"] = []
-        self.diff: Optional[Diff] = None
-        self.previous_recording_path = previous_recording_path
-        self.current_recording_path = current_recording_path
-
-        if self.previous_recording_path is not None and self.mode in (
-            RecorderMode.REPLAY,
-            RecorderMode.DIFF,
-        ):
-            self.diff = Diff(
-                current_recording_path=self.current_recording_path,
-                previous_recording_path=self.previous_recording_path,
-            )
-
-            if self.mode == RecorderMode.REPLAY:
-                self._unprocessed_records_by_type = self.load(self.previous_recording_path)
-
-    @classmethod
-    def register_record_type(cls, rec_type) -> Any:
-        cls._record_cls_by_name[rec_type.__name__] = rec_type
-        cls._record_name_by_params_name[rec_type.params_cls.__name__] = rec_type.__name__
-        return rec_type
 
     def add_record(self, record: Record) -> None:
         rec_cls_name = record.__class__.__name__  # type: ignore
@@ -165,7 +108,7 @@ class Recorder:
         self._records_by_type[rec_cls_name].append(record)
 
     def pop_matching_record(self, params: Any) -> Optional[Record]:
-        rec_type_name = self._record_name_by_params_name.get(type(params).__name__)
+        rec_type_name = Recorder._record_name_by_params_name.get(type(params).__name__)
 
         if rec_type_name is None:
             raise Exception(
@@ -183,8 +126,19 @@ class Recorder:
 
         return match
 
-    def write(self) -> None:
-        with open(self.current_recording_path, "w") as file:
+    def _ensure_records_processed(self, record_type_name: str) -> None:
+        if record_type_name in self._records_by_type:
+            return
+
+        rec_list = []
+        record_cls = Recorder._record_cls_by_name[record_type_name]
+        for record_dct in self._unprocessed_records_by_type[record_type_name]:
+            rec = record_cls.from_dict(record_dct)
+            rec_list.append(rec)  # type: ignore
+        self._records_by_type[record_type_name] = rec_list
+
+    def write(self, path: str) -> None:
+        with open(path, "w") as file:
             json.dump(self._to_dict(), file)
 
     def _to_dict(self) -> Dict:
@@ -195,43 +149,67 @@ class Recorder:
             dct[record_type] = record_list
 
         return dct
+    
+    @classmethod
+    def from_file(cls, file_name: str) -> "Recording":
+        recording = Recording()
+        with open(file_name) as file:
+            recording._unprocessed_records_by_type = json.load(file)
+        return recording
+        
+
+
+class RecorderMode(Enum):
+    RECORD = 1
+    REPLAY = 2
+    DIFF = 3
+
+
+class Recorder:
+    _record_cls_by_name: Dict[str, Type] = {}
+    _record_name_by_params_name: Dict[str, str] = {}
+
+    def __init__(self, mode: RecorderMode, types: Optional[List], recording: Optional[Recording] = None) -> None:
+        self.mode = mode
+        self.recorded_types = types
+        self.recording = recording if recording is not None else Recording()
+        self.diffs: List[Diff] = []
 
     @classmethod
-    def load(cls, file_name: str) -> Dict[str, List[Dict[str, Any]]]:
-        with open(file_name) as file:
-            return json.load(file)
+    def register_record_type(cls, rec_type) -> Any:
+        cls._record_cls_by_name[rec_type.__name__] = rec_type
+        cls._record_name_by_params_name[rec_type.params_cls.__name__] = rec_type.__name__
+        return rec_type
 
-    def _ensure_records_processed(self, record_type_name: str) -> None:
-        if record_type_name in self._records_by_type:
-            return
+    def add_record(self, record: Record) -> None:
+        if self.mode != RecorderMode.RECORD:
+            raise Exception("Records can only be added in record mode.")
 
-        rec_list = []
-        record_cls = self._record_cls_by_name[record_type_name]
-        for record_dct in self._unprocessed_records_by_type[record_type_name]:
-            rec = record_cls.from_dict(record_dct)
-            rec_list.append(rec)  # type: ignore
-        self._records_by_type[record_type_name] = rec_list
+        self.recording.add_record(record)
+
 
     def expect_record(self, params: Any) -> Any:
-        record = self.pop_matching_record(params)
+        if self.mode != RecorderMode.REPLAY and self.mode != RecorderMode.DIFF:
+            raise Exception("Records can only be expected in replay or diff modes.")
+
+        record = self.recording.pop_matching_record(params)
 
         if record is None:
-            raise Exception()
+            rec_type_name = Recorder._record_cls_by_name[Recorder._record_name_by_params_name.get(type(params).__name__)]
+            self.diffs.append(MissingBaselineRecord(rec_type_name(params=params, result=None)))
+            raise Exception(f"Could not find a matching record for expected: \n{repr(params)}")
 
         if record.result is None:
             return None
 
         result_tuple = dataclasses.astuple(record.result)
         return result_tuple[0] if len(result_tuple) == 1 else result_tuple
+    
 
     def write_diffs(self, diff_file_name) -> None:
-        assert self.diff is not None
         with open(diff_file_name, "w") as f:
-            json.dump(self.diff.calculate_diff(), f)
-
-    def print_diffs(self) -> None:
-        assert self.diff is not None
-        print(repr(self.diff.calculate_diff()))
+            json.dump([d.to_dict() for d in self.diffs], f)
+            
 
 
 def get_record_mode_from_env() -> Optional[RecorderMode]:

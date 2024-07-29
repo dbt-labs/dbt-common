@@ -1,6 +1,0 @@
-kind: Features
-body: Added a new InvocationContext class for application context management.
-time: 2024-02-01T10:44:37.161298-05:00
-custom:
-  Author: peterallenwebb
-  Issue: "57"

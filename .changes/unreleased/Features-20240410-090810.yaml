@@ -1,6 +1,0 @@
-kind: Features
-body: Support environment variables which dbt can see but user code cannot.
-time: 2024-04-10T09:08:10.068999-04:00
-custom:
-  Author: peterallenwebb
-  Issue: "103"

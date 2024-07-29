@@ -46,13 +46,13 @@ EXPECTED_STRINGS = [
 
 
 class TestAgateHelper(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.tempdir = mkdtemp()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         rmtree(self.tempdir)
 
-    def test_from_csv(self):
+    def test_from_csv(self) -> None:
         path = os.path.join(self.tempdir, "input.csv")
         with open(path, "wb") as fp:
             fp.write(SAMPLE_CSV_DATA.encode("utf-8"))
@@ -61,7 +61,7 @@ class TestAgateHelper(unittest.TestCase):
         for idx, row in enumerate(tbl):
             self.assertEqual(list(row), EXPECTED[idx])
 
-    def test_bom_from_csv(self):
+    def test_bom_from_csv(self) -> None:
         path = os.path.join(self.tempdir, "input.csv")
         with open(path, "wb") as fp:
             fp.write(SAMPLE_CSV_BOM_DATA.encode("utf-8"))
@@ -70,7 +70,7 @@ class TestAgateHelper(unittest.TestCase):
         for idx, row in enumerate(tbl):
             self.assertEqual(list(row), EXPECTED[idx])
 
-    def test_from_csv_all_reserved(self):
+    def test_from_csv_all_reserved(self) -> None:
         path = os.path.join(self.tempdir, "input.csv")
         with open(path, "wb") as fp:
             fp.write(SAMPLE_CSV_DATA.encode("utf-8"))
@@ -79,7 +79,7 @@ class TestAgateHelper(unittest.TestCase):
         for expected, row in zip(EXPECTED_STRINGS, tbl):
             self.assertEqual(list(row), expected)
 
-    def test_from_data(self):
+    def test_from_data(self) -> None:
         column_names = ["a", "b", "c", "d", "e", "f", "g"]
         data = [
             {
@@ -106,7 +106,7 @@ class TestAgateHelper(unittest.TestCase):
         for idx, row in enumerate(tbl):
             self.assertEqual(list(row), EXPECTED[idx])
 
-    def test_datetime_formats(self):
+    def test_datetime_formats(self) -> None:
         path = os.path.join(self.tempdir, "input.csv")
         datetimes = [
             "20180806T11:33:29.000Z",
@@ -120,7 +120,7 @@ class TestAgateHelper(unittest.TestCase):
             tbl = agate_helper.from_csv(path, ())
             self.assertEqual(tbl[0][0], expected)
 
-    def test_merge_allnull(self):
+    def test_merge_allnull(self) -> None:
         t1 = agate_helper.table_from_rows([(1, "a", None), (2, "b", None)], ("a", "b", "c"))
         t2 = agate_helper.table_from_rows([(3, "c", None), (4, "d", None)], ("a", "b", "c"))
         result = agate_helper.merge_tables([t1, t2])
@@ -130,7 +130,7 @@ class TestAgateHelper(unittest.TestCase):
         assert isinstance(result.column_types[2], agate_helper.Integer)
         self.assertEqual(len(result), 4)
 
-    def test_merge_mixed(self):
+    def test_merge_mixed(self) -> None:
         t1 = agate_helper.table_from_rows(
             [(1, "a", None, None), (2, "b", None, None)], ("a", "b", "c", "d")
         )
@@ -181,7 +181,7 @@ class TestAgateHelper(unittest.TestCase):
         assert isinstance(result.column_types[3], agate.data_types.Number)
         self.assertEqual(len(result), 6)
 
-    def test_nocast_string_types(self):
+    def test_nocast_string_types(self) -> None:
         # String fields should not be coerced into a representative type
         # See: https://github.com/dbt-labs/dbt-core/issues/2984
 
@@ -202,7 +202,7 @@ class TestAgateHelper(unittest.TestCase):
         for i, row in enumerate(tbl):
             self.assertEqual(list(row), expected[i])
 
-    def test_nocast_bool_01(self):
+    def test_nocast_bool_01(self) -> None:
         # True and False values should not be cast to 1 and 0, and vice versa
         # See: https://github.com/dbt-labs/dbt-core/issues/4511
 

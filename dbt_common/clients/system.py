@@ -38,6 +38,15 @@ else:
     c_bool = None
 
 
+def _record_path(path: str) -> bool:
+    return (
+        # TODO: The first check here obviates the next two checks but is probably too coarse?
+        "dbt/include" not in path
+        and "dbt/include/global_project" not in path
+        and "/plugins/postgres/dbt/include/" not in path
+    )
+
+
 @dataclasses.dataclass
 class FindMatchingParams:
     root_path: str
@@ -61,10 +70,7 @@ class FindMatchingParams:
     def _include(self) -> bool:
         # Do not record or replay filesystem searches that were performed against
         # files which are actually part of dbt's implementation.
-        return (
-            "dbt/include/global_project" not in self.root_path
-            and "/plugins/postgres/dbt/include/" not in self.root_path
-        )
+        return _record_path(self.root_path)
 
 
 @dataclasses.dataclass
@@ -148,10 +154,7 @@ class LoadFileParams:
     def _include(self) -> bool:
         # Do not record or replay file reads that were performed against files
         # which are actually part of dbt's implementation.
-        return (
-            "dbt/include/global_project" not in self.path
-            and "/plugins/postgres/dbt/include/" not in self.path
-        )
+        return _record_path(self.path)
 
 
 @dataclasses.dataclass
@@ -246,10 +249,7 @@ class WriteFileParams:
     def _include(self) -> bool:
         # Do not record or replay file reads that were performed against files
         # which are actually part of dbt's implementation.
-        return (
-            "dbt/include/global_project" not in self.path
-            and "/plugins/postgres/dbt/include/" not in self.path
-        )
+        return _record_path(self.path)
 
 
 @Recorder.register_record_type

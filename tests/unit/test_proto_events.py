@@ -18,7 +18,7 @@ info_keys = {
 }
 
 
-def test_events():
+def test_events() -> None:
     # M020 event
     event_code = "M020"
     event = RetryExternalCall(attempt=3, max=5)
@@ -45,7 +45,7 @@ def test_events():
     assert new_msg.data.attempt == msg.data.attempt
 
 
-def test_extra_dict_on_event(monkeypatch):
+def test_extra_dict_on_event(monkeypatch) -> None:
     monkeypatch.setenv("DBT_ENV_CUSTOM_ENV_env_key", "env_value")
 
     reset_metadata_vars()

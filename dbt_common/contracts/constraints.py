@@ -36,6 +36,8 @@ class ColumnLevelConstraint(dbtClassMixin):
     warn_unsupported: bool = (
         True  # Warn if constraint is not supported by the platform and won't be in DDL
     )
+    to: Optional[str] = None
+    to_columns: List[str] = field(default_factory=list)
 
 
 @dataclass

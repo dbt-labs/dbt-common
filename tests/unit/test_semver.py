@@ -1,6 +1,6 @@
 import itertools
 import unittest
-from typing import List
+from typing import List, Optional
 
 from dbt_common.exceptions import VersionsNotCompatibleError
 from dbt_common.semver import (
@@ -23,9 +23,11 @@ def semver_regex_versioning(versions: List[str]) -> bool:
     return True
 
 
-def create_range(start_version_string, end_version_string):
-    start = UnboundedVersionSpecifier()
-    end = UnboundedVersionSpecifier()
+def create_range(
+    start_version_string: Optional[str], end_version_string: Optional[str]
+) -> VersionRange:
+    start: VersionSpecifier = UnboundedVersionSpecifier()
+    end: VersionSpecifier = UnboundedVersionSpecifier()
 
     if start_version_string is not None:
         start = VersionSpecifier.from_version_string(start_version_string)
@@ -37,24 +39,24 @@ def create_range(start_version_string, end_version_string):
 
 
 class TestSemver(unittest.TestCase):
-    def assertVersionSetResult(self, inputs, output_range):
+    def assertVersionSetResult(self, inputs, output_range) -> None:
         expected = create_range(*output_range)
 
         for permutation in itertools.permutations(inputs):
             self.assertEqual(reduce_versions(*permutation), expected)
 
-    def assertInvalidVersionSet(self, inputs):
+    def assertInvalidVersionSet(self, inputs) -> None:
         for permutation in itertools.permutations(inputs):
             with self.assertRaises(VersionsNotCompatibleError):
                 reduce_versions(*permutation)
 
-    def test__versions_compatible(self):
+    def test__versions_compatible(self) -> None:
         self.assertTrue(versions_compatible("0.0.1", "0.0.1"))
         self.assertFalse(versions_compatible("0.0.1", "0.0.2"))
         self.assertTrue(versions_compatible(">0.0.1", "0.0.2"))
         self.assertFalse(versions_compatible("0.4.5a1", "0.4.5a2"))
 
-    def test__semver_regex_versions(self):
+    def test__semver_regex_versions(self) -> None:
         self.assertTrue(
             semver_regex_versioning(
                 [
@@ -140,7 +142,7 @@ class TestSemver(unittest.TestCase):
             )
         )
 
-    def test__reduce_versions(self):
+    def test__reduce_versions(self) -> None:
         self.assertVersionSetResult(["0.0.1", "0.0.1"], ["=0.0.1", "=0.0.1"])
 
         self.assertVersionSetResult(["0.0.1"], ["=0.0.1", "=0.0.1"])
@@ -175,7 +177,7 @@ class TestSemver(unittest.TestCase):
         self.assertInvalidVersionSet(["<0.0.3", ">=0.0.3"])
         self.assertInvalidVersionSet(["<0.0.3", ">0.0.3"])
 
-    def test__resolve_to_specific_version(self):
+    def test__resolve_to_specific_version(self) -> None:
         self.assertEqual(
             resolve_to_specific_version(create_range(">0.0.1", None), ["0.0.1", "0.0.2"]), "0.0.2"
         )
@@ -253,7 +255,7 @@ class TestSemver(unittest.TestCase):
             "0.9.1",
         )
 
-    def test__filter_installable(self):
+    def test__filter_installable(self) -> None:
         installable = filter_installable(
             [
                 "1.1.0",

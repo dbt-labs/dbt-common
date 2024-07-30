@@ -1,4 +1,6 @@
 import json
+from typing import Any, Dict
+
 import pytest
 from dbt_common.record import Diff
 
@@ -191,7 +193,7 @@ def mock_open(mock_files):
     return open_mock
 
 
-def test_calculate_diff_no_diff(monkeypatch):
+def test_calculate_diff_no_diff(monkeypatch) -> None:
     # Mock data for the files
     current_recording_data = {
         "GetEnvRecord": [
@@ -251,11 +253,11 @@ def test_calculate_diff_no_diff(monkeypatch):
         previous_recording_path=previous_recording_path,
     )
     result = diff_instance.calculate_diff()
-    expected_result = {"GetEnvRecord": {}, "DefaultKey": {}}
+    expected_result: Dict[str, Any] = {"GetEnvRecord": {}, "DefaultKey": {}}
     assert result == expected_result
 
 
-def test_calculate_diff_with_diff(monkeypatch):
+def test_calculate_diff_with_diff(monkeypatch) -> None:
     # Mock data for the files
     current_recording_data = {
         "GetEnvRecord": [

@@ -19,7 +19,8 @@ def cast_to_int(integer: Optional[int]) -> int:
 
 
 def cast_dict_to_dict_of_strings(dct: Mapping[Any, Any]) -> Dict[str, str]:
-    new_dct = {}
+    new_dct: Dict[str, str] = {}
+
     for k, v in dct.items():
         new_dct[str(k)] = str(v)
     return new_dct

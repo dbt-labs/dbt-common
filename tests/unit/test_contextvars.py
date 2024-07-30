@@ -1,7 +1,7 @@
 from dbt_common.events.contextvars import log_contextvars, get_node_info, set_log_contextvars
 
 
-def test_contextvars():
+def test_contextvars() -> None:
     node_info = {
         "unique_id": "model.test.my_model",
         "started_at": None,

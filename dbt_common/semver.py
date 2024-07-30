@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import re
-from typing import List
+from typing import List, Iterable
 
 import dbt_common.exceptions.base
 from dbt_common.exceptions import VersionsNotCompatibleError
@@ -429,7 +429,7 @@ def versions_compatible(*args) -> bool:
         return False
 
 
-def find_possible_versions(requested_range, available_versions):
+def find_possible_versions(requested_range, available_versions: Iterable[str]):
     possible_versions = []
 
     for version_string in available_versions:
@@ -442,7 +442,9 @@ def find_possible_versions(requested_range, available_versions):
     return [v.to_version_string(skip_matcher=True) for v in sorted_versions]
 
 
-def resolve_to_specific_version(requested_range, available_versions):
+def resolve_to_specific_version(
+    requested_range, available_versions: Iterable[str]
+) -> Optional[str]:
     max_version = None
     max_version_string = None
 

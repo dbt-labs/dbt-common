@@ -1,15 +1,47 @@
+import os
 from contextvars import ContextVar, copy_context
-from typing import List, Mapping, Optional
+from typing import List, Mapping, Optional, Iterator
 
 from dbt_common.constants import PRIVATE_ENV_PREFIX, SECRET_ENV_PREFIX
+from dbt_common.record import Recorder
+
+
+class CaseInsensitiveMapping(Mapping):
+    def __init__(self, env: Mapping[str, str]):
+        self._env = {k.casefold(): (k, v) for k, v in env.items()}
+
+    def __getitem__(self, key: str) -> str:
+        return self._env[key.casefold()][1]
+
+    def __len__(self) -> int:
+        return len(self._env)
+
+    def __iter__(self) -> Iterator[str]:
+        for item in self._env.items():
+            yield item[0]
 
 
 class InvocationContext:
     def __init__(self, env: Mapping[str, str]):
-        self._env = {k: v for k, v in env.items() if not k.startswith(PRIVATE_ENV_PREFIX)}
+        self._env: Mapping[str, str]
+
+        env_public = {}
+        env_private = {}
+
+        for k, v in env.items():
+            if k.startswith(PRIVATE_ENV_PREFIX):
+                env_private[k] = v
+            else:
+                env_public[k] = v
+
+        if os.name == "nt":
+            self._env = CaseInsensitiveMapping(env_public)
+        else:
+            self._env = env_public
+
         self._env_secrets: Optional[List[str]] = None
-        self._env_private = {k: v for k, v in env.items() if k.startswith(PRIVATE_ENV_PREFIX)}
-        self.recorder = None
+        self._env_private = env_private
+        self.recorder: Optional[Recorder] = None
         # This class will also eventually manage the invocation_id, flags, event manager, etc.
 
     @property
@@ -32,7 +64,7 @@ class InvocationContext:
 _INVOCATION_CONTEXT_VAR: ContextVar[InvocationContext] = ContextVar("DBT_INVOCATION_CONTEXT_VAR")
 
 
-def reliably_get_invocation_var() -> ContextVar:
+def reliably_get_invocation_var() -> ContextVar[InvocationContext]:
     invocation_var: Optional[ContextVar] = next(
         (cv for cv in copy_context() if cv.name == _INVOCATION_CONTEXT_VAR.name), None
     )

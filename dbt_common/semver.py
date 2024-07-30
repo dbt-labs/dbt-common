@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import re
-from typing import List
+from typing import List, Iterable
 
 import dbt_common.exceptions.base
 from dbt_common.exceptions import VersionsNotCompatibleError
@@ -67,14 +67,14 @@ $
 _VERSION_REGEX = re.compile(_VERSION_REGEX_PAT_STR, re.VERBOSE)
 
 
-def _cmp(a, b):
+def _cmp(a, b) -> int:
     """Return negative if a<b, zero if a==b, positive if a>b."""
     return (a > b) - (a < b)
 
 
 @dataclass
 class VersionSpecifier(VersionSpecification):
-    def to_version_string(self, skip_matcher=False):
+    def to_version_string(self, skip_matcher: bool = False) -> str:
         prerelease = ""
         build = ""
         matcher = ""
@@ -92,7 +92,7 @@ class VersionSpecifier(VersionSpecification):
         )
 
     @classmethod
-    def from_version_string(cls, version_string):
+    def from_version_string(cls, version_string: str) -> "VersionSpecifier":
         match = _VERSION_REGEX.match(version_string)
 
         if not match:
@@ -104,7 +104,7 @@ class VersionSpecifier(VersionSpecification):
 
         return cls.from_dict(matched)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.to_version_string()
 
     def to_range(self) -> "VersionRange":
@@ -123,7 +123,7 @@ class VersionSpecifier(VersionSpecification):
 
         return VersionRange(start=range_start, end=range_end)
 
-    def compare(self, other):
+    def compare(self, other: "VersionSpecifier") -> int:
         if self.is_unbounded or other.is_unbounded:
             return 0
 
@@ -192,36 +192,36 @@ class VersionSpecifier(VersionSpecification):
 
         return 0
 
-    def __lt__(self, other):
+    def __lt__(self, other: "VersionSpecifier") -> bool:
         return self.compare(other) == -1
 
-    def __gt__(self, other):
+    def __gt__(self, other: "VersionSpecifier") -> bool:
         return self.compare(other) == 1
 
-    def __eq___(self, other):
+    def __eq___(self, other: "VersionSpecifier") -> bool:
         return self.compare(other) == 0
 
-    def __cmp___(self, other):
+    def __cmp___(self, other: "VersionSpecifier") -> int:
         return self.compare(other)
 
     @property
-    def is_unbounded(self):
+    def is_unbounded(self) -> bool:
         return False
 
     @property
-    def is_lower_bound(self):
+    def is_lower_bound(self) -> bool:
         return self.matcher in [Matchers.GREATER_THAN, Matchers.GREATER_THAN_OR_EQUAL]
 
     @property
-    def is_upper_bound(self):
+    def is_upper_bound(self) -> bool:
         return self.matcher in [Matchers.LESS_THAN, Matchers.LESS_THAN_OR_EQUAL]
 
     @property
-    def is_exact(self):
+    def is_exact(self) -> bool:
         return self.matcher == Matchers.EXACT
 
     @classmethod
-    def _nat_cmp(cls, a, b):
+    def _nat_cmp(cls, a, b) -> int:
         def cmp_prerelease_tag(a, b):
             if isinstance(a, int) and isinstance(b, int):
                 return _cmp(a, b)
@@ -358,23 +358,23 @@ class UnboundedVersionSpecifier(VersionSpecifier):
             matcher=Matchers.EXACT, major=None, minor=None, patch=None, prerelease=None, build=None
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "*"
 
     @property
-    def is_unbounded(self):
+    def is_unbounded(self) -> bool:
         return True
 
     @property
-    def is_lower_bound(self):
+    def is_lower_bound(self) -> bool:
         return False
 
     @property
-    def is_upper_bound(self):
+    def is_upper_bound(self) -> bool:
         return False
 
     @property
-    def is_exact(self):
+    def is_exact(self) -> bool:
         return False
 
 
@@ -418,7 +418,7 @@ def reduce_versions(*args):
     return to_return
 
 
-def versions_compatible(*args):
+def versions_compatible(*args) -> bool:
     if len(args) == 1:
         return True
 
@@ -429,7 +429,7 @@ def versions_compatible(*args):
         return False
 
 
-def find_possible_versions(requested_range, available_versions):
+def find_possible_versions(requested_range, available_versions: Iterable[str]):
     possible_versions = []
 
     for version_string in available_versions:
@@ -442,7 +442,9 @@ def find_possible_versions(requested_range, available_versions):
     return [v.to_version_string(skip_matcher=True) for v in sorted_versions]
 
 
-def resolve_to_specific_version(requested_range, available_versions):
+def resolve_to_specific_version(
+    requested_range, available_versions: Iterable[str]
+) -> Optional[str]:
     max_version = None
     max_version_string = None
 

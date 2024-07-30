@@ -13,7 +13,7 @@ class ExampleMergableClass(Mergeable):
 
 
 class TestMergableClass(unittest.TestCase):
-    def test_mergeability(self):
+    def test_mergeability(self) -> None:
         mergeable1 = ExampleMergableClass(
             attr_a="loses", attr_b=None, attr_c=["I'll", "still", "exist"]
         )

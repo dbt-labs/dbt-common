@@ -67,7 +67,7 @@ $
 _VERSION_REGEX = re.compile(_VERSION_REGEX_PAT_STR, re.VERBOSE)
 
 
-def _cmp(a, b):
+def _cmp(a, b) -> int:
     """Return negative if a<b, zero if a==b, positive if a>b."""
     return (a > b) - (a < b)
 
@@ -123,7 +123,7 @@ class VersionSpecifier(VersionSpecification):
 
         return VersionRange(start=range_start, end=range_end)
 
-    def compare(self, other):
+    def compare(self, other: "VersionSpecifier") -> int:
         if self.is_unbounded or other.is_unbounded:
             return 0
 
@@ -192,16 +192,16 @@ class VersionSpecifier(VersionSpecification):
 
         return 0
 
-    def __lt__(self, other) -> bool:
+    def __lt__(self, other: "VersionSpecifier") -> bool:
         return self.compare(other) == -1
 
-    def __gt__(self, other) -> bool:
+    def __gt__(self, other: "VersionSpecifier") -> bool:
         return self.compare(other) == 1
 
-    def __eq___(self, other) -> bool:
+    def __eq___(self, other: "VersionSpecifier") -> bool:
         return self.compare(other) == 0
 
-    def __cmp___(self, other):
+    def __cmp___(self, other: "VersionSpecifier") -> int:
         return self.compare(other)
 
     @property
@@ -221,7 +221,7 @@ class VersionSpecifier(VersionSpecification):
         return self.matcher == Matchers.EXACT
 
     @classmethod
-    def _nat_cmp(cls, a, b):
+    def _nat_cmp(cls, a, b) -> int:
         def cmp_prerelease_tag(a, b):
             if isinstance(a, int) and isinstance(b, int):
                 return _cmp(a, b)
@@ -358,23 +358,23 @@ class UnboundedVersionSpecifier(VersionSpecifier):
             matcher=Matchers.EXACT, major=None, minor=None, patch=None, prerelease=None, build=None
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "*"
 
     @property
-    def is_unbounded(self):
+    def is_unbounded(self) -> bool:
         return True
 
     @property
-    def is_lower_bound(self):
+    def is_lower_bound(self) -> bool:
         return False
 
     @property
-    def is_upper_bound(self):
+    def is_upper_bound(self) -> bool:
         return False
 
     @property
-    def is_exact(self):
+    def is_exact(self) -> bool:
         return False
 
 

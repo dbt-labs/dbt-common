@@ -37,22 +37,8 @@ concurrency:
 
 jobs:
 
-  update-version-and-create-changelog:
-    name: Update Version and Create Changelog
-    permissions:
-      contents: write # this is the permission that allows creating a new release
-    secrets: inherit
-    uses: ./.github/workflows/release-prep.yml
-    with:
-      sha: ${{ github.sha }}
-      version_number: ${{ inputs.version_number }}
-      target_branch: ${{ inputs.target_branch }}
-      test_run: ${{ inputs.test_run }}
-
-
-  test-and-build:
-    name: Test and Build
-    needs: [update-version-and-create-changelog]
+  test-and-check:
+    name: Test and Check
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.deploy-to }}
@@ -77,10 +63,29 @@ jobs:
         run: hatch build
         shell: bash
 
+      - name: Check artifacts
+        run: hatch run build:check-all
+        shell: bash
+
+
+  update-version-and-create-changelog:
+    name: Update Version and Create Changelog
+    needs: [test-and-check]
+    permissions:
+      contents: write # this is the permission that allows creating a new release
+    secrets: inherit
+    uses: ./.github/workflows/release-prep.yml
+    with:
+      sha: ${{ github.sha }}
+      version_number: ${{ inputs.version_number }}
+      target_branch: ${{ inputs.target_branch }}
+      test_run: ${{ inputs.test_run }}
+
+
   publish:
     name: Publish to PyPI
     if: ${{ !inputs.test_run }}
-    needs: [test-and-build, update-version-and-create-changelog]
+    needs: [test-and-check, update-version-and-create-changelog]
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.deploy-to }}
@@ -88,11 +93,11 @@ jobs:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
 
     steps:
-      - name: Check artifacts
-        run: hatch run build:check-all
+      - name: Build Artifacts
+        run: hatch build
         shell: bash
 
-      - name: Publish artifacts to PyPI Test
+      - name: Publish Artifacts to PyPI Test
         if: inputs.deploy-to == 'PypiTest' && !inputs.test_run
         uses: pypa/gh-action-pypi-publish@release/v1
         with:

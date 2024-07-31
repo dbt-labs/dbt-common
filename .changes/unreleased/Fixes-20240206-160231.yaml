@@ -1,6 +1,0 @@
-kind: Fixes
-body: Make invocation contexts more reliable in testing scenarios.
-time: 2024-02-06T16:02:31.81842-05:00
-custom:
-  Author: peterallenwebb
-  Issue: "52"

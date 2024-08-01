@@ -1,15 +1,15 @@
 import dataclasses
-from typing import Any, Self
+from typing import Any
 
 
 # TODO: remove from dbt_common.contracts.util:: Replaceable + references
 class Replaceable:
-    def replace(self, **kwargs: Any) -> Self:
+    def replace(self, **kwargs: Any):
         return dataclasses.replace(self, **kwargs)  # type: ignore
 
 
 class Mergeable(Replaceable):
-    def merged(self, *args: Self) -> Self:
+    def merged(self, *args):
         """Perform a shallow merge, where the last non-None write wins. This is
         intended to merge dataclasses that are a collection of optional values.
         """

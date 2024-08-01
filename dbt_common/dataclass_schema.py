@@ -92,7 +92,7 @@ class dbtClassMixin(DataClassMessagePackMixin):
         return json_schema
 
     @classmethod
-    def validate(cls, data):
+    def validate(cls, data: Any) -> None:
         json_schema = cls.json_schema()
         validator = jsonschema.Draft7Validator(json_schema)
         error = next(iter(validator.iter_errors(data)), None)

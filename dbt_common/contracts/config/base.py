@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, Field
 
 from itertools import chain
-from typing import Callable, Dict, Any, List, TypeVar, Type
+from typing import Any, Callable, Dict, Iterator, List, Type, TypeVar
 
 from dbt_common.contracts.config.metadata import Metadata
 from dbt_common.exceptions import CompilationError, DbtInternalError
@@ -45,7 +45,7 @@ class BaseConfig(AdditionalPropertiesAllowed, Replaceable):
         else:
             del self._extra[key]
 
-    def _content_iterator(self, include_condition: Callable[[Field], bool]):
+    def _content_iterator(self, include_condition: Callable[[Field[Any]], bool]) -> Iterator[str]:
         seen = set()
         for fld, _ in self._get_fields():
             seen.add(fld.name)
@@ -57,7 +57,7 @@ class BaseConfig(AdditionalPropertiesAllowed, Replaceable):
                 seen.add(key)
                 yield key
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         yield from self._content_iterator(include_condition=lambda f: True)
 
     def __len__(self) -> int:
@@ -76,7 +76,7 @@ class BaseConfig(AdditionalPropertiesAllowed, Replaceable):
         elif key in unrendered and key not in other:
             return False
         else:
-            return unrendered[key] == other[key]
+            return bool(unrendered[key] == other[key])
 
     @classmethod
     def same_contents(cls, unrendered: Dict[str, Any], other: Dict[str, Any]) -> bool:
@@ -203,11 +203,11 @@ class CompareBehavior(Metadata):
         return "compare"
 
     @classmethod
-    def should_include(cls, fld: Field) -> bool:
+    def should_include(cls, fld: Field[Any]) -> bool:
         return cls.from_field(fld) == cls.Include
 
 
-def _listify(value: Any) -> List:
+def _listify(value: Any) -> List[Any]:
     if isinstance(value, list):
         return value[:]
     else:

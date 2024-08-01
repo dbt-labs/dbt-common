@@ -4,12 +4,14 @@ from __future__ import annotations
 from dataclasses import dataclass, Field
 
 from itertools import chain
-from typing import Callable, Dict, Any, List, Type, Self, Iterator
+from typing import Any, Callable, Dict, Iterator, List, Type, TypeVar
 
 from dbt_common.contracts.config.metadata import Metadata
 from dbt_common.exceptions import CompilationError, DbtInternalError
 from dbt_common.contracts.config.properties import AdditionalPropertiesAllowed
 from dbt_common.contracts.util import Replaceable
+
+T = TypeVar("T", bound="BaseConfig")
 
 
 @dataclass
@@ -144,8 +146,8 @@ class BaseConfig(AdditionalPropertiesAllowed, Replaceable):
         return result
 
     def update_from(
-        self, data: Dict[str, Any], config_cls: Type[BaseConfig], validate: bool = True
-    ) -> Self:
+        self: T, data: Dict[str, Any], config_cls: Type[BaseConfig], validate: bool = True
+    ) -> T:
         """Update and validate config given a dict.
 
         Given a dict of keys, update the current config from them, validate
@@ -167,7 +169,7 @@ class BaseConfig(AdditionalPropertiesAllowed, Replaceable):
             self.validate(dct)
         return self.from_dict(dct)
 
-    def finalize_and_validate(self) -> Self:
+    def finalize_and_validate(self: T) -> T:
         dct = self.to_dict(omit_none=False)
         self.validate(dct)
         return self.from_dict(dct)

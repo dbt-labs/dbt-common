@@ -6,7 +6,7 @@ from dbt_common.constants import PRIVATE_ENV_PREFIX, SECRET_ENV_PREFIX
 from dbt_common.record import Recorder
 
 
-class CaseInsensitiveMapping(Mapping):
+class CaseInsensitiveMapping(Mapping[str, str]):
     def __init__(self, env: Mapping[str, str]):
         self._env = {k.casefold(): (k, v) for k, v in env.items()}
 
@@ -65,7 +65,7 @@ _INVOCATION_CONTEXT_VAR: ContextVar[InvocationContext] = ContextVar("DBT_INVOCAT
 
 
 def reliably_get_invocation_var() -> ContextVar[InvocationContext]:
-    invocation_var: Optional[ContextVar] = next(
+    invocation_var: Optional[ContextVar[InvocationContext]] = next(
         (cv for cv in copy_context() if cv.name == _INVOCATION_CONTEXT_VAR.name), None
     )
 

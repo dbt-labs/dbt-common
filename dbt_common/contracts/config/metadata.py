@@ -9,7 +9,7 @@ M = TypeVar("M", bound="Metadata")
 
 class Metadata(Enum):
     @classmethod
-    def from_field(cls: Type[M], fld: Field[Any]) -> M:
+    def from_field(cls: Type[M], fld: Field) -> M:
         default = cls.default_field()
         key = cls.metadata_key()
 
@@ -28,7 +28,7 @@ class Metadata(Enum):
         raise NotImplementedError("Not implemented")
 
 
-def _get_meta_value(cls: Type[M], fld: Field[Any], key: str, default: Any) -> M:
+def _get_meta_value(cls: Type[M], fld: Field, key: str, default: Any) -> M:
     # a metadata field might exist. If it does, it might have a matching key.
     # If it has both, make sure the value is valid and return it. If it
     # doesn't, return the default.
@@ -65,5 +65,5 @@ class ShowBehavior(Metadata):
         return "show_hide"
 
     @classmethod
-    def should_show(cls, fld: Field[Any]) -> bool:
+    def should_show(cls, fld: Field) -> bool:
         return cls.from_field(fld) == cls.Show

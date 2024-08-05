@@ -62,7 +62,7 @@ class dbtClassMixin(DataClassMessagePackMixin):
     against the schema
     """
 
-    _mapped_fields: ClassVar[Optional[Dict[Any, List[Tuple[Field[Any], str]]]]] = None
+    _mapped_fields: ClassVar[Optional[Dict[Any, List[Tuple[Field, str]]]]] = None
 
     # Config class used by Mashumaro
     class Config(dbtMashConfig):

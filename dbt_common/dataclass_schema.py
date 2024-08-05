@@ -1,4 +1,4 @@
-from typing import Any, cast, ClassVar, Dict, get_type_hints, List, Optional, Tuple
+from typing import Any, ClassVar, Dict, get_type_hints, List, Optional, Tuple, Union
 import re
 import jsonschema
 from dataclasses import fields, Field
@@ -6,7 +6,6 @@ from enum import Enum
 from datetime import datetime
 from dateutil.parser import parse
 
-# type: ignore
 from mashumaro.config import (
     TO_DICT_ADD_OMIT_NONE_FLAG,
     ADD_SERIALIZATION_CONTEXT,
@@ -33,8 +32,8 @@ class DateTimeSerialization(SerializationStrategy):
             out += "Z"
         return out
 
-    def deserialize(self, value) -> datetime:
-        return value if isinstance(value, datetime) else parse(cast(str, value))
+    def deserialize(self, value: Union[datetime, str]) -> datetime:
+        return value if isinstance(value, datetime) else parse(value)
 
 
 class dbtMashConfig(MashBaseConfig):
@@ -63,7 +62,7 @@ class dbtClassMixin(DataClassMessagePackMixin):
     against the schema
     """
 
-    _mapped_fields: ClassVar[Optional[Dict[Any, List[Tuple[Field, str]]]]] = None
+    _mapped_fields: ClassVar[Optional[Dict[Any, List[Tuple[Field[Any], str]]]]] = None
 
     # Config class used by Mashumaro
     class Config(dbtMashConfig):

@@ -9,12 +9,12 @@ from itertools import chain, islice
 from typing import Any, Callable, Dict, Iterator, List, Mapping, Optional, Union, Set, Type
 from typing_extensions import Protocol
 
-import jinja2  # type: ignore
-import jinja2.ext  # type: ignore
-import jinja2.nativetypes  # type: ignore
-import jinja2.nodes  # type: ignore
-import jinja2.parser  # type: ignore
-import jinja2.sandbox  # type: ignore
+import jinja2
+import jinja2.ext
+import jinja2.nativetypes
+import jinja2.nodes
+import jinja2.parser
+import jinja2.sandbox
 
 from dbt_common.tests import test_caching_enabled
 from dbt_common.utils.jinja import (

@@ -1,6 +1,6 @@
 from codecs import BOM_UTF8
 
-import agate  # type: ignore
+import agate
 import datetime
 import isodate
 import json
@@ -149,7 +149,7 @@ def as_matrix(table):
     return [r.values() for r in table.rows.values()]
 
 
-def from_csv(abspath, text_columns, delimiter=","):
+def from_csv(abspath, text_columns, delimiter=",") -> agate.Table:
     type_tester = build_type_tester(text_columns=text_columns)
     with open(abspath, encoding="utf-8") as fp:
         if fp.read(1) != BOM:

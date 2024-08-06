@@ -5,12 +5,12 @@ from dbt_common.exceptions import ConnectionError
 from dbt_common.utils.connection import connection_exception_retry
 
 
-def no_retry_fn():
+def no_retry_fn() -> str:
     return "success"
 
 
 class TestNoRetries:
-    def test_no_retry(self):
+    def test_no_retry(self) -> None:
         fn_to_retry = functools.partial(no_retry_fn)
         result = connection_exception_retry(fn_to_retry, 3)
 

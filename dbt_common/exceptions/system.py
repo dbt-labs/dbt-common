@@ -26,7 +26,7 @@ class WorkingDirectoryError(CommandError):
     def __init__(self, cwd: str, cmd: List[str], msg: str) -> None:
         super().__init__(cwd, cmd, msg)
 
-    def __str__(self):
+    def __str__(self, prefix: str = "! ") -> str:
         return f'{self.msg}: "{self.cwd}"'
 
 
@@ -46,5 +46,5 @@ class CommandResultError(CommandError):
         self.stderr = scrub_secrets(stderr.decode("utf-8"), env_secrets())
         self.args = (cwd, self.cmd, returncode, self.stdout, self.stderr, msg)
 
-    def __str__(self):
+    def __str__(self, prefix: str = "! ") -> str:
         return f"{self.msg} running: {self.cmd}"

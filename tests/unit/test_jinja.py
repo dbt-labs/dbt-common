@@ -227,7 +227,7 @@ class TestBlockLexer(unittest.TestCase):
             with self.assertRaises(CompilationError):
                 extract_toplevel_blocks(body, allowed_blocks={"myblock"})
 
-    def test_wrong_end_failure(self):
+    def test_wrong_end_failure(self) -> None:
         body = "{% myblock foo %} {% endotherblock %}"
         with self.assertRaises(CompilationError):
             extract_toplevel_blocks(body, allowed_blocks={"myblock", "otherblock"})

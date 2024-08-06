@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import re
-from typing import List, Iterable
+from typing import Iterable, List, Union
 
 import dbt_common.exceptions.base
 from dbt_common.exceptions import VersionsNotCompatibleError
@@ -378,7 +378,7 @@ class UnboundedVersionSpecifier(VersionSpecifier):
         return False
 
 
-def reduce_versions(*args):
+def reduce_versions(*args: Union[VersionSpecifier, VersionRange, str]) -> VersionRange:
     version_specifiers = []
 
     for version in args:

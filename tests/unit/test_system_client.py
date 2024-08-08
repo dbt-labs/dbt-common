@@ -280,7 +280,6 @@ class TestUntarPackage(unittest.TestCase):
                 with tarfile.open(fileobj=named_tar_file, mode="w:gz") as tar:
                     tar.addfile(tarfile.TarInfo(relative_file_a), open(file_a.name))
 
-        #  now we test can test that we can untar the file successfully
         assert tarfile.is_tarfile(tar.name)
         with self.assertRaises(tarfile.OutsideDestinationError):
             dbt_common.clients.system.untar_package(tar_file_full_path, self.tempdest)

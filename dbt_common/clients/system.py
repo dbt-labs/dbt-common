@@ -52,7 +52,6 @@ class FindMatchingParams:
     root_path: str
     relative_paths_to_search: List[str]
     file_pattern: str
-
     # ignore_spec: Optional[PathSpec] = None
 
     def __init__(

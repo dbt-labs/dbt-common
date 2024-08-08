@@ -268,3 +268,19 @@ class TestUntarPackage(unittest.TestCase):
             with self.assertRaises(tarfile.ReadError) as exc:
                 dbt_common.clients.system.untar_package(named_file.name, self.tempdest)
             self.assertEqual("empty file", str(exc.exception))
+
+    def test_untar_package_outside_directory(self) -> None:
+        with NamedTemporaryFile(
+            prefix="my-package.2", suffix=".tar.gz", dir=self.tempdir, delete=False
+        ) as named_tar_file:
+            tar_file_full_path = named_tar_file.name
+            with NamedTemporaryFile(prefix="a", suffix=".txt", dir=self.tempdir) as file_a:
+                file_a.write(b"some text in the text file")
+                relative_file_a = "/../" + os.path.basename(file_a.name)
+                with tarfile.open(fileobj=named_tar_file, mode="w:gz") as tar:
+                    tar.addfile(tarfile.TarInfo(relative_file_a), open(file_a.name))
+
+        #  now we test can test that we can untar the file successfully
+        assert tarfile.is_tarfile(tar.name)
+        with self.assertRaises(tarfile.OutsideDestinationError):
+            dbt_common.clients.system.untar_package(tar_file_full_path, self.tempdest)

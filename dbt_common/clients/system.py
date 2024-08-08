@@ -52,6 +52,7 @@ class FindMatchingParams:
     root_path: str
     relative_paths_to_search: List[str]
     file_pattern: str
+
     # ignore_spec: Optional[PathSpec] = None
 
     def __init__(
@@ -608,11 +609,35 @@ def rename(from_path: str, to_path: str, force: bool = False) -> None:
     shutil.move(from_path, to_path)
 
 
+def safe_extract(tarball, path=".", members=None, *, numeric_owner=False):
+    """
+    Fix for CWE-22: CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')
+    Solution copied from https://github.com/mindsdb/mindsdb/blob/main/mindsdb/utilities/fs.py
+    """
+
+    def _is_within_directory(directory, target):
+        abs_directory = os.path.abspath(directory)
+        abs_target = os.path.abspath(target)
+        prefix = os.path.commonprefix([abs_directory, abs_target])
+        return prefix == abs_directory
+
+    # for py >= 3.12
+    if hasattr(tarball, "data_filter"):
+        tarball.extractall(path, members=members, numeric_owner=numeric_owner, filter="data")
+    else:
+        for member in tarball.getmembers():
+            member_path = os.path.join(path, member.name)
+            if not _is_within_directory(path, member_path):
+                raise tarfile.OutsideDestinationError(member, path)
+
+        tarball.extractall(path, members=members, numeric_owner=numeric_owner)
+
+
 def untar_package(tar_path: str, dest_dir: str, rename_to: Optional[str] = None) -> None:
     tar_path = convert_path(tar_path)
     tar_dir_name = None
     with tarfile.open(tar_path, "r:gz") as tarball:
-        tarball.extractall(dest_dir)
+        safe_extract(tarball, dest_dir)
         tar_dir_name = os.path.commonprefix(tarball.getnames())
     if rename_to:
         downloaded_path = os.path.join(dest_dir, tar_dir_name)

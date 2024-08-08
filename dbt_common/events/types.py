@@ -1,7 +1,11 @@
+from typing import Optional
+
 from dbt_common.events.base_types import (
     DebugLevel,
     InfoLevel,
+    WarnLevel,
 )
+from dbt_common.ui import warning_tag
 
 
 # The classes in this file represent the data necessary to describe a
@@ -27,6 +31,41 @@ from dbt_common.events.base_types import (
 # | T    | Test only           |
 #
 # The basic idea is that event codes roughly translate to the natural order of running a dbt task
+
+
+# =======================================================
+# D - Deprecations
+# =======================================================
+
+
+class BehaviorDeprecationEvent(WarnLevel):
+    flag_name: str
+    flag_source: str
+    deprecation_version: Optional[str]
+    deprecation_message: Optional[str]
+    docs_url: Optional[str]
+
+    def code(self) -> str:
+        return "D042"  # TODO: update this to the next unused code
+
+    def message(self) -> str:
+        msg = f"The legacy behavior controlled by `{self.flag_name}` is deprecated.\n"
+
+        if self.deprecation_version:
+            msg = (
+                f"The legacy behavior is expected to be retired in `{self.deprecation_version}`.\n"
+            )
+
+        msg += f"The new behavior can be turned on by setting `flags.{self.flag_name}` to `True` in `dbt_project.yml`.\n"
+
+        if self.deprecation_message:
+            msg += f"{self.deprecation_message}.\n"
+
+        docs_url = self.docs_url or f"https://docs.getdbt.com/search?q={self.flag_name}"
+        msg += f"Visit {docs_url} for more information."
+
+        return warning_tag(msg)
+
 
 # =======================================================
 # M - Deps generation

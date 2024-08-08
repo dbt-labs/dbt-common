@@ -1,6 +1,13 @@
 import inspect
 from types import SimpleNamespace
-from typing import Any, Dict, List, NotRequired, TypedDict
+from typing import Any, Dict, List, TypedDict
+
+try:
+    from typing import NotRequired
+except ImportError:
+    # NotRequired was introduced in Python 3.11
+    # This is the suggested way to implement a TypedDict with optional arguments
+    from typing import Optional as NotRequired
 
 from dbt_common.events.base_types import WarnLevel
 from dbt_common.events.functions import fire_event

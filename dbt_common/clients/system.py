@@ -625,12 +625,13 @@ def safe_extract(tarball: tarfile.TarFile, path: str = ".") -> None:
     if hasattr(tarball, "data_filter"):
         tarball.extractall(path, filter="data")
     else:
-        for member in tarball.getmembers():
+        members = tarball.getmembers()
+        for member in members:
             member_path = os.path.join(path, member.name)
             if not _is_within_directory(path, member_path):
                 raise tarfile.OutsideDestinationError(member, path)
 
-        tarball.extractall(path)
+        tarball.extractall(path, members=members)
 
 
 def untar_package(tar_path: str, dest_dir: str, rename_to: Optional[str] = None) -> None:

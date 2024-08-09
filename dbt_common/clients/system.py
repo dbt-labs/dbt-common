@@ -52,6 +52,7 @@ class FindMatchingParams:
     root_path: str
     relative_paths_to_search: List[str]
     file_pattern: str
+
     # ignore_spec: Optional[PathSpec] = None
 
     def __init__(
@@ -608,9 +609,9 @@ def rename(from_path: str, to_path: str, force: bool = False) -> None:
     shutil.move(from_path, to_path)
 
 
-def safe_extract(tarball, path=".", members=None, *, numeric_owner=False):
+def safe_extract(tarball: tarfile.TarFile, path: str = ".") -> None:
     """
-    Fix for CWE-22: CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')
+    Fix for CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')
     Solution copied from https://github.com/mindsdb/mindsdb/blob/main/mindsdb/utilities/fs.py
     """
 
@@ -622,14 +623,14 @@ def safe_extract(tarball, path=".", members=None, *, numeric_owner=False):
 
     # for py >= 3.12
     if hasattr(tarball, "data_filter"):
-        tarball.extractall(path, members=members, numeric_owner=numeric_owner, filter="data")
+        tarball.extractall(path, filter="data")
     else:
         for member in tarball.getmembers():
             member_path = os.path.join(path, member.name)
             if not _is_within_directory(path, member_path):
                 raise tarfile.OutsideDestinationError(member, path)
 
-        tarball.extractall(path, members=members, numeric_owner=numeric_owner)
+        tarball.extractall(path)
 
 
 def untar_package(tar_path: str, dest_dir: str, rename_to: Optional[str] = None) -> None:

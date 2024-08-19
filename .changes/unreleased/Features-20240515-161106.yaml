@@ -1,6 +1,0 @@
-kind: Features
-body: Add a print event to support firing event to console in --quiet mode
-time: 2024-05-15T16:11:06.815526-07:00
-custom:
-  Author: ChenyuLInx
-  Issue: "8756"

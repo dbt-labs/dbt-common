@@ -9,12 +9,12 @@ from itertools import chain, islice
 from typing import Any, Callable, Dict, Iterator, List, Mapping, Optional, Union, Set, Type
 from typing_extensions import Protocol
 
-import jinja2  # type: ignore
-import jinja2.ext  # type: ignore
-import jinja2.nativetypes  # type: ignore
-import jinja2.nodes  # type: ignore
-import jinja2.parser  # type: ignore
-import jinja2.sandbox  # type: ignore
+import jinja2
+import jinja2.ext
+import jinja2.nativetypes
+import jinja2.nodes
+import jinja2.parser
+import jinja2.sandbox
 
 from dbt_common.tests import test_caching_enabled
 from dbt_common.utils.jinja import (
@@ -124,6 +124,7 @@ class MacroFuzzTemplate(jinja2.nativetypes.NativeTemplate):
                 "shared or locals parameters."
             )
 
+        vars = {} if vars is None else vars
         parent = ChainMap(vars, self.globals) if self.globals else vars
 
         return self.environment.context_class(self.environment, parent, self.name, self.blocks)
@@ -544,6 +545,7 @@ _TESTING_BLOCKS_CACHE: Dict[int, List[Union[BlockData, BlockTag]]] = {}
 
 def _get_blocks_hash(text: str, allowed_blocks: Optional[Set[str]], collect_raw_data: bool) -> int:
     """Provides a hash function over the arguments to extract_toplevel_blocks, in order to support caching."""
+    allowed_blocks = allowed_blocks or set()
     allowed_tuple = tuple(sorted(allowed_blocks) or [])
     return text.__hash__() + allowed_tuple.__hash__() + collect_raw_data.__hash__()
 

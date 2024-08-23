@@ -304,6 +304,7 @@ class BaseMacroGenerator:
 class MacroProtocol(Protocol):
     name: str
     macro_sql: str
+    package_name: str
 
 
 class CallableMacroGenerator(BaseMacroGenerator):

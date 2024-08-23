@@ -39,6 +39,10 @@ class BehaviorFlag:
     def setting(self, value: bool) -> None:
         self._setting = value
 
+    @property
+    def no_warn(self) -> bool:
+        return self._setting
+
     def __bool__(self) -> bool:
         return self.setting
 

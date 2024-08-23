@@ -103,3 +103,22 @@ def test_behavior_flags_emit_correct_deprecation(event_catcher) -> None:
     assert msg.info.name == "BehaviorDeprecationEvent"
     assert msg.data.flag_name == "flag_false"
     assert msg.data.flag_source == __name__  # defaults to the calling module
+
+
+def test_behavior_flags_no_deprecation_event_on_no_warn(event_catcher) -> None:
+    behavior = register(
+        behavior_flags=[
+            {"name": "flag_false", "default": False},
+        ],
+        user_flags={},
+    )
+
+    # trigger the evaluation with no_warn, no event should fire
+    if behavior.flag_false.no_warn:
+        pass
+    assert len(event_catcher.caught_events) == 0
+
+    # trigger the evaluation, an event should fire
+    if behavior.flag_false:
+        pass
+    assert len(event_catcher.caught_events) == 1

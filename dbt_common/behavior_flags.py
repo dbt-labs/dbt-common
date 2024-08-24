@@ -74,7 +74,7 @@ Behavior = SimpleNamespace
 
 def register(
     behavior_flags: List[RawBehaviorFlag],
-    user_flags: Dict[str, Any],
+    user_overrides: Dict[str, Any],
 ) -> Behavior:
     flags = {}
     for raw_flag in behavior_flags:
@@ -84,8 +84,8 @@ def register(
         }
 
         # specifically evaluate for `None` since `False` and `None` should be treated differently
-        if user_flags.get(raw_flag["name"]) is not None:
-            flag["setting"] = user_flags.get(raw_flag["name"])
+        if user_overrides.get(raw_flag["name"]) is not None:
+            flag["setting"] = user_overrides[raw_flag["name"]]
 
         event = BehaviorDeprecationEvent(
             flag_name=raw_flag["name"],

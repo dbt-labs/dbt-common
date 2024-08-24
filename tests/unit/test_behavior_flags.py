@@ -14,7 +14,7 @@ def test_behavior_default():
             {"name": "default_false_flag", "default": False},
             {"name": "default_true_flag", "default": True},
         ],
-        user_flags={},
+        user_overrides={},
     )
 
     assert behavior.default_false_flag.setting is False
@@ -31,7 +31,7 @@ def test_behavior_user_override():
             {"name": "flag_default_true_override_false", "default": True},
             {"name": "flag_default_true_override_true", "default": True},
         ],
-        user_flags={
+        user_overrides={
             "flag_default_false_override_false": False,
             "flag_default_false_override_true": True,
             "flag_default_true_override_false": False,
@@ -53,7 +53,7 @@ def test_behavior_flag_can_be_used_as_conditional():
             {"name": "flag_false", "default": False},
             {"name": "flag_true", "default": True},
         ],
-        user_flags={},
+        user_overrides={},
     )
 
     assert False if behavior.flag_false else True
@@ -75,7 +75,7 @@ def test_behavior_flags_emit_deprecation_event_on_evaluation(event_catcher) -> N
             {"name": "flag_false", "default": False},
             {"name": "flag_true", "default": True},
         ],
-        user_flags={},
+        user_overrides={},
     )
 
     # trigger the evaluation, no event should fire
@@ -92,7 +92,7 @@ def test_behavior_flags_emit_deprecation_event_on_evaluation(event_catcher) -> N
 def test_behavior_flags_emit_correct_deprecation(event_catcher) -> None:
     behavior = register(
         behavior_flags=[{"name": "flag_false", "default": False}],
-        user_flags={},
+        user_overrides={},
     )
 
     # trigger the evaluation
@@ -110,7 +110,7 @@ def test_behavior_flags_no_deprecation_event_on_no_warn(event_catcher) -> None:
         behavior_flags=[
             {"name": "flag_false", "default": False},
         ],
-        user_flags={},
+        user_overrides={},
     )
 
     # trigger the evaluation with no_warn, no event should fire

@@ -1,7 +1,7 @@
 import pytest
 from pytest_mock import MockerFixture  # type: ignore
 
-from dbt_common.behavior_flags import register
+from dbt_common.behavior_flags import Behavior
 from dbt_common.events.event_manager import EventManager
 from dbt_common.events.event_manager_client import add_callback_to_manager
 
@@ -9,7 +9,7 @@ from tests.unit.utils import EventCatcher
 
 
 def test_behavior_default():
-    behavior = register(
+    behavior = Behavior(
         behavior_flags=[
             {"name": "default_false_flag", "default": False},
             {"name": "default_true_flag", "default": True},
@@ -22,7 +22,7 @@ def test_behavior_default():
 
 
 def test_behavior_user_override():
-    behavior = register(
+    behavior = Behavior(
         behavior_flags=[
             {"name": "flag_default_false", "default": False},
             {"name": "flag_default_false_override_false", "default": False},
@@ -48,7 +48,7 @@ def test_behavior_user_override():
 
 
 def test_behavior_flag_can_be_used_as_conditional():
-    behavior = register(
+    behavior = Behavior(
         behavior_flags=[
             {"name": "flag_false", "default": False},
             {"name": "flag_true", "default": True},
@@ -70,7 +70,7 @@ def event_catcher(mocker: MockerFixture) -> EventCatcher:
 
 
 def test_behavior_flags_emit_deprecation_event_on_evaluation(event_catcher) -> None:
-    behavior = register(
+    behavior = Behavior(
         behavior_flags=[
             {"name": "flag_false", "default": False},
             {"name": "flag_true", "default": True},
@@ -90,7 +90,7 @@ def test_behavior_flags_emit_deprecation_event_on_evaluation(event_catcher) -> N
 
 
 def test_behavior_flags_emit_correct_deprecation(event_catcher) -> None:
-    behavior = register(
+    behavior = Behavior(
         behavior_flags=[{"name": "flag_false", "default": False}],
         user_overrides={},
     )
@@ -106,7 +106,7 @@ def test_behavior_flags_emit_correct_deprecation(event_catcher) -> None:
 
 
 def test_behavior_flags_no_deprecation_event_on_no_warn(event_catcher) -> None:
-    behavior = register(
+    behavior = Behavior(
         behavior_flags=[
             {"name": "flag_false", "default": False},
         ],

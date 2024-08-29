@@ -8,46 +8,12 @@ except ImportError:
     # This is the suggested way to implement a TypedDict with optional arguments
     from typing import Optional as NotRequired
 
-from dbt_common.events.base_types import WarnLevel
 from dbt_common.events.functions import fire_event
 from dbt_common.events.types import BehaviorDeprecationEvent
 from dbt_common.exceptions import DbtInternalError
 
 
-class BehaviorFlag:
-    """
-    The canonical behavior flag that gets used through dbt packages
-
-    Args:
-        name: the name of the behavior flag, e.g. enforce_quoting_on_relation_creation
-        setting: the flag setting, after accounting for user input and the default
-        deprecation_event: the event to fire if the flag evaluates to False
-    """
-
-    def __init__(self, name: str, setting: bool, deprecation_event: WarnLevel) -> None:
-        self.name = name
-        self.setting = setting
-        self.deprecation_event = deprecation_event
-
-    @property
-    def setting(self) -> bool:
-        if self._setting is False:
-            fire_event(self.deprecation_event)
-        return self._setting
-
-    @setting.setter
-    def setting(self, value: bool) -> None:
-        self._setting = value
-
-    @property
-    def no_warn(self) -> bool:
-        return self._setting
-
-    def __bool__(self) -> bool:
-        return self.setting
-
-
-class RawBehaviorFlag(TypedDict):
+class BehaviorFlag(TypedDict):
     """
     A set of config used to create a BehaviorFlag
 
@@ -67,50 +33,68 @@ class RawBehaviorFlag(TypedDict):
     docs_url: NotRequired[str]
 
 
+class BehaviorFlagRendered:
+    """
+    The canonical behavior flag that gets used through dbt packages
+
+    Args:
+        flag: the configuration for the behavior flag
+        user_overrides: a set of user settings, one of which may be an override on this behavior flag
+    """
+
+    def __init__(self, flag: BehaviorFlag, user_overrides: Dict[str, Any]) -> None:
+        self.name = flag["name"]
+        self.setting = user_overrides.get(flag["name"], flag["default"])
+        self.deprecation_event = self._deprecation_event(flag)
+
+    @property
+    def setting(self) -> bool:
+        if self._setting is False:
+            fire_event(self.deprecation_event)
+        return self._setting
+
+    @setting.setter
+    def setting(self, value: bool) -> None:
+        self._setting = value
+
+    @property
+    def no_warn(self) -> bool:
+        return self._setting
+
+    def _deprecation_event(self, flag: BehaviorFlag) -> BehaviorDeprecationEvent:
+        return BehaviorDeprecationEvent(
+            flag_name=flag["name"],
+            flag_source=flag.get("source", self._default_source()),
+            deprecation_version=flag.get("deprecation_version"),
+            deprecation_message=flag.get("deprecation_message"),
+            docs_url=flag.get("docs_url"),
+        )
+
+    @staticmethod
+    def _default_source() -> str:
+        """
+        If the maintainer did not provide a source, default to the module that called `register`.
+        For adapters, this will likely be `dbt.adapters.<foo>.impl` for `dbt-foo`.
+        """
+        frame = inspect.stack()[5]
+        if module := inspect.getmodule(frame[0]):
+            return module.__name__
+        return "Unknown"
+
+    def __bool__(self) -> bool:
+        return self.setting
+
+
 # this is effectively a dictionary that supports dot notation
 # it makes usage easy, e.g. adapter.behavior.my_flag
 class Behavior:
-    _flags: List[BehaviorFlag]
+    _flags: List[BehaviorFlagRendered]
 
-    def __init__(
-        self,
-        behavior_flags: List[RawBehaviorFlag],
-        user_overrides: Dict[str, Any],
-    ) -> None:
-        flags = []
-        for raw_flag in behavior_flags:
-            flags.append(
-                BehaviorFlag(
-                    name=raw_flag["name"],
-                    setting=user_overrides.get(raw_flag["name"], raw_flag["default"]),
-                    deprecation_event=_behavior_deprecation_event(raw_flag),
-                )
-            )
-        self._flags = flags
+    def __init__(self, flags: List[BehaviorFlag], user_overrides: Dict[str, Any]) -> None:
+        self._flags = [BehaviorFlagRendered(flag, user_overrides) for flag in flags]
 
-    def __getattr__(self, name: str) -> BehaviorFlag:
+    def __getattr__(self, name: str) -> BehaviorFlagRendered:
         for flag in self._flags:
             if flag.name == name:
                 return flag
         raise DbtInternalError(f"The flag {name} has not be registered.")
-
-
-def _behavior_deprecation_event(flag: RawBehaviorFlag) -> BehaviorDeprecationEvent:
-    return BehaviorDeprecationEvent(
-        flag_name=flag["name"],
-        flag_source=flag.get("source", _default_source()),
-        deprecation_version=flag.get("deprecation_version"),
-        deprecation_message=flag.get("deprecation_message"),
-        docs_url=flag.get("docs_url"),
-    )
-
-
-def _default_source() -> str:
-    """
-    If the maintainer did not provide a source, default to the module that called `register`.
-    For adapters, this will likely be `dbt.adapters.<foo>.impl` for `dbt-foo`.
-    """
-    frame = inspect.stack()[3]
-    if module := inspect.getmodule(frame[0]):
-        return module.__name__
-    return "Unknown"

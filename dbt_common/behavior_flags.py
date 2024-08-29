@@ -76,9 +76,10 @@ class BehaviorFlagRendered:
         If the maintainer did not provide a source, default to the module that called `register`.
         For adapters, this will likely be `dbt.adapters.<foo>.impl` for `dbt-foo`.
         """
-        frame = inspect.stack()[5]
-        if module := inspect.getmodule(frame[0]):
-            return module.__name__
+        for frame in inspect.stack():
+            if module := inspect.getmodule(frame[0]):
+                if module.__name__ != __name__:
+                    return module.__name__
         return "Unknown"
 
     def __bool__(self) -> bool:

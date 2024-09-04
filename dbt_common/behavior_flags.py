@@ -100,6 +100,10 @@ class Behavior:
             ...
         {% endif %}
         ```
+
+    Args:
+        flags: a list of configurations, one for each behavior flag
+        user_overrides: a set of user settings, which may include overrides on one or more of the behavior flags
     """
 
     _flags: List[BehaviorFlagRendered]

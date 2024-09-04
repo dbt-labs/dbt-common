@@ -46,7 +46,7 @@ class BehaviorDeprecationEvent(WarnLevel):
     docs_url: Optional[str]
 
     def code(self) -> str:
-        return "D042"  # TODO: update this to the next unused code
+        return "D018"
 
     def message(self) -> str:
         msg = f"The legacy behavior controlled by `{self.flag_name}` is deprecated.\n"

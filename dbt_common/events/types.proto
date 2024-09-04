@@ -25,7 +25,7 @@ message GenericMessage {
 
 // D - Deprecations
 
-// D042
+// D018
 message BehaviorDeprecationEvent {
     string flag_name = 1;
     string flag_source = 2;

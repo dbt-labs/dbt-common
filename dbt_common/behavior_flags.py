@@ -15,11 +15,11 @@ from dbt_common.exceptions import DbtInternalError
 
 class BehaviorFlag(TypedDict):
     """
-    A set of config used to create a BehaviorFlag
+    Configuration used to create a BehaviorFlagRendered instance
 
     Args:
         name: the name of the behavior flag
-        default:  default setting, starts as False, becomes True in the next minor release
+        default: default setting, starts as False, becomes True after a bake-in period
         deprecation_version: the version when the default will change to True
         deprecation_message: an additional message to send when the flag evaluates to False
         docs_url: the url to the relevant docs on docs.getdbt.com
@@ -35,7 +35,7 @@ class BehaviorFlag(TypedDict):
 
 class BehaviorFlagRendered:
     """
-    The canonical behavior flag that gets used through dbt packages
+    A rendered behavior flag that gets used throughout dbt packages
 
     Args:
         flag: the configuration for the behavior flag
@@ -73,7 +73,7 @@ class BehaviorFlagRendered:
     @staticmethod
     def _default_source() -> str:
         """
-        If the maintainer did not provide a source, default to the module that called `register`.
+        If the maintainer did not provide a source, default to the module that called this class.
         For adapters, this will likely be `dbt.adapters.<foo>.impl` for `dbt-foo`.
         """
         for frame in inspect.stack():
@@ -86,9 +86,22 @@ class BehaviorFlagRendered:
         return self.setting
 
 
-# this is effectively a dictionary that supports dot notation
-# it makes usage easy, e.g. adapter.behavior.my_flag
 class Behavior:
+    """
+    A collection of behavior flags
+
+    This is effectively a dictionary that supports dot notation for easy reference, e.g.:
+        ```python
+        if adapter.behavior.my_flag:
+            ...
+        ```
+        ```jinja
+        {% if adapter.behavior.my_flag %}
+            ...
+        {% endif %}
+        ```
+    """
+
     _flags: List[BehaviorFlagRendered]
 
     def __init__(self, flags: List[BehaviorFlag], user_overrides: Dict[str, Any]) -> None:

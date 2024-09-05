@@ -10,7 +10,7 @@ except ImportError:
 
 from dbt_common.events.functions import fire_event
 from dbt_common.events.types import BehaviorDeprecationEvent
-from dbt_common.exceptions import DbtInternalError
+from dbt_common.exceptions import CompilationError
 
 
 class BehaviorFlag(TypedDict):
@@ -122,4 +122,4 @@ class Behavior:
         for flag in self._flags:
             if flag.name == name:
                 return flag
-        raise DbtInternalError(f"The flag {name} has not be registered.")
+        raise CompilationError(f"The flag {name} has not be registered.")

@@ -1,11 +1,4 @@
-import pytest
-from pytest_mock import MockerFixture  # type: ignore
-
 from dbt_common.behavior_flags import Behavior
-from dbt_common.events.event_manager import EventManager
-from dbt_common.events.event_manager_client import add_callback_to_manager
-
-from tests.unit.utils import EventCatcher
 
 
 def test_behavior_default():
@@ -60,15 +53,6 @@ def test_behavior_flag_can_be_used_as_conditional():
     assert True if behavior.flag_true else False
 
 
-@pytest.fixture(scope="function")
-def event_catcher(mocker: MockerFixture) -> EventCatcher:
-    # mock out the global event manager so the callback doesn't get added to all other tests
-    mocker.patch("dbt_common.events.event_manager_client._EVENT_MANAGER", EventManager())
-    catcher = EventCatcher()
-    add_callback_to_manager(catcher.catch)
-    return catcher
-
-
 def test_behavior_flags_emit_deprecation_event_on_evaluation(event_catcher) -> None:
     behavior = Behavior(
         [
@@ -89,7 +73,7 @@ def test_behavior_flags_emit_deprecation_event_on_evaluation(event_catcher) -> N
     assert len(event_catcher.caught_events) == 1
 
 
-def test_behavior_flags_emit_correct_deprecation(event_catcher) -> None:
+def test_behavior_flags_emit_correct_deprecation_event(event_catcher) -> None:
     behavior = Behavior([{"name": "flag_false", "default": False}], {})
 
     # trigger the evaluation

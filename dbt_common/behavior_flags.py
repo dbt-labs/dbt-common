@@ -94,9 +94,16 @@ class Behavior:
         ```python
         if adapter.behavior.my_flag:
             ...
+
+        if adapter.behavior.my_flag.no_warn:  # this will not fire the deprecation event
+            ...
         ```
         ```jinja
         {% if adapter.behavior.my_flag %}
+            ...
+        {% endif %}
+
+        {% if adapter.behavior.my_flag.no_warn %}  {# this will not fire the deprecation event #}
             ...
         {% endif %}
         ```

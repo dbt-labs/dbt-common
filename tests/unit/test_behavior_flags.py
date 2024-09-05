@@ -1,4 +1,7 @@
+import pytest
+
 from dbt_common.behavior_flags import Behavior
+from dbt_common.exceptions.base import CompilationError
 
 
 def test_behavior_default():
@@ -38,6 +41,19 @@ def test_behavior_user_override():
     assert behavior.flag_default_true.setting is True
     assert behavior.flag_default_true_override_false.setting is False
     assert behavior.flag_default_true_override_true.setting is True
+
+
+def test_behavior_unregistered_flag_raises_correct_exception():
+    behavior = Behavior(
+        [
+            {"name": "behavior_flag_exists", "default": False},
+        ],
+        {},
+    )
+
+    assert behavior.behavior_flag_exists.setting is False
+    with pytest.raises(CompilationError):
+        assert behavior.behavior_flag_does_not_exist
 
 
 def test_behavior_flag_can_be_used_as_conditional():

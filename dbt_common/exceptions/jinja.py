@@ -1,8 +1,9 @@
+from dbt_common.clients._jinja_blocks import Tag, TagIterator
 from dbt_common.exceptions import CompilationError
 
 
 class BlockDefinitionNotAtTopError(CompilationError):
-    def __init__(self, tag_parser, tag_start) -> None:
+    def __init__(self, tag_parser: TagIterator, tag_start: int) -> None:
         self.tag_parser = tag_parser
         self.tag_start = tag_start
         super().__init__(msg=self.get_message())
@@ -31,7 +32,7 @@ class MissingCloseTagError(CompilationError):
 
 
 class MissingControlFlowStartTagError(CompilationError):
-    def __init__(self, tag, expected_tag: str, tag_parser) -> None:
+    def __init__(self, tag: Tag, expected_tag: str, tag_parser: TagIterator) -> None:
         self.tag = tag
         self.expected_tag = expected_tag
         self.tag_parser = tag_parser
@@ -47,7 +48,7 @@ class MissingControlFlowStartTagError(CompilationError):
 
 
 class NestedTagsError(CompilationError):
-    def __init__(self, outer, inner) -> None:
+    def __init__(self, outer: Tag, inner: Tag) -> None:
         self.outer = outer
         self.inner = inner
         super().__init__(msg=self.get_message())
@@ -62,7 +63,7 @@ class NestedTagsError(CompilationError):
 
 
 class UnexpectedControlFlowEndTagError(CompilationError):
-    def __init__(self, tag, expected_tag: str, tag_parser) -> None:
+    def __init__(self, tag: Tag, expected_tag: str, tag_parser: TagIterator) -> None:
         self.tag = tag
         self.expected_tag = expected_tag
         self.tag_parser = tag_parser

@@ -1,5 +1,5 @@
-
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from dbt_common.clients._jinja_blocks import Tag, TagIterator
 

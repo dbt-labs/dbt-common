@@ -4,7 +4,6 @@ from typing import Any, Callable, Dict, List, Optional, Type
 
 import pytest
 from dbt_common.record import Diff
-from tox.pytest import MonkeyPatch
 
 Case = List[Dict[str, Any]]
 
@@ -202,7 +201,7 @@ def mock_open(mock_files: Dict[str, Any]) -> Callable[..., MockFile]:
     return open_mock
 
 
-def test_calculate_diff_no_diff(monkeypatch: MonkeyPatch) -> None:
+def test_calculate_diff_no_diff(monkeypatch: pytest.MonkeyPatch) -> None:
     # Mock data for the files
     current_recording_data = {
         "GetEnvRecord": [
@@ -266,7 +265,7 @@ def test_calculate_diff_no_diff(monkeypatch: MonkeyPatch) -> None:
     assert result == expected_result
 
 
-def test_calculate_diff_with_diff(monkeypatch: MonkeyPatch) -> None:
+def test_calculate_diff_with_diff(monkeypatch: pytest.MonkeyPatch) -> None:
     # Mock data for the files
     current_recording_data = {
         "GetEnvRecord": [

@@ -39,13 +39,13 @@ def create_range(
 
 
 class TestSemver(unittest.TestCase):
-    def assertVersionSetResult(self, inputs, output_range) -> None:
+    def assertVersionSetResult(self, inputs: List[str], output_range: List[Optional[str]]) -> None:
         expected = create_range(*output_range)
 
         for permutation in itertools.permutations(inputs):
             self.assertEqual(reduce_versions(*permutation), expected)
 
-    def assertInvalidVersionSet(self, inputs) -> None:
+    def assertInvalidVersionSet(self, inputs: List[str]) -> None:
         for permutation in itertools.permutations(inputs):
             with self.assertRaises(VersionsNotCompatibleError):
                 reduce_versions(*permutation)

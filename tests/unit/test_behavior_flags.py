@@ -4,7 +4,7 @@ from dbt_common.behavior_flags import Behavior
 from dbt_common.exceptions.base import CompilationError
 
 
-def test_behavior_default():
+def test_behavior_default() -> None:
     behavior = Behavior(
         [
             {"name": "default_false_flag", "default": False},
@@ -17,7 +17,7 @@ def test_behavior_default():
     assert behavior.default_true_flag.setting is True
 
 
-def test_behavior_user_override():
+def test_behavior_user_override() -> None:
     behavior = Behavior(
         [
             {"name": "flag_default_false", "default": False},
@@ -43,7 +43,7 @@ def test_behavior_user_override():
     assert behavior.flag_default_true_override_true.setting is True
 
 
-def test_behavior_unregistered_flag_raises_correct_exception():
+def test_behavior_unregistered_flag_raises_correct_exception() -> None:
     behavior = Behavior(
         [
             {"name": "behavior_flag_exists", "default": False},
@@ -56,7 +56,7 @@ def test_behavior_unregistered_flag_raises_correct_exception():
         assert behavior.behavior_flag_does_not_exist
 
 
-def test_behavior_flag_can_be_used_as_conditional():
+def test_behavior_flag_can_be_used_as_conditional() -> None:
     behavior = Behavior(
         [
             {"name": "flag_false", "default": False},

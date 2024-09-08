@@ -29,8 +29,14 @@ class Record:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            "params": self.params._to_dict() if hasattr(self.params, "_to_dict") else dataclasses.asdict(self.params),  # type: ignore
-            "result": self.result._to_dict() if hasattr(self.result, "_to_dict") else dataclasses.asdict(self.result) if self.result is not None else None,  # type: ignore
+            "params": self.params._to_dict()
+            if hasattr(self.params, "_to_dict")
+            else dataclasses.asdict(self.params),
+            "result": self.result._to_dict()
+            if hasattr(self.result, "_to_dict")
+            else dataclasses.asdict(self.result)
+            if self.result is not None
+            else None,
         }
 
     @classmethod

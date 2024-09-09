@@ -2,6 +2,7 @@ import pytest
 
 from dbt_common.behavior_flags import Behavior
 from dbt_common.exceptions.base import CompilationError
+from unit.utils import EventCatcher
 
 
 def test_behavior_default() -> None:
@@ -69,7 +70,7 @@ def test_behavior_flag_can_be_used_as_conditional() -> None:
     assert True if behavior.flag_true else False
 
 
-def test_behavior_flags_emit_deprecation_event_on_evaluation(event_catcher) -> None:
+def test_behavior_flags_emit_deprecation_event_on_evaluation(event_catcher: EventCatcher) -> None:
     behavior = Behavior(
         [
             {"name": "flag_false", "default": False},
@@ -89,7 +90,7 @@ def test_behavior_flags_emit_deprecation_event_on_evaluation(event_catcher) -> N
     assert len(event_catcher.caught_events) == 1
 
 
-def test_behavior_flags_emit_correct_deprecation_event(event_catcher) -> None:
+def test_behavior_flags_emit_correct_deprecation_event(event_catcher: EventCatcher) -> None:
     behavior = Behavior([{"name": "flag_false", "default": False}], {})
 
     # trigger the evaluation
@@ -102,7 +103,7 @@ def test_behavior_flags_emit_correct_deprecation_event(event_catcher) -> None:
     assert msg.data.flag_source == __name__  # defaults to the calling module
 
 
-def test_behavior_flags_no_deprecation_event_on_no_warn(event_catcher) -> None:
+def test_behavior_flags_no_deprecation_event_on_no_warn(event_catcher: EventCatcher) -> None:
     behavior = Behavior([{"name": "flag_false", "default": False}], {})
 
     # trigger the evaluation with no_warn, no event should fire

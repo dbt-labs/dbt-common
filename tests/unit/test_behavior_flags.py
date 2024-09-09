@@ -2,7 +2,7 @@ import pytest
 
 from dbt_common.behavior_flags import Behavior
 from dbt_common.exceptions.base import CompilationError
-from unit.utils import EventCatcher
+from tests.unit.utils import EventCatcher
 
 
 def test_behavior_default() -> None:

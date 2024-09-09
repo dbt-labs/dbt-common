@@ -69,7 +69,7 @@ class TestDeepMap(unittest.TestCase):
         }
 
     @staticmethod
-    def intify_all(value, _) -> int:
+    def intify_all(value: Any, _: Any) -> int:
         try:
             return int(value)
         except (TypeError, ValueError):

@@ -1,5 +1,6 @@
 import json
-from typing import Any, Dict, List
+from inspect import Traceback
+from typing import Any, Callable, Dict, List, Optional, Type
 
 import pytest
 from dbt_common.record import Diff
@@ -172,22 +173,27 @@ def test_diff_default_with_diff(current_simple: Case, current_simple_modified: C
 
 # Mock out reading the files so we don't have to
 class MockFile:
-    def __init__(self, json_data) -> None:
+    def __init__(self, json_data: Any) -> None:
         self.json_data = json_data
 
-    def __enter__(self):
+    def __enter__(self) -> "MockFile":
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: Optional[Type[Exception]],
+        exc_val: Optional[Exception],
+        exc_tb: Optional[Traceback],
+    ) -> None:
         pass
 
-    def read(self):
+    def read(self) -> str:
         return json.dumps(self.json_data)
 
 
 # Create a Mock Open Function
-def mock_open(mock_files):
-    def open_mock(file, *args, **kwargs):
+def mock_open(mock_files: Dict[str, Any]) -> Callable[..., MockFile]:
+    def open_mock(file: str, *args: Any, **kwargs: Any) -> MockFile:
         if file in mock_files:
             return MockFile(mock_files[file])
         raise FileNotFoundError(f"No mock file found for {file}")
@@ -195,7 +201,7 @@ def mock_open(mock_files):
     return open_mock
 
 
-def test_calculate_diff_no_diff(monkeypatch) -> None:
+def test_calculate_diff_no_diff(monkeypatch: pytest.MonkeyPatch) -> None:
     # Mock data for the files
     current_recording_data = {
         "GetEnvRecord": [
@@ -259,7 +265,7 @@ def test_calculate_diff_no_diff(monkeypatch) -> None:
     assert result == expected_result
 
 
-def test_calculate_diff_with_diff(monkeypatch) -> None:
+def test_calculate_diff_with_diff(monkeypatch: pytest.MonkeyPatch) -> None:
     # Mock data for the files
     current_recording_data = {
         "GetEnvRecord": [

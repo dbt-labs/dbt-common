@@ -17,6 +17,7 @@ class Note(WarnLevel):
         return "Z050"
 
     def message(self) -> str:
+        assert isinstance(self.msg, str)
         return self.msg
 
 

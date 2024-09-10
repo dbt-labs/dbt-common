@@ -1,0 +1,6 @@
+kind: Under the Hood
+body: Improve docs parsing performance.
+time: 2024-09-10T15:34:47.389953+02:00
+custom:
+    Author: fredriv
+    Issue: "9037"

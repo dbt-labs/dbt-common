@@ -285,6 +285,9 @@ def merge_config_dicts(orig_dict: Dict[str, Any], new_dict: Dict[str, Any]) -> N
     # orig_dict is already encountered configs, new_dict is new
     # This mirrors code in _merge_field_value in model_config.py which is similar but
     # operates on config objects.
+    if orig_dict == {}:
+        orig_dict.update(new_dict)
+        return
     for k, v in new_dict.items():
         # MergeBehavior for post-hook and pre-hook is to collect all
         # values, instead of overwriting
@@ -309,18 +312,16 @@ def merge_config_dicts(orig_dict: Dict[str, Any], new_dict: Dict[str, Any]) -> N
                 for key, value in v.items():
                     extend = False
                     # This might start with a +, to indicate we should extend the list
-                    # instead of just clobbering it
+                    # instead of just clobbering it. We don't want to remove the + here
+                    # (like in the other method) because we want it preserved
                     if key.startswith("+"):
-                        new_key = key.lstrip("+")
                         extend = True
-                    else:
-                        new_key = key
-                    if new_key in orig_dict[k] and extend:
+                    if key in orig_dict[k] and extend:
                         # extend the list
-                        orig_dict[k][new_key].extend(_listify(value))
+                        orig_dict[k][key].extend(_listify(value))
                     else:
                         # clobber the list
-                        orig_dict[k][new_key] = _listify(value)
+                        orig_dict[k][key] = _listify(value)
             else:
                 # This is always a dictionary
                 orig_dict[k] = v

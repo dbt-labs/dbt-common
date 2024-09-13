@@ -112,7 +112,7 @@ class BaseConfig(AdditionalPropertiesAllowed, Replaceable):
             "contract",
         ],
         "dict_key_append": ["grants"],
-        "object": ["snapshot_table_column_names"],
+        "object": ["snapshot_meta_column_names"],
     }
 
     @classmethod

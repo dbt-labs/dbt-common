@@ -126,6 +126,15 @@ message FormattingMsg {
     Formatting data = 2;
 }
 
+// Z039
+message DisableTracking {
+}
+
+message DisableTrackingMsg {
+    CoreEventInfo info = 1;
+    DisableTracking data = 2;
+}
+
 // Z050
 message Note {
     string msg = 1;

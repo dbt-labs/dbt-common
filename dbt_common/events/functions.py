@@ -1,26 +1,33 @@
-from pathlib import Path
-
-from dbt_common.events.event_manager_client import get_event_manager
-from dbt_common.exceptions import EventCompilationError
-from dbt_common.invocation import get_invocation_id
-from dbt_common.helper_types import WarnErrorOptions
-from dbt_common.utils.encoding import ForgivingJSONEncoder
-from dbt_common.events.base_types import BaseEvent, EventLevel, EventMsg
-from dbt_common.events.logger import LoggerConfig, LineFormat
-from dbt_common.exceptions import scrub_secrets, env_secrets
-from dbt_common.events.types import Note
 from functools import partial
 import json
 import os
+from pathlib import Path
 import sys
-from typing import Callable, Dict, Optional, TextIO, Union
+from typing import Any, Callable, Dict, Optional, TextIO, Union
+
 from google.protobuf.json_format import MessageToDict
+from snowplow_tracker import Subject
+from snowplow_tracker.typing import FailureCallback
+
+from dbt_common.helper_types import WarnErrorOptions
+from dbt_common.invocation import get_invocation_id
+from dbt_common.events.base_types import BaseEvent, EventLevel, EventMsg
+from dbt_common.events.cookie import Cookie
+from dbt_common.events.event_manager_client import get_event_manager
+from dbt_common.events.logger import LoggerConfig, LineFormat
+from dbt_common.events.tracker import TrackerConfig
+from dbt_common.events.types import DisableTracking, Note
+from dbt_common.events.user import User
+from dbt_common.exceptions import EventCompilationError, scrub_secrets, env_secrets
+from dbt_common.utils.encoding import ForgivingJSONEncoder
+
 
 LOG_VERSION = 3
 metadata_vars: Optional[Dict[str, str]] = None
 _METADATA_ENV_PREFIX = "DBT_ENV_CUSTOM_ENV_"
 WARN_ERROR_OPTIONS = WarnErrorOptions(include=[], exclude=[])
 WARN_ERROR = False
+
 
 # This global, and the following two functions for capturing stdout logs are
 # an unpleasant hack we intend to remove as part of API-ification. The GitHub
@@ -55,6 +62,24 @@ def get_stdout_config(
         ),
         invocation_id=get_invocation_id(),
         output_stream=sys.stdout,
+    )
+
+
+def get_logfile_config(
+    name: str,
+    log_path: str,
+    line_format: Optional[LineFormat] = LineFormat.PlainText,
+    use_colors: Optional[bool] = False,
+    log_file_max_bytes: Optional[int] = 10 * 1024 * 1024,
+) -> LoggerConfig:
+    return LoggerConfig(
+        name=name,
+        line_format=line_format,
+        level=EventLevel.DEBUG,  # File log is *always* debug level
+        use_colors=use_colors,
+        invocation_id=get_invocation_id(),
+        output_file_name=log_path,
+        output_file_max_bytes=log_file_max_bytes,
     )
 
 
@@ -153,3 +178,65 @@ def get_metadata_vars() -> Dict[str, str]:
 def reset_metadata_vars() -> None:
     global metadata_vars
     metadata_vars = None
+
+
+def _default_on_failure(num_ok, unsent):
+    """
+    num_ok will always be 0, unsent will always be 1 entry long
+    because the buffer is length 1, so not much to talk about
+
+    TODO: add `disable_tracking` as a callback on `DisableTracking`
+    """
+    fire_event(DisableTracking())
+
+
+def snowplow_config(
+    user: User,
+    endpoint: str,
+    protocol: Optional[str] = "https",
+    on_failure: Optional[FailureCallback] = _default_on_failure,
+) -> TrackerConfig:
+    return TrackerConfig(
+        invocation_id=user.invocation_id,
+        endpoint=endpoint,
+        protocol=protocol,
+        on_failure=on_failure,
+    )
+
+
+def enable_tracking(tracker, user: User):
+    cookie = _get_cookie(user)
+    user.enable_tracking(cookie)
+
+    subject = Subject()
+    subject.set_user_id(cookie.get("id"))
+    tracker.set_subject(subject)
+
+
+def disable_tracking(tracker, user: User):
+    user.disable_tracking()
+    tracker.set_subject(None)
+
+
+def _get_cookie(user: User) -> Dict[str, Any]:
+    if cookie := user.cookie:
+        return cookie
+    return _set_cookie(user)
+
+
+def _set_cookie(user: User) -> Dict[str, Any]:
+    """
+    If the user points dbt to a profile directory which exists AND
+    contains a profiles.yml file, then we can set a cookie. If the
+    specified folder does not exist, or if there is not a profiles.yml
+    file in this folder, then an inconsistent cookie can be used. This
+    will change in every dbt invocation until the user points to a
+    profile dir file which contains a valid profiles.yml file.
+
+    See: https://github.com/dbt-labs/dbt-core/issues/1645
+    """
+    if user.profile.exists():
+        cookie = Cookie(user.directory)
+        user.cookie = cookie.as_dict()
+        return user.cookie
+    return {}

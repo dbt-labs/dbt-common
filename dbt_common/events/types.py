@@ -151,6 +151,18 @@ class Formatting(InfoLevel):
         return self.msg
 
 
+class DisableTracking(DebugLevel):
+    def code(self) -> str:
+        return "Z039"
+
+    def message(self) -> str:
+        return (
+            "Error sending anonymous usage statistics. Disabling tracking for this execution. "
+            "If you wish to permanently disable tracking, see: "
+            "https://docs.getdbt.com/reference/global-configs#send-anonymous-usage-stats."
+        )
+
+
 class Note(InfoLevel):
     """Unstructured events.
 

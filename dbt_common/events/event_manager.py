@@ -4,11 +4,13 @@ from typing import List, Optional, Protocol, Tuple
 
 from dbt_common.events.base_types import BaseEvent, EventLevel, msg_from_base_event, TCallback
 from dbt_common.events.logger import LoggerConfig, _Logger, _TextLogger, _JsonLogger, LineFormat
+from dbt_common.events.tracker import TrackerConfig, _Tracker
 
 
 class EventManager:
     def __init__(self) -> None:
         self.loggers: List[_Logger] = []
+        self.trackers: List[_Tracker] = []
         self.callbacks: List[TCallback] = []
 
     def fire_event(self, e: BaseEvent, level: Optional[EventLevel] = None) -> None:
@@ -37,6 +39,9 @@ class EventManager:
         )
         self.loggers.append(logger)
 
+    def add_tracker(self, config: TrackerConfig) -> None:
+        self.trackers.append(_Tracker(config))
+
     def add_callback(self, callback: TCallback) -> None:
         self.callbacks.append(callback)
 
@@ -48,11 +53,15 @@ class EventManager:
 class IEventManager(Protocol):
     callbacks: List[TCallback]
     loggers: List[_Logger]
+    trackers: List[_Tracker]
 
     def fire_event(self, e: BaseEvent, level: Optional[EventLevel] = None) -> None:
         ...
 
     def add_logger(self, config: LoggerConfig) -> None:
+        ...
+
+    def add_tracker(self, config: TrackerConfig) -> None:
         ...
 
     def add_callback(self, callback: TCallback) -> None:

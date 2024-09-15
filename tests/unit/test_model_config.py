@@ -106,6 +106,9 @@ def test_update_from() -> None:
     assert updated_obj.snapshot_table_column_names.second_column == "dbt_more"
     assert updated_obj.snapshot_table_column_names.third_column is None
 
+    # If we want to merge both grants, they need to both have a "+"
+    initial_dct["grants"] = {"+one": "alt"}
+
     merge_config_dicts(initial_dct, update_dct)
 
     expected = {
@@ -113,7 +116,7 @@ def test_update_from() -> None:
         "tags": ["one", "two", "five"],
         "meta": {"one": 1, "two": 2, "three": 3},
         "clobbered": "later",
-        "grants": {"one": ["alt", "some"], "two": ["fine"]},
+        "grants": {"+one": ["alt", "some"], "two": ["fine"]},
         "snapshot_table_column_names": {"first_column": "dbt_ack", "second_column": "dbt_more"},
     }
 

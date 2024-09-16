@@ -163,6 +163,22 @@ class DisableTracking(DebugLevel):
         )
 
 
+class SendingEvent(DebugLevel):
+    def code(self) -> str:
+        return "Z040"
+
+    def message(self) -> str:
+        return f"Sending event: {self.kwargs}"
+
+
+class SendEventFailure(DebugLevel):
+    def code(self) -> str:
+        return "Z041"
+
+    def message(self) -> str:
+        return "An error was encountered while trying to send an event"
+
+
 class Note(InfoLevel):
     """Unstructured events.
 

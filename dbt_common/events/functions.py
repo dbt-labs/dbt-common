@@ -19,7 +19,7 @@ from dbt_common.events.cookie import Cookie
 from dbt_common.events.event_manager_client import get_event_manager
 from dbt_common.events.logger import LoggerConfig, LineFormat
 from dbt_common.events.tracker import FileTracker, SnowplowTracker, Tracker, TrackerConfig
-from dbt_common.events.types import DisableTracking, Note
+from dbt_common.events.types import DisableTracking, Note, SendingEvent, SendEventFailure
 from dbt_common.events.user import User
 from dbt_common.exceptions import EventCompilationError, scrub_secrets, env_secrets
 from dbt_common.utils.encoding import ForgivingJSONEncoder
@@ -266,9 +266,8 @@ def track(tracker: Tracker, user: User, msg: EventMsg) -> None:
     if user.do_not_track:
         return
 
-    # fire_event(SendingEvent(kwargs=str(**msg_to_dict(msg))))
+    fire_event(SendingEvent(kwargs=str(**msg_to_dict(msg))))
     try:
         tracker.track(msg)
     except Exception:
-        # fire_event(SendEventFailure())
-        pass
+        fire_event(SendEventFailure())

@@ -68,24 +68,6 @@ def get_stdout_config(
     )
 
 
-def get_logfile_config(
-    name: str,
-    log_path: str,
-    line_format: Optional[LineFormat] = LineFormat.PlainText,
-    use_colors: Optional[bool] = False,
-    log_file_max_bytes: Optional[int] = 10 * 1024 * 1024,
-) -> LoggerConfig:
-    return LoggerConfig(
-        name=name,
-        line_format=line_format,
-        level=EventLevel.DEBUG,  # File log is *always* debug level
-        use_colors=use_colors,
-        invocation_id=get_invocation_id(),
-        output_file_name=log_path,
-        output_file_max_bytes=log_file_max_bytes,
-    )
-
-
 def make_log_dir_if_missing(log_path: Union[Path, str]) -> None:
     if isinstance(log_path, str):
         log_path = Path(log_path)

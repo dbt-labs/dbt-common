@@ -5,8 +5,6 @@ from pathlib import Path
 import sys
 from typing import Any, Callable, Dict, Optional, TextIO, Union
 
-from snowplow_tracker.typing import FailureCallback
-
 from dbt_common.helper_types import WarnErrorOptions
 from dbt_common.invocation import get_invocation_id
 from dbt_common.events.base_types import (
@@ -19,7 +17,7 @@ from dbt_common.events.cookie import Cookie
 from dbt_common.events.event_manager_client import get_event_manager
 from dbt_common.events.logger import LoggerConfig, LineFormat
 from dbt_common.events.tracker import FileTracker, SnowplowTracker, Tracker, TrackerConfig
-from dbt_common.events.types import DisableTracking, Note, SendingEvent, SendEventFailure
+from dbt_common.events.types import Note, SendingEvent, SendEventFailure
 from dbt_common.events.user import User
 from dbt_common.exceptions import EventCompilationError, scrub_secrets, env_secrets
 from dbt_common.utils.encoding import ForgivingJSONEncoder
@@ -153,60 +151,12 @@ def reset_metadata_vars() -> None:
     metadata_vars = None
 
 
-def _default_on_failure(num_ok, unsent):
-    """
-    num_ok will always be 0, unsent will always be 1 entry long
-    because the buffer is length 1, so not much to talk about
-
-    TODO: add `disable_tracking` as a callback on `DisableTracking`
-    """
-    fire_event(DisableTracking())
-
-
-def tracker_factory(
-    user: User,
-    endpoint: Optional[str],
-    protocol: Optional[str] = "https",
-    on_failure: Optional[FailureCallback] = _default_on_failure,
-    name: Optional[str] = None,
-    output_file_name: Optional[str] = None,
-    output_file_max_bytes: Optional[int] = None,
-) -> Tracker:
-    if all([user, endpoint]):
-        return snowplow_tracker(user, endpoint, protocol, on_failure)
-    elif all([user, name, output_file_name]):
-        return file_tracker(user, name, output_file_name, output_file_max_bytes)
+def tracker_factory(config: TrackerConfig) -> Tracker:
+    if all([config.invocation_id, config.endpoint, config.msg_schemas]):
+        return SnowplowTracker.from_config(config)
+    elif all([config.invocation_id, config.name, config.output_file_name]):
+        return FileTracker.from_config(config)
     raise Exception("Invalid tracking configuration.")
-
-
-def snowplow_tracker(
-    user: User,
-    endpoint: str,
-    protocol: Optional[str] = "https",
-    on_failure: Optional[FailureCallback] = _default_on_failure,
-) -> Tracker:
-    config = TrackerConfig(
-        invocation_id=user.invocation_id,
-        endpoint=endpoint,
-        protocol=protocol,
-        on_failure=on_failure,
-    )
-    return SnowplowTracker.from_config(config)
-
-
-def file_tracker(
-    user: User,
-    name: str,
-    output_file_name: str,
-    output_file_max_bytes: Optional[int],
-) -> Tracker:
-    config = TrackerConfig(
-        invocation_id=user.invocation_id,
-        name=name,
-        output_file_name=output_file_name,
-        output_file_max_bytes=output_file_max_bytes,
-    )
-    return FileTracker.from_config(config)
 
 
 def enable_tracking(tracker: Tracker, user: User):

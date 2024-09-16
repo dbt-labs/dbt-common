@@ -5,17 +5,20 @@ from pathlib import Path
 import sys
 from typing import Any, Callable, Dict, Optional, TextIO, Union
 
-from google.protobuf.json_format import MessageToDict
-from snowplow_tracker import Subject
 from snowplow_tracker.typing import FailureCallback
 
 from dbt_common.helper_types import WarnErrorOptions
 from dbt_common.invocation import get_invocation_id
-from dbt_common.events.base_types import BaseEvent, EventLevel, EventMsg
+from dbt_common.events.base_types import (
+    BaseEvent,
+    EventLevel,
+    EventMsg,
+    msg_to_dict as _msg_to_dict,
+)
 from dbt_common.events.cookie import Cookie
 from dbt_common.events.event_manager_client import get_event_manager
 from dbt_common.events.logger import LoggerConfig, LineFormat
-from dbt_common.events.tracker import TrackerConfig
+from dbt_common.events.tracker import FileTracker, SnowplowTracker, Tracker, TrackerConfig
 from dbt_common.events.types import DisableTracking, Note
 from dbt_common.events.user import User
 from dbt_common.exceptions import EventCompilationError, scrub_secrets, env_secrets
@@ -117,26 +120,14 @@ def msg_to_json(msg: EventMsg) -> str:
 
 
 def msg_to_dict(msg: EventMsg) -> dict:
-    msg_dict = dict()
     try:
-        msg_dict = MessageToDict(
-            msg,
-            preserving_proto_field_name=True,
-            including_default_value_fields=True,  # type: ignore
-        )
+        return _msg_to_dict(msg)
     except Exception as exc:
         event_type = type(msg).__name__
         fire_event(
             Note(msg=f"type {event_type} is not serializable. {str(exc)}"), level=EventLevel.WARN
         )
-    # We don't want an empty NodeInfo in output
-    if (
-        "data" in msg_dict
-        and "node_info" in msg_dict["data"]
-        and msg_dict["data"]["node_info"]["node_name"] == ""
-    ):
-        del msg_dict["data"]["node_info"]
-    return msg_dict
+    return {}
 
 
 def warn_or_error(event, node=None) -> None:
@@ -190,32 +181,61 @@ def _default_on_failure(num_ok, unsent):
     fire_event(DisableTracking())
 
 
-def snowplow_config(
+def tracker_factory(
+    user: User,
+    endpoint: Optional[str],
+    protocol: Optional[str] = "https",
+    on_failure: Optional[FailureCallback] = _default_on_failure,
+    name: Optional[str] = None,
+    output_file_name: Optional[str] = None,
+    output_file_max_bytes: Optional[int] = None,
+) -> Tracker:
+    if all([user, endpoint]):
+        return snowplow_tracker(user, endpoint, protocol, on_failure)
+    elif all([user, name, output_file_name]):
+        return file_tracker(user, name, output_file_name, output_file_max_bytes)
+    raise Exception("Invalid tracking configuration.")
+
+
+def snowplow_tracker(
     user: User,
     endpoint: str,
     protocol: Optional[str] = "https",
     on_failure: Optional[FailureCallback] = _default_on_failure,
-) -> TrackerConfig:
-    return TrackerConfig(
+) -> Tracker:
+    config = TrackerConfig(
         invocation_id=user.invocation_id,
         endpoint=endpoint,
         protocol=protocol,
         on_failure=on_failure,
     )
+    return SnowplowTracker.from_config(config)
 
 
-def enable_tracking(tracker, user: User):
+def file_tracker(
+    user: User,
+    name: str,
+    output_file_name: str,
+    output_file_max_bytes: Optional[int],
+) -> Tracker:
+    config = TrackerConfig(
+        invocation_id=user.invocation_id,
+        name=name,
+        output_file_name=output_file_name,
+        output_file_max_bytes=output_file_max_bytes,
+    )
+    return FileTracker.from_config(config)
+
+
+def enable_tracking(tracker: Tracker, user: User):
     cookie = _get_cookie(user)
     user.enable_tracking(cookie)
-
-    subject = Subject()
-    subject.set_user_id(cookie.get("id"))
-    tracker.set_subject(subject)
+    tracker.enable_tracking(cookie)
 
 
-def disable_tracking(tracker, user: User):
+def disable_tracking(tracker: Tracker, user: User):
     user.disable_tracking()
-    tracker.set_subject(None)
+    tracker.disable_tracking()
 
 
 def _get_cookie(user: User) -> Dict[str, Any]:
@@ -240,3 +260,15 @@ def _set_cookie(user: User) -> Dict[str, Any]:
         user.cookie = cookie.as_dict()
         return user.cookie
     return {}
+
+
+def track(tracker: Tracker, user: User, msg: EventMsg) -> None:
+    if user.do_not_track:
+        return
+
+    # fire_event(SendingEvent(kwargs=str(**msg_to_dict(msg))))
+    try:
+        tracker.track(msg)
+    except Exception:
+        # fire_event(SendEventFailure())
+        pass

@@ -151,6 +151,22 @@ def msg_from_base_event(event: BaseEvent, level: Optional[EventLevel] = None):
     return new_event
 
 
+def msg_to_dict(msg: EventMsg) -> dict:
+    msg_dict = MessageToDict(
+        msg,
+        preserving_proto_field_name=True,
+        including_default_value_fields=True,  # type: ignore
+    )
+    # We don't want an empty NodeInfo in output
+    if (
+        "data" in msg_dict
+        and "node_info" in msg_dict["data"]
+        and msg_dict["data"]["node_info"]["node_name"] == ""
+    ):
+        del msg_dict["data"]["node_info"]
+    return msg_dict
+
+
 # DynamicLevel requires that the level be supplied on the
 # event construction call using the "info" function from functions.py
 class DynamicLevel(BaseEvent):

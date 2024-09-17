@@ -42,7 +42,7 @@ class BehaviorChangeEvent(WarnLevel):
     flag_name: str
     flag_source: str
     description: Optional[str] = None
-    docs_url: Optional[str] = None
+    docs_url: Optional[str] = "https://docs.getdbt.com/reference/global-configs/behavior-changes"
 
     def code(self) -> str:
         return "D018"
@@ -56,10 +56,7 @@ class BehaviorChangeEvent(WarnLevel):
         if self.description:
             msg += f"{self.description}.\n"
 
-        docs_url = (
-            self.docs_url or "https://docs.getdbt.com/reference/global-configs/behavior-changes"
-        )
-        msg += f"Visit {docs_url} for more information."
+        msg += f"Visit {self.docs_url} for more information."
 
         return warning_tag(msg)
 

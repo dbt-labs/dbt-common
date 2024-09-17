@@ -22,6 +22,12 @@ class BehaviorFlag(TypedDict):
         default: default setting, starts as False, becomes True after a bake-in period
         description: an additional message to send when the flag evaluates to False
         docs_url: the url to the relevant docs on docs.getdbt.com
+
+    *Note*:
+        While `description` and `docs_url` are both listed as `NotRequired`, at least one of them is required.
+        This is validated when the flag is rendered in `BehaviorFlagRendered` below.
+        The goal of this restriction is to provide the end user with context so they can make an informed decision
+        about if, and when, to enable the behavior flag.
     """
 
     name: str

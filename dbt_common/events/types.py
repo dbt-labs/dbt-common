@@ -38,30 +38,27 @@ from dbt_common.ui import warning_tag
 # =======================================================
 
 
-class BehaviorDeprecationEvent(WarnLevel):
+class BehaviorChangeEvent(WarnLevel):
     flag_name: str
     flag_source: str
-    deprecation_version: Optional[str]
-    deprecation_message: Optional[str]
-    docs_url: Optional[str]
+    description: Optional[str] = None
+    docs_url: Optional[str] = None
 
     def code(self) -> str:
         return "D018"
 
     def message(self) -> str:
-        msg = f"The legacy behavior controlled by `{self.flag_name}` is deprecated.\n"
+        msg = (
+            f"The behavior controlled by `{self.flag_name}` is currently turned off.\n"
+            f"This behavior can be turned on by setting `flags.{self.flag_name}` to `True` in `dbt_project.yml`.\n"
+        )
 
-        if self.deprecation_version:
-            msg = (
-                f"The legacy behavior is expected to be retired in `{self.deprecation_version}`.\n"
-            )
+        if self.description:
+            msg += f"{self.description}.\n"
 
-        msg += f"The new behavior can be turned on by setting `flags.{self.flag_name}` to `True` in `dbt_project.yml`.\n"
-
-        if self.deprecation_message:
-            msg += f"{self.deprecation_message}.\n"
-
-        docs_url = self.docs_url or f"https://docs.getdbt.com/search?q={self.flag_name}"
+        docs_url = (
+            self.docs_url or "https://docs.getdbt.com/reference/global-configs/behavior-changes"
+        )
         msg += f"Visit {docs_url} for more information."
 
         return warning_tag(msg)

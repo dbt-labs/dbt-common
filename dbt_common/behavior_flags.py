@@ -9,8 +9,8 @@ except ImportError:
     from typing import Optional as NotRequired
 
 from dbt_common.events.functions import fire_event
-from dbt_common.events.types import BehaviorDeprecationEvent
-from dbt_common.exceptions import CompilationError
+from dbt_common.events.types import BehaviorChangeEvent
+from dbt_common.exceptions import CompilationError, DbtInternalError
 
 
 class BehaviorFlag(TypedDict):
@@ -20,16 +20,14 @@ class BehaviorFlag(TypedDict):
     Args:
         name: the name of the behavior flag
         default: default setting, starts as False, becomes True after a bake-in period
-        deprecation_version: the version when the default will change to True
-        deprecation_message: an additional message to send when the flag evaluates to False
+        description: an additional message to send when the flag evaluates to False
         docs_url: the url to the relevant docs on docs.getdbt.com
     """
 
     name: str
     default: bool
     source: NotRequired[str]
-    deprecation_version: NotRequired[str]
-    deprecation_message: NotRequired[str]
+    description: NotRequired[str]
     docs_url: NotRequired[str]
 
 
@@ -43,14 +41,28 @@ class BehaviorFlagRendered:
     """
 
     def __init__(self, flag: BehaviorFlag, user_overrides: Dict[str, Any]) -> None:
+        self._validate(flag)
+
         self.name = flag["name"]
         self.setting = user_overrides.get(flag["name"], flag["default"])
-        self.deprecation_event = self._deprecation_event(flag)
+        self._behavior_change_event = BehaviorChangeEvent(
+            flag_name=flag["name"],
+            flag_source=flag.get("source", self._default_source()),
+            description=flag.get("description"),
+            docs_url=flag.get("docs_url"),
+        )
+
+    @staticmethod
+    def _validate(flag: BehaviorFlag) -> None:
+        if flag.get("description") is None and flag.get("docs_url") is None:
+            raise DbtInternalError(
+                "Behavior change flags require at least one of `description` and `docs_url`."
+            )
 
     @property
     def setting(self) -> bool:
         if self._setting is False:
-            fire_event(self.deprecation_event)
+            fire_event(self._behavior_change_event)
         return self._setting
 
     @setting.setter
@@ -60,15 +72,6 @@ class BehaviorFlagRendered:
     @property
     def no_warn(self) -> bool:
         return self._setting
-
-    def _deprecation_event(self, flag: BehaviorFlag) -> BehaviorDeprecationEvent:
-        return BehaviorDeprecationEvent(
-            flag_name=flag["name"],
-            flag_source=flag.get("source", self._default_source()),
-            deprecation_version=flag.get("deprecation_version"),
-            deprecation_message=flag.get("deprecation_message"),
-            docs_url=flag.get("docs_url"),
-        )
 
     @staticmethod
     def _default_source() -> str:
@@ -95,7 +98,7 @@ class Behavior:
         if adapter.behavior.my_flag:
             ...
 
-        if adapter.behavior.my_flag.no_warn:  # this will not fire the deprecation event
+        if adapter.behavior.my_flag.no_warn:  # this will not fire the behavior change event
             ...
         ```
         ```jinja
@@ -103,7 +106,7 @@ class Behavior:
             ...
         {% endif %}
 
-        {% if adapter.behavior.my_flag.no_warn %}  {# this will not fire the deprecation event #}
+        {% if adapter.behavior.my_flag.no_warn %}  {# this will not fire the behavior change event #}
             ...
         {% endif %}
         ```

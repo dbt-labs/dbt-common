@@ -1,0 +1,6 @@
+kind: Features
+body: Add MergeBehavior.Object for snapshot column feature
+time: 2024-09-18T11:49:03.257411-04:00
+custom:
+  Author: gshank
+  Issue: "191"

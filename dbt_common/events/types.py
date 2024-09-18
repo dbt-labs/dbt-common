@@ -42,7 +42,7 @@ class BehaviorChangeEvent(WarnLevel):
 
     def message(self) -> str:
         return warning_tag(
-            f"{self.description}.\n"
+            f"{self.description}\n"
             f"You may opt into the new behavior sooner by setting `flags.{self.flag_name}` to `True` in `dbt_project.yml`.\n"
             f"Visit {self.docs_url} for more information."
         )

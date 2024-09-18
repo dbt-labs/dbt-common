@@ -1,5 +1,3 @@
-from typing import Optional
-
 from dbt_common.events.base_types import (
     DebugLevel,
     InfoLevel,
@@ -38,33 +36,16 @@ from dbt_common.ui import warning_tag
 # =======================================================
 
 
-class BehaviorDeprecationEvent(WarnLevel):
-    flag_name: str
-    flag_source: str
-    deprecation_version: Optional[str]
-    deprecation_message: Optional[str]
-    docs_url: Optional[str]
-
+class BehaviorChangeEvent(WarnLevel):
     def code(self) -> str:
         return "D018"
 
     def message(self) -> str:
-        msg = f"The legacy behavior controlled by `{self.flag_name}` is deprecated.\n"
-
-        if self.deprecation_version:
-            msg = (
-                f"The legacy behavior is expected to be retired in `{self.deprecation_version}`.\n"
-            )
-
-        msg += f"The new behavior can be turned on by setting `flags.{self.flag_name}` to `True` in `dbt_project.yml`.\n"
-
-        if self.deprecation_message:
-            msg += f"{self.deprecation_message}.\n"
-
-        docs_url = self.docs_url or f"https://docs.getdbt.com/search?q={self.flag_name}"
-        msg += f"Visit {docs_url} for more information."
-
-        return warning_tag(msg)
+        return warning_tag(
+            f"{self.description}\n"
+            f"You may opt into the new behavior sooner by setting `flags.{self.flag_name}` to `True` in `dbt_project.yml`.\n"
+            f"Visit {self.docs_url} for more information."
+        )
 
 
 # =======================================================

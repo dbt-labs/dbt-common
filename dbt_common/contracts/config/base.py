@@ -96,10 +96,14 @@ class BaseConfig(AdditionalPropertiesAllowed, Replaceable):
                     return False
         return True
 
-    # This is used in 'add_config_call' to create the combined config_call_dict.
-    # 'meta' moved here from node
+    # This is used in 'merge_config_dicts' to create the combined orig_dict.
+    # Note: "clobber" fields aren't defined, because that's the default.
+    #    "access" is currently the only Clobber field.
+    # This shouldn't really be defined  here. It would be better to have it
+    # associated with the config definitions, but at the point we use it, we
+    # don't know which config we're dealing with.
     mergebehavior = {
-        "append": ["pre-hook", "pre_hook", "post-hook", "post_hook", "tags"],
+        "append": ["pre-hook", "pre_hook", "post-hook", "post_hook", "tags", "packages"],
         "update": [
             "quoting",
             "column_types",
@@ -108,6 +112,7 @@ class BaseConfig(AdditionalPropertiesAllowed, Replaceable):
             "contract",
         ],
         "dict_key_append": ["grants"],
+        "object": ["snapshot_meta_column_names"],
     }
 
     @classmethod
@@ -180,6 +185,7 @@ class MergeBehavior(Metadata):
     Update = 2
     Clobber = 3
     DictKeyAppend = 4
+    Object = 5
 
     @classmethod
     def default_field(cls) -> "MergeBehavior":
@@ -215,8 +221,10 @@ def _listify(value: Any) -> List[Any]:
 
 
 # There are two versions of this code. The one here is for config
-# objects, the one in _add_config_call in core context_config.py is for
-# config_call_dict dictionaries.
+# objects which can get the "MergeBehavior" from the field in the class,
+# the one below in 'merge_config_dicts' (formerly in
+# _add_config_call in core context_config.py) is for config_call dictionaries
+# where we need to get the MergeBehavior from someplace else.
 def _merge_field_value(
     merge_behavior: MergeBehavior,
     self_value: Any,
@@ -225,7 +233,8 @@ def _merge_field_value(
     if merge_behavior == MergeBehavior.Clobber:
         return other_value
     elif merge_behavior == MergeBehavior.Append:
-        return _listify(self_value) + _listify(other_value)
+        new_value = _listify(self_value) + _listify(other_value)
+        return new_value
     elif merge_behavior == MergeBehavior.Update:
         if not isinstance(self_value, dict):
             raise DbtInternalError(f"expected dict, got {self_value}")
@@ -258,6 +267,73 @@ def _merge_field_value(
                 # clobber the list
                 new_dict[new_key] = _listify(other_value[key])
         return new_dict
-
+    elif merge_behavior == MergeBehavior.Object:
+        # All fields in classes with MergeBehavior.Object should have a default of None
+        if not type(self_value).__name__ == type(other_value).__name__:
+            raise DbtInternalError(
+                f"got conflicting types: {type(self_value).__name__} and {type(other_value).__name__}"
+            )
+        new_value = self_value.copy()
+        new_value.update(other_value)
+        return new_value
     else:
         raise DbtInternalError(f"Got an invalid merge_behavior: {merge_behavior}")
+
+
+# This is used in ContextConfig._add_config_call. It updates the orig_dict in place.
+def merge_config_dicts(orig_dict: Dict[str, Any], new_dict: Dict[str, Any]) -> None:
+    # orig_dict is already encountered configs, new_dict is new
+    # This mirrors code in _merge_field_value in model_config.py which is similar but
+    # operates on config objects.
+    if orig_dict == {}:
+        orig_dict.update(new_dict)
+        return
+    for k, v in new_dict.items():
+        # MergeBehavior for post-hook and pre-hook is to collect all
+        # values, instead of overwriting
+        if k in BaseConfig.mergebehavior["append"]:
+            if k in orig_dict:  # should always be a list here
+                orig_dict[k] = _listify(orig_dict[k]) + _listify(v)
+            else:
+                orig_dict[k] = _listify(v)
+        elif k in BaseConfig.mergebehavior["update"]:
+            if not isinstance(v, dict):
+                raise DbtInternalError(f"expected dict, got {v}")
+            if k in orig_dict and isinstance(orig_dict[k], dict):
+                orig_dict[k].update(v)
+            else:
+                orig_dict[k] = v
+        elif k in BaseConfig.mergebehavior["dict_key_append"]:
+            if not isinstance(v, dict):
+                raise DbtInternalError(f"expected dict, got {v}")
+            if k in orig_dict:  # should always be a dict
+                for key in orig_dict[k].keys():
+                    orig_dict[k][key] = _listify(orig_dict[k][key])
+                for key, value in v.items():
+                    extend = False
+                    # This might start with a +, to indicate we should extend the list
+                    # instead of just clobbering it. We don't want to remove the + here
+                    # (like in the other method) because we want it preserved
+                    if key.startswith("+"):
+                        extend = True
+                    if key in orig_dict[k] and extend:
+                        # extend the list
+                        orig_dict[k][key].extend(_listify(value))
+                    else:
+                        # clobber the list
+                        orig_dict[k][key] = _listify(value)
+            else:
+                # This is always a dictionary
+                orig_dict[k] = v
+                # listify everything
+                for key, value in orig_dict[k].items():
+                    orig_dict[k][key] = _listify(value)
+        elif k in BaseConfig.mergebehavior["object"]:
+            if not isinstance(v, dict):
+                raise DbtInternalError(f"expected dict, got {v}")
+            if k not in orig_dict:
+                orig_dict[k] = {}
+            for obj_k, obj_v in v.items():
+                orig_dict[k][obj_k] = obj_v
+        else:  # Clobber
+            orig_dict[k] = v

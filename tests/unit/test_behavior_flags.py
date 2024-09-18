@@ -1,7 +1,7 @@
 import pytest
 
 from dbt_common.behavior_flags import Behavior
-from dbt_common.exceptions.base import CompilationError
+from dbt_common.exceptions.base import CompilationError, DbtInternalError
 from tests.unit.utils import EventCatcher
 
 
@@ -123,7 +123,16 @@ def test_behavior_flags_emit_behavior_change_event_on_evaluation(
                 "description": "This flag is false.",
                 "docs_url": "https://docs.getdbt.com/reference/global-configs/behavior-changes",
             },
-        )
+        ),
+        (
+            {"name": "flag_false", "default": False, "docs_url": "https://docs.getdbt.com"},
+            {
+                "flag_name": "flag_false",
+                "flag_source": __name__,
+                "description": "The behavior controlled by `flag_false` is currently turned off.\n",
+                "docs_url": "https://docs.getdbt.com",
+            },
+        ),
     ],
 )
 def test_behavior_flags_emit_correct_behavior_change_event(
@@ -157,3 +166,8 @@ def test_behavior_flags_no_behavior_change_event_on_no_warn(event_catcher: Event
     if behavior.flag_false:
         pass
     assert len(event_catcher.caught_events) == 1
+
+
+def test_behavior_flag_requires_description_or_docs_url(event_catcher: EventCatcher) -> None:
+    with pytest.raises(DbtInternalError):
+        Behavior([{"name": "flag_false", "default": False}], {})

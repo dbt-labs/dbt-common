@@ -48,15 +48,15 @@ class BehaviorChangeEvent(WarnLevel):
         return "D018"
 
     def message(self) -> str:
-        msg = (
-            f"The behavior controlled by `{self.flag_name}` is currently turned off.\n"
-            f"This behavior can be turned on by setting `flags.{self.flag_name}` to `True` in `dbt_project.yml`.\n"
-        )
-
         if self.description:
-            msg += f"{self.description}.\n"
+            msg = f"{self.description}.\n"
+        else:
+            msg = f"The behavior controlled by `{self.flag_name}` is currently turned off.\n"
 
-        msg += f"Visit {self.docs_url} for more information."
+        msg += (
+            f"You may opt into the new behavior sooner by setting `flags.{self.flag_name}` to `True` in `dbt_project.yml`.\n"
+            f"Visit {self.docs_url} for more information."
+        )
 
         return warning_tag(msg)
 

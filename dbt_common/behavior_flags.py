@@ -51,11 +51,16 @@ class BehaviorFlagRendered:
 
         self.name = flag["name"]
         self.setting = user_overrides.get(flag["name"], flag["default"])
+
+        default_description = (
+            f"""The behavior controlled by `{flag["name"]}` is currently turned off.\n"""
+        )
+        default_docs_url = "https://docs.getdbt.com/reference/global-configs/behavior-changes"
         self._behavior_change_event = BehaviorChangeEvent(
             flag_name=flag["name"],
             flag_source=flag.get("source", self._default_source()),
-            description=flag.get("description"),
-            docs_url=flag.get("docs_url"),
+            description=flag.get("description", default_description),
+            docs_url=flag.get("docs_url", default_docs_url),
         )
 
     @staticmethod

@@ -1,5 +1,3 @@
-from typing import Optional
-
 from dbt_common.events.base_types import (
     DebugLevel,
     InfoLevel,
@@ -39,26 +37,15 @@ from dbt_common.ui import warning_tag
 
 
 class BehaviorChangeEvent(WarnLevel):
-    flag_name: str
-    flag_source: str
-    description: Optional[str] = None
-    docs_url: Optional[str] = "https://docs.getdbt.com/reference/global-configs/behavior-changes"
-
     def code(self) -> str:
         return "D018"
 
     def message(self) -> str:
-        if self.description:
-            msg = f"{self.description}.\n"
-        else:
-            msg = f"The behavior controlled by `{self.flag_name}` is currently turned off.\n"
-
-        msg += (
+        return warning_tag(
+            f"{self.description}.\n"
             f"You may opt into the new behavior sooner by setting `flags.{self.flag_name}` to `True` in `dbt_project.yml`.\n"
             f"Visit {self.docs_url} for more information."
         )
-
-        return warning_tag(msg)
 
 
 # =======================================================

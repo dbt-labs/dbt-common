@@ -112,10 +112,24 @@ def test_behavior_flags_emit_behavior_change_event_on_evaluation(
     assert len(event_catcher.caught_events) == 1
 
 
-def test_behavior_flags_emit_correct_behavior_change_event(event_catcher: EventCatcher) -> None:
-    behavior = Behavior(
-        [{"name": "flag_false", "default": False, "description": "This flag is false."}], {}
-    )
+@pytest.mark.parametrize(
+    "flag,event",
+    [
+        (
+            {"name": "flag_false", "default": False, "description": "This flag is false."},
+            {
+                "flag_name": "flag_false",
+                "flag_source": __name__,
+                "description": "This flag is false.",
+                "docs_url": "https://docs.getdbt.com/reference/global-configs/behavior-changes",
+            },
+        )
+    ],
+)
+def test_behavior_flags_emit_correct_behavior_change_event(
+    event_catcher: EventCatcher, flag, event
+) -> None:
+    behavior = Behavior([flag], {})
 
     # trigger the evaluation
     if behavior.flag_false:
@@ -123,8 +137,10 @@ def test_behavior_flags_emit_correct_behavior_change_event(event_catcher: EventC
 
     msg = event_catcher.caught_events[0]
     assert msg.info.name == "BehaviorChangeEvent"
-    assert msg.data.flag_name == "flag_false"
-    assert msg.data.flag_source == __name__  # defaults to the calling module
+    assert msg.data.flag_name == event["flag_name"]
+    assert msg.data.flag_source == event["flag_source"]
+    assert msg.data.description == event["description"]
+    assert msg.data.docs_url == event["docs_url"]
 
 
 def test_behavior_flags_no_behavior_change_event_on_no_warn(event_catcher: EventCatcher) -> None:

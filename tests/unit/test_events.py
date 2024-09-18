@@ -62,7 +62,7 @@ class TestEventJSONSerialization:
         # N.B. Events instantiated here include the module prefix in order to
         # avoid having the entire list twice in the code.
         # D - Deprecations ======================
-        types.BehaviorDeprecationEvent(flag_name="Do you have a flag?", flag_source="dbt_common"),
+        types.BehaviorChangeEvent(flag_name="Do you have a flag?", flag_source="dbt_common"),
         # M - Deps generation ======================
         types.RetryExternalCall(attempt=0, max=0),
         types.RecordRetryException(exc=""),

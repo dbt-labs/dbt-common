@@ -10,13 +10,13 @@ def env_secrets() -> List[str]:
     return [v for k, v in os.environ.items() if k.startswith(SECRET_ENV_PREFIX) and v.strip()]
 
 
-def scrub_secrets(msg: str, secrets: List[str]) -> str:
+def scrub_secrets(msg: Any, secrets: List[str]) -> Any:
     scrubbed = str(msg)
 
     for secret in secrets:
         scrubbed = scrubbed.replace(secret, "*****")
 
-    return scrubbed
+    return msg if str(msg) == scrubbed else scrubbed
 
 
 class DbtBaseException(Exception):

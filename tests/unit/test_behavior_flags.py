@@ -171,3 +171,35 @@ def test_behavior_flags_no_behavior_change_event_on_no_warn(event_catcher: Event
 def test_behavior_flag_requires_description_or_docs_url(event_catcher: EventCatcher) -> None:
     with pytest.raises(DbtInternalError):
         Behavior([{"name": "flag_false", "default": False}], {})
+
+
+def test_behavior_flags_fire_once_per_flag(event_catcher: EventCatcher) -> None:
+    behavior = Behavior(
+        [
+            {"name": "flag_1", "default": False, "description": "This is flag 1."},
+            {"name": "flag_2", "default": False, "description": "This is flag 2."},
+        ],
+        {},
+    )
+
+    assert len(event_catcher.caught_events) == 0
+
+    # trigger the evaluation for flag_1, an event should fire
+    if behavior.flag_1:
+        pass
+    assert len(event_catcher.caught_events) == 1
+
+    # trigger the evaluation for flag_1 again, no event should fire
+    if behavior.flag_1:
+        pass
+    assert len(event_catcher.caught_events) == 1
+
+    # trigger the evaluation for flag_2, an event should fire
+    if behavior.flag_2:
+        pass
+    assert len(event_catcher.caught_events) == 2
+
+    # trigger the evaluation for flag_1 again, no event should fire
+    if behavior.flag_1:
+        pass
+    assert len(event_catcher.caught_events) == 2

@@ -46,6 +46,8 @@ class BehaviorFlagRendered:
         user_overrides: a set of user settings, one of which may be an override on this behavior flag
     """
 
+    fired: bool = False
+
     def __init__(self, flag: BehaviorFlag, user_overrides: Dict[str, Any]) -> None:
         self._validate(flag)
 
@@ -72,8 +74,9 @@ class BehaviorFlagRendered:
 
     @property
     def setting(self) -> bool:
-        if self._setting is False:
+        if self._setting is False and not self.fired:
             fire_event(self._behavior_change_event)
+            self.fired = True
         return self._setting
 
     @setting.setter

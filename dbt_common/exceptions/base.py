@@ -240,7 +240,7 @@ class DbtDatabaseError(DbtRuntimeError):
         lines = []
 
         if hasattr(self.node, "build_path") and self.node.build_path:
-            lines.append(f"compiled Code at {self.node.build_path}")
+            lines.append(f"compiled code at {self.node.build_path}")
 
         return lines + DbtRuntimeError.process_stack(self)
 

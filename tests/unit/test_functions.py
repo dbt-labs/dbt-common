@@ -17,6 +17,7 @@ class Note(WarnLevel):
         return "Z050"
 
     def message(self) -> str:
+        assert isinstance(self.msg, str)
         return self.msg
 
 
@@ -38,7 +39,7 @@ def valid_error_names() -> Set[str]:
 
 
 class TestWarnOrError:
-    def test_fires_error(self, valid_error_names: Set[str]):
+    def test_fires_error(self, valid_error_names: Set[str]) -> None:
         functions.WARN_ERROR_OPTIONS = WarnErrorOptions(
             include="*", valid_error_names=valid_error_names
         )
@@ -49,8 +50,8 @@ class TestWarnOrError:
         self,
         valid_error_names: Set[str],
         event_catcher: EventCatcher,
-        set_event_manager_with_catcher,
-    ):
+        set_event_manager_with_catcher: None,
+    ) -> None:
         functions.WARN_ERROR_OPTIONS = WarnErrorOptions(
             include="*", exclude=list(valid_error_names), valid_error_names=valid_error_names
         )
@@ -62,8 +63,8 @@ class TestWarnOrError:
         self,
         valid_error_names: Set[str],
         event_catcher: EventCatcher,
-        set_event_manager_with_catcher,
-    ):
+        set_event_manager_with_catcher: None,
+    ) -> None:
         functions.WARN_ERROR_OPTIONS = WarnErrorOptions(
             include="*", silence=list(valid_error_names), valid_error_names=valid_error_names
         )

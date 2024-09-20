@@ -1,7 +1,9 @@
 from dbt_common.events.base_types import (
     DebugLevel,
     InfoLevel,
+    WarnLevel,
 )
+from dbt_common.ui import warning_tag
 
 
 # The classes in this file represent the data necessary to describe a
@@ -27,6 +29,24 @@ from dbt_common.events.base_types import (
 # | T    | Test only           |
 #
 # The basic idea is that event codes roughly translate to the natural order of running a dbt task
+
+
+# =======================================================
+# D - Deprecations
+# =======================================================
+
+
+class BehaviorChangeEvent(WarnLevel):
+    def code(self) -> str:
+        return "D018"
+
+    def message(self) -> str:
+        return warning_tag(
+            f"{self.description}\n"
+            f"You may opt into the new behavior sooner by setting `flags.{self.flag_name}` to `True` in `dbt_project.yml`.\n"
+            f"Visit {self.docs_url} for more information."
+        )
+
 
 # =======================================================
 # M - Deps generation

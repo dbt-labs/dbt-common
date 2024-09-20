@@ -23,6 +23,21 @@ message GenericMessage {
     EventInfo info = 1;
 }
 
+// D - Deprecations
+
+// D018
+message BehaviorChangeEvent {
+    string flag_name = 1;
+    string flag_source = 2;
+    string description = 3;
+    string docs_url = 4;
+}
+
+message BehaviorChangeEventMsg {
+    EventInfo info = 1;
+    BehaviorChangeEvent data = 2;
+}
+
 // M - Deps generation
 
 // M020

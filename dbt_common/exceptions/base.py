@@ -1,5 +1,5 @@
 import builtins
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 import os
 
 from dbt_common.constants import SECRET_ENV_PREFIX
@@ -23,7 +23,7 @@ class DbtBaseException(Exception):
     CODE = -32000
     MESSAGE = "Server Error"
 
-    def data(self):
+    def data(self) -> Dict[str, Any]:
         # if overriding, make sure the result is json-serializable.
         return {
             "type": self.__class__.__name__,
@@ -32,7 +32,7 @@ class DbtBaseException(Exception):
 
 
 class DbtInternalError(DbtBaseException):
-    def __init__(self, msg: str):
+    def __init__(self, msg: str) -> None:
         self.stack: List = []
         self.msg = scrub_secrets(msg, env_secrets())
 
@@ -40,7 +40,7 @@ class DbtInternalError(DbtBaseException):
     def type(self) -> str:
         return "Internal"
 
-    def process_stack(self):
+    def process_stack(self) -> List[str]:
         lines = []
         stack = self.stack
         first = True
@@ -81,7 +81,7 @@ class DbtRuntimeError(RuntimeError, DbtBaseException):
         self.node = node
         self.msg = scrub_secrets(msg, env_secrets())
 
-    def add_node(self, node=None):
+    def add_node(self, node=None) -> None:
         if node is not None and node is not self.node:
             if self.node is not None:
                 self.stack.append(self.node)
@@ -91,7 +91,7 @@ class DbtRuntimeError(RuntimeError, DbtBaseException):
     def type(self):
         return "Runtime"
 
-    def node_to_string(self, node: Any):
+    def node_to_string(self, node: Any) -> str:
         """Given a node-like object we attempt to create the best identifier we can."""
         result = ""
         if hasattr(node, "resource_type"):
@@ -103,7 +103,7 @@ class DbtRuntimeError(RuntimeError, DbtBaseException):
 
         return result.strip() if result != "" else "<Unknown>"
 
-    def process_stack(self):
+    def process_stack(self) -> List[str]:
         lines = []
         stack = self.stack + [self.node]
         first = True
@@ -122,7 +122,7 @@ class DbtRuntimeError(RuntimeError, DbtBaseException):
 
         return lines
 
-    def validator_error_message(self, exc: builtins.Exception):
+    def validator_error_message(self, exc: builtins.Exception) -> str:
         """Given a dbt.dataclass_schema.ValidationError return the relevant parts as a string.
 
         dbt.dataclass_schema.ValidationError is basically a jsonschema.ValidationError)
@@ -132,7 +132,7 @@ class DbtRuntimeError(RuntimeError, DbtBaseException):
         path = "[%s]" % "][".join(map(repr, exc.relative_path))
         return f"at path {path}: {exc.message}"
 
-    def __str__(self, prefix: str = "! "):
+    def __str__(self, prefix: str = "! ") -> str:
         node_string = ""
 
         if self.node is not None:
@@ -149,7 +149,7 @@ class DbtRuntimeError(RuntimeError, DbtBaseException):
 
         return lines[0] + "\n" + "\n".join(["  " + line for line in lines[1:]])
 
-    def data(self):
+    def data(self) -> Dict[str, Any]:
         result = DbtBaseException.data(self)
         if self.node is None:
             return result
@@ -236,7 +236,7 @@ class DbtDatabaseError(DbtRuntimeError):
     CODE = 10003
     MESSAGE = "Database Error"
 
-    def process_stack(self):
+    def process_stack(self) -> List[str]:
         lines = []
 
         if hasattr(self.node, "build_path") and self.node.build_path:
@@ -250,7 +250,7 @@ class DbtDatabaseError(DbtRuntimeError):
 
 
 class UnexpectedNullError(DbtDatabaseError):
-    def __init__(self, field_name: str, source):
+    def __init__(self, field_name: str, source) -> None:
         self.field_name = field_name
         self.source = source
         msg = (
@@ -268,7 +268,7 @@ class CommandError(DbtRuntimeError):
         self.cmd = cmd_scrubbed
         self.args = (cwd, cmd_scrubbed, msg)
 
-    def __str__(self):
+    def __str__(self, prefix: str = "! ") -> str:
         if len(self.cmd) == 0:
             return f"{self.msg}: No arguments given"
         return f'{self.msg}: "{self.cmd[0]}"'

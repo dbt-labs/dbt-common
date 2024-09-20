@@ -10,7 +10,6 @@ import dataclasses
 import json
 import os
 
-from deepdiff import DeepDiff  # type: ignore
 from enum import Enum
 from typing import Any, Callable, Dict, List, Mapping, Optional, Type
 
@@ -21,7 +20,8 @@ class Record:
     to the request, and the 'result' is what is returned."""
 
     params_cls: type
-    result_cls: Optional[type]
+    result_cls: Optional[type] = None
+    group: Optional[str] = None
 
     def __init__(self, params, result) -> None:
         self.params = params
@@ -29,8 +29,14 @@ class Record:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            "params": self.params._to_dict() if hasattr(self.params, "_to_dict") else dataclasses.asdict(self.params),  # type: ignore
-            "result": self.result._to_dict() if hasattr(self.result, "_to_dict") else dataclasses.asdict(self.result) if self.result is not None else None,  # type: ignore
+            "params": self.params._to_dict()
+            if hasattr(self.params, "_to_dict")
+            else dataclasses.asdict(self.params),
+            "result": self.result._to_dict()
+            if hasattr(self.result, "_to_dict")
+            else dataclasses.asdict(self.result)
+            if self.result is not None
+            else None,
         }
 
     @classmethod
@@ -52,6 +58,11 @@ class Record:
 
 class Diff:
     def __init__(self, current_recording_path: str, previous_recording_path: str) -> None:
+        # deepdiff is expensive to import, so we only do it here when we need it
+        from deepdiff import DeepDiff  # type: ignore
+
+        self.diff = DeepDiff
+
         self.current_recording_path = current_recording_path
         self.previous_recording_path = previous_recording_path
 
@@ -67,7 +78,7 @@ class Diff:
             if previous[i].get("result").get("table") is not None:
                 previous[i]["result"]["table"] = json.loads(previous[i]["result"]["table"])
 
-        return DeepDiff(previous, current, ignore_order=True, verbose_level=2)
+        return self.diff(previous, current, ignore_order=True, verbose_level=2)
 
     def diff_env_records(self, current: List, previous: List) -> Dict[str, Any]:
         # The mode and filepath may change.  Ignore them.
@@ -77,12 +88,12 @@ class Diff:
             "root[0]['result']['env']['DBT_RECORDER_MODE']",
         ]
 
-        return DeepDiff(
+        return self.diff(
             previous, current, ignore_order=True, verbose_level=2, exclude_paths=exclude_paths
         )
 
     def diff_default(self, current: List, previous: List) -> Dict[str, Any]:
-        return DeepDiff(previous, current, ignore_order=True, verbose_level=2)
+        return self.diff(previous, current, ignore_order=True, verbose_level=2)
 
     def calculate_diff(self) -> Dict[str, Any]:
         with open(self.current_recording_path) as current_recording:
@@ -305,9 +316,9 @@ def record_function(
             if recorder is None:
                 return func_to_record(*args, **kwargs)
 
-            if (
-                recorder.recorded_types is not None
-                and record_type.__name__ not in recorder.recorded_types
+            if recorder.recorded_types is not None and not (
+                record_type.__name__ in recorder.recorded_types
+                or record_type.group in recorder.recorded_types
             ):
                 return func_to_record(*args, **kwargs)
 

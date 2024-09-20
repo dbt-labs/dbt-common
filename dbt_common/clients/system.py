@@ -38,11 +38,21 @@ else:
     c_bool = None
 
 
+def _record_path(path: str) -> bool:
+    return (
+        # TODO: The first check here obviates the next two checks but is probably too coarse?
+        "dbt/include" not in path
+        and "dbt/include/global_project" not in path
+        and "/plugins/postgres/dbt/include/" not in path
+    )
+
+
 @dataclasses.dataclass
 class FindMatchingParams:
     root_path: str
     relative_paths_to_search: List[str]
     file_pattern: str
+
     # ignore_spec: Optional[PathSpec] = None
 
     def __init__(
@@ -61,12 +71,7 @@ class FindMatchingParams:
     def _include(self) -> bool:
         # Do not record or replay filesystem searches that were performed against
         # files which are actually part of dbt's implementation.
-        return (
-            "dbt/include"
-            not in self.root_path  # TODO: This actually obviates the next two checks but is probably too coarse?
-            and "dbt/include/global_project" not in self.root_path
-            and "/plugins/postgres/dbt/include/" not in self.root_path
-        )
+        return _record_path(self.root_path)
 
 
 @dataclasses.dataclass
@@ -150,10 +155,7 @@ class LoadFileParams:
     def _include(self) -> bool:
         # Do not record or replay file reads that were performed against files
         # which are actually part of dbt's implementation.
-        return (
-            "dbt/include/global_project" not in self.path
-            and "/plugins/postgres/dbt/include/" not in self.path
-        )
+        return _record_path(self.path)
 
 
 @dataclasses.dataclass
@@ -248,10 +250,7 @@ class WriteFileParams:
     def _include(self) -> bool:
         # Do not record or replay file reads that were performed against files
         # which are actually part of dbt's implementation.
-        return (
-            "dbt/include/global_project" not in self.path
-            and "/plugins/postgres/dbt/include/" not in self.path
-        )
+        return _record_path(self.path)
 
 
 @Recorder.register_record_type
@@ -610,11 +609,36 @@ def rename(from_path: str, to_path: str, force: bool = False) -> None:
     shutil.move(from_path, to_path)
 
 
+def safe_extract(tarball: tarfile.TarFile, path: str = ".") -> None:
+    """
+    Fix for CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')
+    Solution copied from https://github.com/mindsdb/mindsdb/blob/main/mindsdb/utilities/fs.py
+    """
+
+    def _is_within_directory(directory, target):
+        abs_directory = os.path.abspath(directory)
+        abs_target = os.path.abspath(target)
+        prefix = os.path.commonprefix([abs_directory, abs_target])
+        return prefix == abs_directory
+
+    # for py >= 3.12
+    if hasattr(tarball, "data_filter"):
+        tarball.extractall(path, filter="data")
+    else:
+        members = tarball.getmembers()
+        for member in members:
+            member_path = os.path.join(path, member.name)
+            if not _is_within_directory(path, member_path):
+                raise tarfile.OutsideDestinationError(member, path)
+
+        tarball.extractall(path, members=members)
+
+
 def untar_package(tar_path: str, dest_dir: str, rename_to: Optional[str] = None) -> None:
     tar_path = convert_path(tar_path)
     tar_dir_name = None
     with tarfile.open(tar_path, "r:gz") as tarball:
-        tarball.extractall(dest_dir)
+        safe_extract(tarball, dest_dir)
         tar_dir_name = os.path.commonprefix(tarball.getnames())
     if rename_to:
         downloaded_path = os.path.join(dest_dir, tar_dir_name)

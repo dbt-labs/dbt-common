@@ -1,4 +1,5 @@
 import unittest
+from typing import Any, Tuple, Union
 
 import dbt_common.exceptions
 import dbt_common.utils.dict
@@ -68,7 +69,7 @@ class TestDeepMap(unittest.TestCase):
         }
 
     @staticmethod
-    def intify_all(value, _):
+    def intify_all(value: Any, _: Any) -> int:
         try:
             return int(value)
         except (TypeError, ValueError):
@@ -98,7 +99,7 @@ class TestDeepMap(unittest.TestCase):
         self.assertEqual(actual, expected)
 
     @staticmethod
-    def special_keypath(value, keypath):
+    def special_keypath(value: Any, keypath: Tuple[Union[str, int], ...]) -> Any:
         if tuple(keypath) == ("foo", "baz", 1):
             return "hello"
         else:

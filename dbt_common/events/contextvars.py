@@ -22,7 +22,7 @@ def get_contextvars(prefix: str) -> Dict[str, Any]:
     return rv
 
 
-def get_node_info():
+def get_node_info() -> Dict[str, Any]:
     cvars = get_contextvars(LOG_PREFIX)
     if "node_info" in cvars:
         return cvars["node_info"]

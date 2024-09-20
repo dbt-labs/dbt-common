@@ -47,6 +47,7 @@ class BehaviorFlagRendered:
     """
 
     def __init__(self, flag: BehaviorFlag, user_overrides: Dict[str, Any]) -> None:
+        self._warn_once = None
         self._validate(flag)
 
         self.name = flag["name"]
@@ -74,6 +75,8 @@ class BehaviorFlagRendered:
     def setting(self) -> bool:
         if self._setting is False:
             fire_event(self._behavior_change_event)
+            if self._warn_once:
+                self._setting = True
         return self._setting
 
     @setting.setter
@@ -83,6 +86,10 @@ class BehaviorFlagRendered:
     @property
     def no_warn(self) -> bool:
         return self._setting
+
+    @property
+    def warn_once(self) -> None:
+        self._warn_once = True
 
     @staticmethod
     def _default_source() -> str:

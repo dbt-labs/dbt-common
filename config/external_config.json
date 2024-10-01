@@ -1,0 +1,138 @@
+{
+  "id": "dbt-common/external-catalog-config-v0",
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "description": "..",
+  "title": "External Catalog Config",
+  "type": "object",
+  "required": [
+    "catalogs"
+  ],
+  "properties": {
+        "catalogs": {
+          "type": "array",
+          "items": {
+                "$ref": "#/$defs/externalCatalog"
+            }
+        }
+    },
+  "$defs": {
+    "icebergConfiguration": {
+      "type": "object",
+      "required": [
+        "table_format",
+        "external_location",
+        "location"
+      ],
+      "properties": {
+        "table_format": {
+            "type": "string",
+            "description": "The table format"
+            },
+        "namespace": {
+          "type": "string",
+          "description": "The namespace",
+          "default": "dbt"
+        },
+        "external_location": {
+          "type": "string",
+          "description": "The external location",
+          "format": "uri"
+        }
+        }
+      },
+    "glueConfiguration": {
+      "type": "object",
+      "required": [
+        "table_format",
+        "external_location",
+        "location"
+      ],
+      "properties": {
+        "table_format": {
+            "type": "string",
+            "description": "The table format"
+            },
+        "namespace": {
+          "type": "string",
+          "description": "The namespace",
+          "default": "dbt"
+        },
+        "external_location": {
+          "type": "string",
+          "description": "The external location",
+          "format": "uri"
+        },
+        "aws_account_id": {
+          "type": "string",
+          "description": "The AWS account ID"
+        },
+        "role_arn": {
+          "type": "string",
+          "description": "The role ARN"
+        }
+        }
+      },
+    "management": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether management is enabled"
+        },
+        "create_if_not_exists": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to create the external catalog if it does not exist"
+        },
+        "alter_if_different": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to alter the external catalog if it exists"
+        },
+        "read_only": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether the external catalog is read-only"
+        },
+        "refresh": {
+          "type": "string",
+          "enum": [
+            "always",
+            "never",
+            "on_change"
+          ],
+          "default": "on_change",
+          "description": "Whether to refresh the external catalog"
+        }
+      }
+    },
+    "externalCatalog": {
+      "type": "object",
+      "required": [
+        "type",
+        "name",
+        "configuration",
+        "management"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the external catalog"
+        },
+        "type": {
+          "enum": [
+            "iceberg",
+            "glue"
+          ]
+        },
+        "configuration": {
+          "anyOf": [{"$ref": "#/$defs/icebergConfiguration"}, {"$ref": "#/$defs/glueConfiguration"}]
+        },
+        "management": {
+          "$ref": "#/$defs/management"
+        }
+    }
+  }
+}
+}

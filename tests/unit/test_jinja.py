@@ -1,7 +1,7 @@
 import unittest
 
 from dbt_common.clients._jinja_blocks import BlockTag
-from dbt_common.clients.jinja import extract_toplevel_blocks
+from dbt_common.clients.jinja import extract_toplevel_blocks, get_template, render_template
 from dbt_common.exceptions import CompilationError
 
 
@@ -503,3 +503,24 @@ if_you_do_this_you_are_awful = """
 hi
 {% endmaterialization %}
 """
+
+
+def test_if_list_filter():
+    jinja_string = """
+        {%- if my_var | is_list -%}
+            Found a list
+        {%- else -%}
+            Did not find a list
+        {%- endif -%}
+    """
+    # Check with list variable
+    ctx = {"my_var": ["one", "two"]}
+    template = get_template(jinja_string, ctx)
+    rendered = render_template(template, ctx)
+    assert "Found a list" in rendered
+
+    # Check with non-list variable
+    ctx = {"my_var": "one"}
+    template = get_template(jinja_string, ctx)
+    rendered = render_template(template, ctx)
+    assert "Did not find a list" in rendered

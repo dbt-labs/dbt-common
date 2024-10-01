@@ -470,11 +470,16 @@ def create_undefined(node: Optional[_NodeProtocol] = None) -> Type[jinja2.Undefi
     return Undefined
 
 
+def is_list(value):
+    return isinstance(value, list)
+
+
 NATIVE_FILTERS: Dict[str, Callable[[Any], Any]] = {
     "as_text": TextMarker,
     "as_bool": BoolMarker,
     "as_native": NativeMarker,
     "as_number": NumberMarker,
+    "is_list": is_list,
 }
 
 
@@ -483,6 +488,7 @@ TEXT_FILTERS: Dict[str, Callable[[Any], Any]] = {
     "as_bool": lambda x: x,
     "as_native": lambda x: x,
     "as_number": lambda x: x,
+    "is_list": is_list,
 }
 
 

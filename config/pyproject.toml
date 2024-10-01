@@ -1,7 +1,7 @@
 [project]
 name = "dbt-config"
 dynamic = ["version"]
-description = "The shared common utilities that dbt-core and adapter implementations use"
+description = "The shared configuration interfaces"
 readme = "README.md"
 requires-python = ">=3.8"
 license = "Apache-2.0"
@@ -71,7 +71,7 @@ path = "src/dbt_config/__about__.py"
 ### Default env & scripts
 
 [tool.hatch.envs.default]
-description = "Default environment with dependencies for running dbt-common"
+description = "Default environment with dependencies for running dbt-config"
 features = ["lint", "test"]
 
 ### Test settings, envs & scripts
@@ -80,7 +80,7 @@ description = "Env for running development commands for testing"
 features = ["test"]
 
 [tool.hatch.envs.test.scripts]
-unit = "python -m pytest --cov=dbt_config --cov-report=xml {args:test/}"
+unit = "python -m pytest --cov=dbt_config --cov-report=xml test/"
 
 ### Linting settings, envs & scripts
 
@@ -149,7 +149,6 @@ exclude = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["dbt_config"]
 
 [tool.hatch.envs.build]
 description = "Env for running development commands for linting"

@@ -28,7 +28,7 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "pydantic",
+  "pydantic"
 ]
 
 [project.optional-dependencies]

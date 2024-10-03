@@ -1,6 +1,6 @@
 import yaml
 
-from dbt_config.external_config import ExternalCatalogConfig
+from dbt_config.catalog_config import ExternalCatalogConfig
 
 __EXAMPLE_VALID_CONFIG = """
 catalogs: # list of objects
@@ -33,4 +33,5 @@ catalogs: # list of objects
 
 def test_parse_external_config():
     unparsed_config = yaml.safe_load(__EXAMPLE_VALID_CONFIG)
-    ExternalCatalogConfig.model_validate(unparsed_config)
+    config = ExternalCatalogConfig.model_validate(unparsed_config)
+    assert config.catalogs[0].name == "titanic"

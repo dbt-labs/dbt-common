@@ -1,11 +1,13 @@
 import codecs
 import linecache
 import os
+import re
 import tempfile
 from ast import literal_eval
 from collections import ChainMap
 from contextlib import contextmanager
 from itertools import chain, islice
+from sys import intern
 from types import CodeType
 from typing import (
     Any,
@@ -18,13 +20,15 @@ from typing import (
     Union,
     Set,
     Type,
-    NoReturn,
+    NoReturn
 )
+
 
 from typing_extensions import Protocol
 
 import jinja2
 import jinja2.ext
+import jinja2.lexer
 import jinja2.nativetypes
 import jinja2.nodes
 import jinja2.parser
@@ -89,6 +93,16 @@ def _linecache_inject(source: str, write: bool) -> str:
     return filename
 
 
+# Extends the jinja lexer to deal with the right arrow operator used to annotate
+# return types, as implemented in MacroFuzzParser.parse_signature()
+#TOKEN_RIGHT_ARROW = intern("rarrow")
+#jinja2.lexer.operators["->"] = TOKEN_RIGHT_ARROW
+#jinja2.lexer.reverse_operators = {v: k for k, v in jinja2.lexer.operators.items()}
+#jinja2.lexer.operator_re = re.compile(
+#    f"({'|'.join(re.escape(x) for x in sorted(jinja2.lexer.reverse_operators, key=lambda x: -len(x)))})"
+#)
+
+
 class MacroFuzzParser(jinja2.parser.Parser):
     def parse_macro(self) -> jinja2.nodes.Macro:
         node = jinja2.nodes.Macro(lineno=next(self.stream).lineno)
@@ -98,9 +112,44 @@ class MacroFuzzParser(jinja2.parser.Parser):
         #  - @cmcarthur
         node.name = get_dbt_macro_name(self.parse_assign_target(name_only=True).name)
 
+        setattr(node, "is_annotated", False)
         self.parse_signature(node)
         node.body = self.parse_statements(("name:endmacro",), drop_needle=True)
         return node
+
+    def parse_signature(self, node: jinja2.parser._MacroCall) -> None:
+        """Duplicates the jinja implementation of parser.parse_signature, but
+        adds logic to deal with colon parameter type annotation syntax and arrow
+        return type annotation syntax."""
+        setattr(node, "arg_types", [])
+        setattr(node, "return_type", None)
+        args = node.args = []
+        defaults = node.defaults = []
+        self.stream.expect("lparen")
+        while self.stream.current.type != "rparen":
+            if args:
+                self.stream.expect("comma")
+            arg = self.parse_assign_target(name_only=True)
+            arg.set_ctx("param")
+
+            if self.stream.skip_if("colon"):
+                node.is_annotated = True
+                arg_type = self.parse_assign_target(name_only=True).name
+            else:
+                arg_type = ""
+
+            node.arg_types.append(arg_type)
+
+            if self.stream.skip_if("assign"):
+                defaults.append(self.parse_expression())
+            elif defaults:
+                self.fail("non-default argument follows default argument")
+            args.append(arg)
+        self.stream.expect("rparen")
+
+        if self.stream.skip_if("right_arrow"):
+            node.is_annotated = True
+            node.return_type = self.parse_assign_target(name_only=True)
 
 
 class MacroFuzzEnvironment(jinja2.sandbox.SandboxedEnvironment):

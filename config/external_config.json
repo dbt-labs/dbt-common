@@ -1,6 +1,6 @@
 {
   "id": "dbt-common/external-catalog-config-v0",
-  "$schema": "http://json-schema.org/draft-06/schema#",
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "description": "..",
   "title": "External Catalog Config",
   "type": "object",
@@ -21,17 +21,36 @@
       "required": [
         "table_format",
         "external_location",
+        "internal_namespace",
         "location"
       ],
       "properties": {
         "table_format": {
             "type": "string",
-            "description": "The table format"
+            "description": "The table format",
+            "default": "iceberg"
             },
-        "namespace": {
+        "catalog_namespace": {
           "type": "string",
           "description": "The namespace",
           "default": "dbt"
+        },
+        "internal_namespace": {
+          "type": "object",
+            "required": [
+                "database",
+                "schema"
+            ],
+            "properties": {
+                "database": {
+                "type": "string",
+                "description": "The database"
+                },
+                "schema": {
+                "type": "string",
+                "description": "The schema"
+                }
+            }
         },
         "external_location": {
           "type": "string",
@@ -98,11 +117,11 @@
         "refresh": {
           "type": "string",
           "enum": [
-            "always",
+            "on-start",
             "never",
-            "on_change"
+            "just-in-time"
           ],
-          "default": "on_change",
+          "default": "on-start",
           "description": "Whether to refresh the external catalog"
         }
       }
@@ -127,12 +146,13 @@
           ]
         },
         "configuration": {
-          "anyOf": [{"$ref": "#/$defs/icebergConfiguration"}, {"$ref": "#/$defs/glueConfiguration"}]
+          "type": "object",
+          "oneOf": [{"$ref": "#/$defs/icebergConfiguration"}, {"$ref": "#/$defs/glueConfiguration"}]
         },
         "management": {
           "$ref": "#/$defs/management"
         }
-    }
+      }
   }
 }
 }

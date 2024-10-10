@@ -2,7 +2,6 @@ from enum import Enum
 import os
 import threading
 from dbt_common.events import types_pb2
-import sys
 from google.protobuf.json_format import ParseDict, MessageToDict, MessageToJson
 from google.protobuf.message import Message
 from dbt_common.events.helpers import get_json_string_utcnow
@@ -65,14 +64,14 @@ class BaseEvent:
             kwargs["msg"] = str(kwargs["msg"])
         try:
             self.pb_msg = ParseDict(kwargs, msg_cls())
-        except Exception:
+        except Exception as exc:
             # Imports need to be here to avoid circular imports
             from dbt_common.events.types import Note
             from dbt_common.events.functions import fire_event
 
-            error_msg = f"[{class_name}]: Unable to parse dict {kwargs}"
+            error_msg = f"[{class_name}]: Unable to parse logging event dictionary. {exc}. Dictionary: {kwargs}"
             # If we're testing throw an error so that we notice failures
-            if "pytest" in sys.modules:
+            if os.getenv("PYTEST_CURRENT_TEST"):
                 raise Exception(error_msg)
             else:
                 fire_event(Note(msg=error_msg), level=EventLevel.WARN)

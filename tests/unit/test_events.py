@@ -1,4 +1,5 @@
 import re
+import os
 
 import pytest
 
@@ -127,11 +128,12 @@ def test_bad_serialization():
     that bad serializations are properly handled, the best we can do is test
     that the exception handling path is used.
     """
-
     with pytest.raises(Exception) as excinfo:
         types.Note(param_event_doesnt_have="This should break")
+    assert 'has no field named "param_event_doesnt_have" at "Note"' in str(excinfo.value)
 
-    assert (
-        str(excinfo.value)
-        == "[Note]: Unable to parse dict {'param_event_doesnt_have': 'This should break'}"
-    )
+    # With this unset, it shouldn't throw an exception
+    saved = os.environ["PYTEST_CURRENT_TEST"]
+    del os.environ["PYTEST_CURRENT_TEST"]
+    types.Note(param_event_doesnt_have="This should not break")
+    os.environ["PYTEST_CURRENT_TEST"] = saved

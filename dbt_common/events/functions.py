@@ -1,26 +1,34 @@
-from pathlib import Path
-
-from dbt_common.events.event_manager_client import get_event_manager
-from dbt_common.exceptions import EventCompilationError
-from dbt_common.invocation import get_invocation_id
-from dbt_common.helper_types import WarnErrorOptions
-from dbt_common.utils.encoding import ForgivingJSONEncoder
-from dbt_common.events.base_types import BaseEvent, EventLevel, EventMsg
-from dbt_common.events.logger import LoggerConfig, LineFormat
-from dbt_common.exceptions import scrub_secrets, env_secrets
-from dbt_common.events.types import Note
 from functools import partial
 import json
 import os
+from pathlib import Path
 import sys
-from typing import Callable, Dict, Optional, TextIO, Union
-from google.protobuf.json_format import MessageToDict
+from typing import Any, Callable, Dict, Optional, TextIO, Union
+
+from dbt_common.helper_types import WarnErrorOptions
+from dbt_common.invocation import get_invocation_id
+from dbt_common.events.base_types import (
+    BaseEvent,
+    EventLevel,
+    EventMsg,
+    msg_to_dict as _msg_to_dict,
+)
+from dbt_common.events.cookie import Cookie
+from dbt_common.events.event_manager_client import get_event_manager
+from dbt_common.events.logger import LoggerConfig, LineFormat
+from dbt_common.events.tracker import FileTracker, SnowplowTracker, Tracker, TrackerConfig
+from dbt_common.events.types import Note, SendingEvent, SendEventFailure
+from dbt_common.events.user import User
+from dbt_common.exceptions import EventCompilationError, scrub_secrets, env_secrets
+from dbt_common.utils.encoding import ForgivingJSONEncoder
+
 
 LOG_VERSION = 3
 metadata_vars: Optional[Dict[str, str]] = None
 _METADATA_ENV_PREFIX = "DBT_ENV_CUSTOM_ENV_"
 WARN_ERROR_OPTIONS = WarnErrorOptions(include=[], exclude=[])
 WARN_ERROR = False
+
 
 # This global, and the following two functions for capturing stdout logs are
 # an unpleasant hack we intend to remove as part of API-ification. The GitHub
@@ -92,26 +100,14 @@ def msg_to_json(msg: EventMsg) -> str:
 
 
 def msg_to_dict(msg: EventMsg) -> dict:
-    msg_dict = dict()
     try:
-        msg_dict = MessageToDict(
-            msg,
-            preserving_proto_field_name=True,
-            including_default_value_fields=True,  # type: ignore
-        )
+        return _msg_to_dict(msg)
     except Exception as exc:
         event_type = type(msg).__name__
         fire_event(
             Note(msg=f"type {event_type} is not serializable. {str(exc)}"), level=EventLevel.WARN
         )
-    # We don't want an empty NodeInfo in output
-    if (
-        "data" in msg_dict
-        and "node_info" in msg_dict["data"]
-        and msg_dict["data"]["node_info"]["node_name"] == ""
-    ):
-        del msg_dict["data"]["node_info"]
-    return msg_dict
+    return {}
 
 
 def warn_or_error(event, node=None) -> None:
@@ -153,3 +149,57 @@ def get_metadata_vars() -> Dict[str, str]:
 def reset_metadata_vars() -> None:
     global metadata_vars
     metadata_vars = None
+
+
+def tracker_factory(config: TrackerConfig) -> Tracker:
+    if all([config.invocation_id, config.endpoint, config.msg_schemas]):
+        return SnowplowTracker.from_config(config)
+    elif all([config.invocation_id, config.name, config.output_file_name]):
+        return FileTracker.from_config(config)
+    raise Exception("Invalid tracking configuration.")
+
+
+def enable_tracking(tracker: Tracker, user: User):
+    cookie = _get_cookie(user)
+    user.enable_tracking(cookie)
+    tracker.enable_tracking(cookie)
+
+
+def disable_tracking(tracker: Tracker, user: User):
+    user.disable_tracking()
+    tracker.disable_tracking()
+
+
+def _get_cookie(user: User) -> Dict[str, Any]:
+    if cookie := user.cookie:
+        return cookie
+    return _set_cookie(user)
+
+
+def _set_cookie(user: User) -> Dict[str, Any]:
+    """
+    If the user points dbt to a profile directory which exists AND
+    contains a profiles.yml file, then we can set a cookie. If the
+    specified folder does not exist, or if there is not a profiles.yml
+    file in this folder, then an inconsistent cookie can be used. This
+    will change in every dbt invocation until the user points to a
+    profile dir file which contains a valid profiles.yml file.
+
+    See: https://github.com/dbt-labs/dbt-core/issues/1645
+    """
+    if user.profile.exists():
+        cookie = Cookie(user.directory)
+        user.cookie = cookie.as_dict()
+        return user.cookie
+    return {}
+
+
+def track(tracker: Tracker, user: User, msg: EventMsg) -> None:
+    if user.do_not_track:
+        return
+
+    fire_event(SendingEvent(kwargs=str(**msg_to_dict(msg))))
+    try:
+        tracker.track(msg)
+    except Exception:
+        fire_event(SendEventFailure())

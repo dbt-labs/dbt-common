@@ -17,6 +17,11 @@ def add_logger_to_manager(logger) -> None:
     _EVENT_MANAGER.add_logger(logger)
 
 
+def add_tracker_to_manager(tracker) -> None:
+    global _EVENT_MANAGER
+    _EVENT_MANAGER.add_tracker(tracker)
+
+
 def add_callback_to_manager(callback: TCallback) -> None:
     global _EVENT_MANAGER
     _EVENT_MANAGER.add_callback(callback)
@@ -32,4 +37,5 @@ def cleanup_event_logger() -> None:
     # especially important for tests, since pytest replaces the stdout stream
     # during test runs, and closes the stream after the test is over.
     _EVENT_MANAGER.loggers.clear()
+    _EVENT_MANAGER.trackers.clear()
     _EVENT_MANAGER.callbacks.clear()

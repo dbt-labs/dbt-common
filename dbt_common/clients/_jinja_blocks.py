@@ -145,7 +145,6 @@ class TagIterator:
         self.pos -= amount
 
     def _search(self, pattern: re.Pattern) -> Optional[re.Match]:
-
         # Check to see if we have cached a search for this pattern already.
         positioned_match = self._past_matches.get(pattern)
 

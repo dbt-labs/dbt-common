@@ -46,6 +46,7 @@ from dbt_common.exceptions import (
     MaterializationArgError,
     JinjaRenderingError,
     UndefinedCompilationError,
+    DbtRuntimeTypeError
 )
 from dbt_common.exceptions.macros import MacroReturn, UndefinedMacroError, CaughtMacroError
 
@@ -125,6 +126,14 @@ class MacroFuzzEnvironment(jinja2.sandbox.SandboxedEnvironment):
         return super()._compile(source, filename)  # type: ignore
 
 
+class RenderCallJinjaTypeError(jinja2.TemplateError):
+    def __init__(
+        self,
+        message: str,
+    ) -> None:
+        super().__init__(message)
+
+
 class MacroFuzzTemplate(jinja2.nativetypes.NativeTemplate):
     environment_class = MacroFuzzEnvironment  # type: ignore
 
@@ -159,6 +168,8 @@ class MacroFuzzTemplate(jinja2.nativetypes.NativeTemplate):
             return self.environment_class.concat(  # type: ignore
                 self.root_render_func(ctx)  # type: ignore
             )
+        except TypeError as e:
+            raise RenderCallJinjaTypeError(str(e)) from e
         except Exception:
             return self.environment.handle_exception()
 
@@ -531,6 +542,8 @@ def catch_jinja(node: Optional[_NodeProtocol] = None) -> Iterator[None]:
         raise CompilationError(str(e), node) from e
     except jinja2.exceptions.UndefinedError as e:
         raise UndefinedMacroError(str(e), node) from e
+    except RenderCallJinjaTypeError as e:
+        raise DbtRuntimeTypeError(str(e), node) from e
     except CompilationError as exc:
         exc.add_node(node)
         raise

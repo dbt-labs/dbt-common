@@ -272,3 +272,11 @@ class CommandError(DbtRuntimeError):
         if len(self.cmd) == 0:
             return f"{self.msg}: No arguments given"
         return f'{self.msg}: "{self.cmd[0]}"'
+
+
+class DbtRuntimeTypeError(DbtRuntimeError):
+    MESSAGE = "Type Error"
+
+    @property
+    def type(self):
+        return "Type"

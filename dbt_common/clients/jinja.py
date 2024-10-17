@@ -46,7 +46,7 @@ from dbt_common.exceptions import (
     MaterializationArgError,
     JinjaRenderingError,
     UndefinedCompilationError,
-    DbtRuntimeTypeError
+    DbtRuntimeTypeError,
 )
 from dbt_common.exceptions.macros import MacroReturn, UndefinedMacroError, CaughtMacroError
 

@@ -52,11 +52,24 @@
                 }
             }
         },
-        "external_location": {
-          "type": "string",
-          "description": "The external location",
-          "format": "uri"
-        }
+        "external_volume": {
+          "type": "object",
+          "required": [
+                    "type",
+                    "path"
+                ],
+          "properties": {
+              "external_location": {
+                "type": "string",
+                "description": "The external location URI",
+                "format": "uri"
+              },
+              "name": {
+              "type": "string",
+              "description": "The name of the volume"
+              }
+            }
+          }
         }
       },
     "glueConfiguration": {

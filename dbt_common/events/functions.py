@@ -97,7 +97,7 @@ def msg_to_dict(msg: EventMsg) -> dict:
         msg_dict = MessageToDict(
             msg,
             preserving_proto_field_name=True,
-            including_default_value_fields=True,  # type: ignore
+            always_print_fields_with_no_presence=True,
         )
     except Exception as exc:
         event_type = type(msg).__name__

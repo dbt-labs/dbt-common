@@ -91,15 +91,18 @@ class BaseEvent:
 
     def to_dict(self):
         return MessageToDict(
-            self.pb_msg, preserving_proto_field_name=True, including_default_value_fields=True
+            self.pb_msg,
+            preserving_proto_field_name=True,
+            always_print_fields_with_no_presence=True,
         )
 
     def to_json(self) -> str:
         return MessageToJson(
             self.pb_msg,
             preserving_proto_field_name=True,
-            including_default_value_fields=True,
+            always_print_fields_with_no_presence=True,
             indent=None,
+            sort_keys=True,
         )
 
     def level_tag(self) -> EventLevel:

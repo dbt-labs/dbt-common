@@ -2,7 +2,7 @@ import unittest
 
 from dbt_common.clients._jinja_blocks import BlockTag
 from dbt_common.clients.jinja import extract_toplevel_blocks, get_template, render_template
-from dbt_common.exceptions import CompilationError
+from dbt_common.exceptions import CompilationError, DbtRuntimeTypeError
 
 
 class TestBlockLexer(unittest.TestCase):
@@ -445,6 +445,27 @@ class TestBlockLexer(unittest.TestCase):
             "Got an unexpected control flow end tag, got endfor but expected endif next (@ 3:4)",
             str(err.exception),
         )
+
+
+class TestRenderExceptions(unittest.TestCase):
+    def _dummy_config(self, something: str) -> int:
+        return int(something == "foo")
+
+    def test_no_type_error(self) -> None:
+        jinja_string = 'select {{config(something="foo")}} + {{number}} as result'
+        ctx = {"config": self._dummy_config, "number": 1}
+
+        template = get_template(jinja_string, ctx)
+        rendered = render_template(template, ctx)
+        assert "select 1 + 1 as result" == rendered
+
+    def test_type_error(self) -> None:
+        jinja_string = 'select {{config(something=-"foo")}} as result'
+        ctx = {"config": self._dummy_config}
+
+        template = get_template(jinja_string, ctx)
+        with self.assertRaises(DbtRuntimeTypeError):
+            render_template(template, ctx)
 
 
 bar_block = """{% mytype bar %}

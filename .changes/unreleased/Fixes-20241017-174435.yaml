@@ -1,0 +1,6 @@
+kind: Fixes
+body: catch jinja type errors during render phase
+time: 2024-10-17T17:44:35.736867874-03:00
+custom:
+    Author: devmessias
+    Issue: "206"

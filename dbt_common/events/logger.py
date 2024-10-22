@@ -88,6 +88,7 @@ class LoggerConfig:
     output_file_name: Optional[str] = None
     output_file_max_bytes: Optional[int] = 10 * 1024 * 1024  # 10 mb
     logger: Optional[Any] = None
+    pretty_print_json: bool = False
 
 
 class _Logger:
@@ -188,10 +189,17 @@ class _TextLogger(_Logger):
 
 
 class _JsonLogger(_Logger):
+    def __init__(self, config: LoggerConfig) -> None:
+        super().__init__(config)
+        self.pretty_print_json = config.pretty_print_json
+
     def create_line(self, msg: EventMsg) -> str:
         from dbt_common.events.functions import msg_to_dict
 
         msg_dict = msg_to_dict(msg)
-        raw_log_line = json.dumps(msg_dict, sort_keys=True, cls=ForgivingJSONEncoder)
+        indent = 2 if self.pretty_print_json else None
+        raw_log_line = json.dumps(
+            msg_dict, sort_keys=True, cls=ForgivingJSONEncoder, indent=indent
+        )
         line = self.scrubber(raw_log_line)  # type: ignore
         return line

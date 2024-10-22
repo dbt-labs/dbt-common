@@ -41,6 +41,7 @@ def get_stdout_config(
     use_colors: bool,
     level: EventLevel,
     log_cache_events: bool,
+    pretty_print_json: bool = False,
 ) -> LoggerConfig:
     return LoggerConfig(
         name="stdout_log",
@@ -55,6 +56,7 @@ def get_stdout_config(
         ),
         invocation_id=get_invocation_id(),
         output_stream=sys.stdout,
+        pretty_print_json=pretty_print_json,
     )
 
 

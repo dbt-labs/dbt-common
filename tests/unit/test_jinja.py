@@ -467,6 +467,23 @@ class TestRenderExceptions(unittest.TestCase):
         with self.assertRaises(DbtRuntimeTypeError):
             render_template(template, ctx)
 
+    def test_type_error_iter_none(self) -> None:
+        jinja_string = """
+        {% set mylist = None %}
+
+        {% for item in mylist %}
+
+        select '{{ item }}' as my_item
+        {{ 'union all' if not loop.last }}
+
+        {% endfor %}
+        """
+        ctx = {"config": self._dummy_config}
+
+        template = get_template(jinja_string, ctx)
+        with self.assertRaises(DbtRuntimeTypeError):
+            render_template(template, ctx)
+
 
 bar_block = """{% mytype bar %}
 {# a comment

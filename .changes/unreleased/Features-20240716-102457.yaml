@@ -1,6 +1,0 @@
-kind: Features
-body: Add to and to_columns to ColumnLevelConstraint and ModelLevelConstraint contracts
-time: 2024-07-16T10:24:57.11251-04:00
-custom:
-  Author: michelleark
-  Issue: "168"

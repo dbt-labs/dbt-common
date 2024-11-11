@@ -1,6 +1,0 @@
-kind: Fixes
-body: Fix case-insensitive env vars for Windows
-time: 2024-07-15T20:53:55.946355+01:00
-custom:
-    Author: peterallenwebb aranke
-    Issue: "166"

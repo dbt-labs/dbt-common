@@ -1,4 +1,4 @@
-# dbt Core Changelog
+# dbt-common Changelog
 
 - This file provides a full account of all changes to `dbt-common`
 - Changes are listed under the (pre)release in which they first appear. Subsequent releases include changes from previous releases.

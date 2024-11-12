@@ -139,4 +139,4 @@ class Behavior:
         for flag in self._flags:
             if flag.name == name:
                 return flag
-        raise CompilationError(f"The flag {name} has not be registered.")
+        raise CompilationError(f"The flag {name} has not been registered.")

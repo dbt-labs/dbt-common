@@ -125,6 +125,34 @@ message FormattingMsg {
     Formatting data = 2;
 }
 
+// Z039
+message DisableTracking {
+}
+
+message DisableTrackingMsg {
+    CoreEventInfo info = 1;
+    DisableTracking data = 2;
+}
+
+// Z040
+message SendingEvent {
+    string kwargs = 1;
+}
+
+message SendingEventMsg {
+    CoreEventInfo info = 1;
+    SendingEvent data = 2;
+}
+
+// Z041
+message SendEventFailure {
+}
+
+message SendEventFailureMsg {
+    CoreEventInfo info = 1;
+    SendEventFailure data = 2;
+}
+
 // Z050
 message Note {
     string msg = 1;

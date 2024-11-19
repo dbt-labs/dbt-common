@@ -13,11 +13,11 @@ from dbt_common.events.base_types import EventLevel, EventMsg
 from dbt_common.events.format import timestamp_to_datetime_string
 from dbt_common.utils.encoding import ForgivingJSONEncoder
 
-PRINT_EVENT_NAME = "PrintEvent"
+PRINT_EVENT_NAMES = ("PrintEvent", "ShowNode", "CompiledNode")
 
 
 def _is_print_event(msg: EventMsg) -> bool:
-    return msg.info.name == PRINT_EVENT_NAME
+    return msg.info.name in PRINT_EVENT_NAMES
 
 
 # A Filter is a function which takes a BaseEvent and returns True if the event

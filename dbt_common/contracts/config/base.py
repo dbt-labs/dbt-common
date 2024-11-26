@@ -170,9 +170,10 @@ class BaseConfig(AdditionalPropertiesAllowed, Replaceable):
         dct.update(data)
 
         # any validation failures must have come from the update
-        if validate:
-            self.validate(dct)
-        return self.from_dict(dct)
+        # Always validate, otherwise the "from_dict" will cast and eliminate some errors
+        self.validate(dct)
+        obj = self.from_dict(dct)
+        return obj
 
     def finalize_and_validate(self: T) -> T:
         dct = self.to_dict(omit_none=False)

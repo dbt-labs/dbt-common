@@ -172,8 +172,7 @@ class BaseConfig(AdditionalPropertiesAllowed, Replaceable):
         # any validation failures must have come from the update
         if validate:
             self.validate(dct)
-        obj = self.from_dict(dct)
-        return obj
+        return self.from_dict(dct)
 
     def finalize_and_validate(self: T) -> T:
         dct = self.to_dict(omit_none=False)

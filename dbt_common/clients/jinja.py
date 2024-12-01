@@ -534,6 +534,8 @@ def catch_jinja(node: Optional[_NodeProtocol] = None) -> Iterator[None]:
     except CompilationError as exc:
         exc.add_node(node)
         raise
+    except Exception as e:
+        raise CompilationError(str(e), node) from e
 
 
 _TESTING_PARSE_CACHE: Dict[str, jinja2.nodes.Template] = {}

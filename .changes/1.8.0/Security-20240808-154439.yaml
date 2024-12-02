@@ -1,6 +1,0 @@
-kind: Security
-body: Fix arbitrary file write during tarfile extraction
-time: 2024-08-08T15:44:39.601346-05:00
-custom:
-    Author: aranke
-    PR: "182"

@@ -1,6 +1,0 @@
-kind: Features
-body: Include JSON and text output in quiet mode for `dbt show` and `dbt compile`
-time: 2024-11-05T09:31:50.780898-06:00
-custom:
-  Author: dbeatty10
-  Issue: "216"

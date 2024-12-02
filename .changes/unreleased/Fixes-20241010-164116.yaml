@@ -1,6 +1,0 @@
-kind: Fixes
-body: Suppress logging event dictionary parsing exceptions
-time: 2024-10-10T16:41:16.06107-04:00
-custom:
-  Author: gshank
-  Issue: "202"

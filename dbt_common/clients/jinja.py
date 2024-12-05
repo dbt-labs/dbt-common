@@ -46,6 +46,7 @@ from dbt_common.exceptions import (
     MaterializationArgError,
     JinjaRenderingError,
     UndefinedCompilationError,
+    DbtRuntimeError,
 )
 from dbt_common.exceptions.macros import MacroReturn, UndefinedMacroError, CaughtMacroError
 
@@ -534,6 +535,12 @@ def catch_jinja(node: Optional[_NodeProtocol] = None) -> Iterator[None]:
     except CompilationError as exc:
         exc.add_node(node)
         raise
+    except DbtRuntimeError:
+        # Propagate dbt exception raised during jinja compilation
+        raise
+    except Exception as e:
+        # Raise any non-dbt exceptions as CompilationError
+        raise CompilationError(str(e), node) from e
 
 
 _TESTING_PARSE_CACHE: Dict[str, jinja2.nodes.Template] = {}

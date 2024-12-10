@@ -1,6 +1,8 @@
 import jinja2
 import unittest
 
+from typing import Any, Dict
+
 from dbt_common.clients._jinja_blocks import BlockTag
 from dbt_common.clients.jinja import (
     extract_toplevel_blocks,
@@ -521,7 +523,7 @@ def test_if_list_filter() -> None:
         {%- endif -%}
     """
     # Check with list variable
-    ctx = {"my_var": ["one", "two"]}
+    ctx: Dict[str, Any] = {"my_var": ["one", "two"]}
     template = get_template(jinja_string, ctx)
     rendered = render_template(template, ctx)
     assert "Found a list" in rendered

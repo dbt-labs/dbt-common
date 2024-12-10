@@ -2,7 +2,13 @@ import jinja2
 import unittest
 
 from dbt_common.clients._jinja_blocks import BlockTag
-from dbt_common.clients.jinja import extract_toplevel_blocks, get_template, render_template, MacroFuzzParser, MacroType
+from dbt_common.clients.jinja import (
+    extract_toplevel_blocks,
+    get_template,
+    render_template,
+    MacroFuzzParser,
+    MacroType,
+)
 from dbt_common.exceptions import CompilationError
 
 
@@ -506,7 +512,7 @@ hi
 """
 
 
-def test_if_list_filter():
+def test_if_list_filter() -> None:
     jinja_string = """
         {%- if my_var | is_list -%}
             Found a list
@@ -557,4 +563,6 @@ def test_macro_parser_parses_complex_types() -> None:
     assert arg_types[0] == MacroType("List", [MacroType("str")])
     assert arg_types[1] == MacroType("Dict", [MacroType("int"), MacroType("str")])
     assert arg_types[2] == MacroType("Optional", [MacroType("List", [MacroType("str")])])
-    assert arg_types[3] == MacroType("Dict", [MacroType("str"), MacroType("Dict", [MacroType("bool"), MacroType("Any")])])
+    assert arg_types[3] == MacroType(
+        "Dict", [MacroType("str"), MacroType("Dict", [MacroType("bool"), MacroType("Any")])]
+    )

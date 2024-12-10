@@ -1,4 +1,5 @@
 import codecs
+import dataclasses
 import linecache
 import os
 import tempfile
@@ -90,6 +91,12 @@ def _linecache_inject(source: str, write: bool) -> str:
     return filename
 
 
+@dataclasses.dataclass
+class MacroType:
+    name: str
+    type_params: List["MacroType"] = dataclasses.field(default_factory=list)
+
+
 class MacroFuzzParser(jinja2.parser.Parser):
     def parse_macro(self) -> jinja2.nodes.Macro:
         node = jinja2.nodes.Macro(lineno=next(self.stream).lineno)
@@ -127,7 +134,7 @@ class MacroFuzzParser(jinja2.parser.Parser):
             type_name: Optional[str]
             if self.stream.skip_if("colon"):
                 node.has_type_annotations = True  # type: ignore
-                type_name = self.stream.expect("name")
+                type_name = self.parse_type_name()
             else:
                 type_name = ""
 
@@ -140,6 +147,27 @@ class MacroFuzzParser(jinja2.parser.Parser):
 
             args.append(arg)
         self.stream.expect("rparen")
+
+    def parse_type_name(self) -> MacroType:
+        # NOTE: Types syntax is validated here, but not whether type names
+        # are valid or have correct parameters.
+
+        # A type name should consist of a name (i.e. 'Dict')...
+        type_name = self.stream.expect("name").value
+        type = MacroType(type_name)
+
+        # ..and an optional comma-delimited list of type parameters
+        # as in the type declaration 'Dict[str, str]'
+        if self.stream.skip_if("lbracket"):
+            while self.stream.current.type != "rbracket":
+                if type.type_params:
+                    self.stream.expect("comma")
+                param_type = self.parse_type_name()
+                type.type_params.append(param_type)
+
+            self.stream.expect("rbracket")
+
+        return type
 
 
 class MacroFuzzEnvironment(jinja2.sandbox.SandboxedEnvironment):

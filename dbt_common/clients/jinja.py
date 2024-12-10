@@ -103,6 +103,44 @@ class MacroFuzzParser(jinja2.parser.Parser):
         node.body = self.parse_statements(("name:endmacro",), drop_needle=True)
         return node
 
+    def parse_signature(self, node: Union[jinja2.nodes.Macro, jinja2.nodes.CallBlock]) -> None:
+        """Overrides the default jinja Parser.parse_signature method, modifying
+        the original implementation to allow macros to have typed parameters."""
+
+        # Jinja does not support extending its node types, such as Macro, so
+        # at least while typed macros are experimental, we will patch the
+        # information onto the existing types.
+        setattr(node, "arg_types", [])
+        setattr(node, "has_type_annotations", False)
+
+        args = node.args = []
+        defaults = node.defaults = []
+
+        self.stream.expect("lparen")
+        while self.stream.current.type != "rparen":
+            if args:
+                self.stream.expect("comma")
+
+            arg = self.parse_assign_target(name_only=True)
+            arg.set_ctx("param")
+
+            type_name: Optional[str]
+            if self.stream.skip_if("colon"):
+                node.has_type_annotations = True  # type: ignore
+                type_name = self.stream.expect("name")
+            else:
+                type_name = ""
+
+            node.arg_types.append(type_name)  # type: ignore
+
+            if self.stream.skip_if("assign"):
+                defaults.append(self.parse_expression())
+            elif defaults:
+                self.fail("non-default argument follows default argument")
+
+            args.append(arg)
+        self.stream.expect("rparen")
+
 
 class MacroFuzzEnvironment(jinja2.sandbox.SandboxedEnvironment):
     def _parse(

@@ -1,4 +1,5 @@
 import dataclasses
+from enum import Enum
 from typing import Any, Dict, List, Optional
 
 import jinja2
@@ -7,11 +8,15 @@ from dbt_common.clients.jinja import get_environment, MacroType
 
 PRIMITIVE_TYPES = ["Any", "bool", "float", "int", "str"]
 
+class FailureType(Enum):
+    TYPE_MISMATCH = "mismatch"
+    UNKNOWN_TYPE = "unknown"
+    PARAMETER_COUNT = "param_count"
 
 @dataclasses.dataclass
 class TypeCheckFailure:
+    type: FailureType
     msg: str
-
 
 @dataclasses.dataclass
 class DbtMacroCall:
@@ -65,37 +70,47 @@ class DbtMacroCall:
 
         return None
 
-    def is_valid_type(self, t: MacroType) -> bool:
+    def check_type(self, t: MacroType) -> List[TypeCheckFailure]:
         if len(t.type_params) == 0 and t.name in PRIMITIVE_TYPES:
-            return True
-        elif (
-            t.name == "Dict"
-            and len(t.type_params) == 2
-            and t.type_params[0].name in PRIMITIVE_TYPES
-            and self.is_valid_type(t.type_params[1])
-        ):
-            return True
-        elif (
-            t.name in ["List", "Optional"]
-            and len(t.type_params) == 1
-            and self.is_valid_type(t.type_params[0])
-        ):
-            return True
+            return []
 
-        return False
+        failures: List[TypeCheckFailure] = []
+        if t.name == "Dict":
+            if len(t.type_params) != 2:
+                failures.append(TypeCheckFailure(FailureType.PARAMETER_COUNT, f"Expected two type parameters for Dict[], found {len(t.type_params)}."))
+            else:
+                if t.type_params[0].name not in PRIMITIVE_TYPES:
+                    failures.append(TypeCheckFailure(FailureType.TYPE_MISMATCH, "First type parameter of Dict[] must be a primitive type."))
+
+                failures.extend(self.check_type(t.type_params[1]))
+        elif t.name in ("List", "Optional"):
+            if len(t.type_params) != 1:
+                failures.append(TypeCheckFailure(FailureType.PARAMETER_COUNT, "Expected one type parameter for {t.name}[], found {len(t.type_params)}."))
+
+            failures.extend(self.check_type(t.type_params[0]))
+
+        return failures
 
     def check(self, macro_text: str) -> List[TypeCheckFailure]:
         failures: List[TypeCheckFailure] = []
         template = get_environment(None, capture_macros=True).parse(macro_text)
         jinja_macro = template.body[0]
 
+        # This could be arguably be done elsewhere, but check that every
+        # parameter passed to the macro has a valid type.
         for arg_type in jinja_macro.arg_types:
-            if not self.is_valid_type(arg_type):
-                failures.append(TypeCheckFailure(msg="Invalid type."))
+            failures = self.check_type(arg_type)
+            if failures:
+                failures.extend(failures)
 
+        # Check that each positional argument matches the type of the
         for i, arg_type in enumerate(self.arg_types):
             expected_type = jinja_macro.arg_types[i]
             if arg_type != expected_type:
-                failures.append(TypeCheckFailure(msg="Wrong type of parameter."))
+                failures.append(TypeCheckFailure(FailureType.TYPE_MISMATCH, f"Expected type {expected_type.name} as argument {i} but found {arg_type.name}/"))
+
+        # Check whether there were more positional arguments than expected.
+        if len(self.arg_types) > len(jinja_macro.arg_types):
+            failures.append(TypeCheckFailure(FailureType.PARAMETER_COUNT, f"Expected {len(self.arg_types)} type arguments, got {len(jinja_macro.arg_types)}."))
 
         return failures

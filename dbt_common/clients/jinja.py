@@ -18,12 +18,10 @@ from typing import (
     Optional,
     Union,
     Set,
-    Tuple,
     Type,
     NoReturn,
 )
 
-from hypothesis.errors import Frozen
 from typing_extensions import Protocol
 
 import jinja2

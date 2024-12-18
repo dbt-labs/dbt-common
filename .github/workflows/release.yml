@@ -3,13 +3,17 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
+      version_number:
+        description: "Version to bump to: ex. 1.14.5"
+        required: true
+        type: string
       deploy-to:
         type: choice
         description: Choose where to publish (test/prod)
         options:
           - PypiProd
           - PypiTest
-        default: PypiTest
+        default: PypiProd
 
 permissions: read-all
 
@@ -23,10 +27,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  release-prep:
+    permissions:
+      contents: write
+    name: "Version bump and Changelog update"
+    uses: ./.github/actions/release-prep
+    with:
+      version_number: ${{ inputs.version_number }}
+    secrets:
+      inherit
 
   release:
     name: PyPI - ${{ inputs.deploy-to }}
     runs-on: ubuntu-latest
+    needs: release-prep
     environment:
       name: ${{ inputs.deploy-to }}
     permissions:

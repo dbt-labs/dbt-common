@@ -29,14 +29,22 @@ name: Version Bump and Changelog Generation
 run-name: "${{ inputs.version_number }} - Version Bump and Changelog Generation"
 
 on:
+  workflow_call:
+    inputs:
+      version_number:
+        description: "Version to bump to: ex. 1.14.5"
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       version_number:
+        description: "Version to bump to: ex. 1.14.5"
         required: true
         type: string
       test_run:
+        description: "Test run - do not commit changes"
         required: false
-        default: true
+        default: false
         type: boolean
 
 permissions:
@@ -374,7 +382,7 @@ jobs:
     needs: [run-unit-tests, create-temp-branch, audit-version-in-code, audit-changelog]
     if: |
         !failure() && !cancelled() &&
-        inputs.test_run == false &&
+        inputs.test_run != true &&
         (
           needs.audit-changelog.outputs.exists == 'false' ||
           needs.audit-version-in-code.outputs.up_to_date == 'false'

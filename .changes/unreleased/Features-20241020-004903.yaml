@@ -1,0 +1,6 @@
+kind: Features
+body: enable json log for pretty-formatted
+time: 2024-10-20T00:49:03.699651+09:00
+custom:
+    Author: jx2lee
+    Issue: "209"

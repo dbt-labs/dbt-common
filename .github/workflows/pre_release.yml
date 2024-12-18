@@ -238,15 +238,15 @@ jobs:
     needs: [audit-changelog, audit-version-in-code, create-temp-branch]
 
     steps:
-      - name: "Set Git User"
-        run: |
-          git config user.name "Github Build Bot"
-          git config user.email "buildbot@fishtownanalytics.com"
-
       - name: "Checkout ${{ github.repository }} Branch ${{ needs.create-temp-branch.outputs.branch_name }}"
         uses: actions/checkout@v4
         with:
           ref: ${{ needs.create-temp-branch.outputs.branch_name }}
+
+      - name: "Set Git User"
+        run: |
+          git config user.name "Github Build Bot"
+          git config user.email "buildbot@fishtownanalytics.com"
 
       - name: "Add Homebrew To PATH"
         run: |

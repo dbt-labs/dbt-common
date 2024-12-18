@@ -238,15 +238,15 @@ jobs:
     needs: [audit-changelog, audit-version-in-code, create-temp-branch]
 
     steps:
-      - name: "Set Git User"
-        run: |
-          git config user.name "Github Build Bot"
-          git config user.email "buildbot@fishtownanalytics.com"
-
       - name: "Checkout ${{ github.repository }} Branch ${{ needs.create-temp-branch.outputs.branch_name }}"
         uses: actions/checkout@v4
         with:
           ref: ${{ needs.create-temp-branch.outputs.branch_name }}
+
+      - name: "Set Git User"
+        run: |
+          git config user.name "Github Build Bot"
+          git config user.email "buildbot@fishtownanalytics.com"
 
       - name: "Add Homebrew To PATH"
         run: |
@@ -328,13 +328,13 @@ jobs:
       # this step will fail on whitespace errors but also correct them, so add a `| true` to avoid failure
       - name: "Remove Trailing Whitespace Via Pre-commit"
         run: |
-          pre-commit run trailing-whitespace --files .bumpversion.cfg CHANGELOG.md .changes/* | true
+          pre-commit run trailing-whitespace --files .bumpversion.cfg CHANGELOG.md .changes/* || true
           git status
 
       # this step will fail on newline errors but also correct them, so add a `| true` to avoid failure
       - name: "Removing Extra Newlines Via Pre-commit"
         run: |
-          pre-commit run end-of-file-fixer --files .bumpversion.cfg CHANGELOG.md .changes/* | true
+          pre-commit run end-of-file-fixer --files .bumpversion.cfg CHANGELOG.md .changes/* || true
           git status
 
       - name: "Commit & Push Changes"
@@ -388,16 +388,16 @@ jobs:
           echo needs.audit-changelog.outputs.exists: ${{ needs.audit-changelog.outputs.exists }}
           echo needs.audit-version-in-code.outputs.up_to_date: ${{ needs.audit-version-in-code.outputs.up_to_date }}
 
-      - name: "Set Git User"
-        run: |
-          git config user.name "Github Build Bot"
-          git config user.email "buildbot@fishtownanalytics.com"
-
       - name: "Checkout Repo ${{ github.repository }}"
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
           token: ${{ secrets.FISHTOWN_BOT_PAT }}
+
+      - name: "Set Git User"
+        run: |
+          git config user.name "Github Build Bot"
+          git config user.email "buildbot@fishtownanalytics.com"
 
       - name: "Merge in changes"
         run: |

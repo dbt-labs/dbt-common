@@ -71,6 +71,6 @@ jobs:
         with:
           repository-url: https://test.pypi.org/legacy/
 
-      - name: Publish artifacts to PyPI Prod
-        if: inputs.deploy-to == 'PypiProd'
-        uses: pypa/gh-action-pypi-publish@release/v1
+      # - name: Publish artifacts to PyPI Prod
+      #   if: inputs.deploy-to == 'PypiProd'
+      #   uses: pypa/gh-action-pypi-publish@release/v1

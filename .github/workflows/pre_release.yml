@@ -376,57 +376,57 @@ jobs:
         run: |
           hatch run test:unit
 
-  merge-changes:
-    name: "Merge Changes Into ${{ github.ref }}"
-    runs-on: ubuntu-latest
-    needs: [run-unit-tests, create-temp-branch, audit-version-in-code, audit-changelog]
-    if: |
-        !failure() && !cancelled() &&
-        inputs.test_run != true &&
-        (
-          needs.audit-changelog.outputs.exists == 'false' ||
-          needs.audit-version-in-code.outputs.up_to_date == 'false'
-        )
+  # merge-changes:
+  #   name: "Merge Changes Into ${{ github.ref }}"
+  #   runs-on: ubuntu-latest
+  #   needs: [run-unit-tests, create-temp-branch, audit-version-in-code, audit-changelog]
+  #   if: |
+  #       !failure() && !cancelled() &&
+  #       inputs.test_run != true &&
+  #       (
+  #         needs.audit-changelog.outputs.exists == 'false' ||
+  #         needs.audit-version-in-code.outputs.up_to_date == 'false'
+  #       )
 
-    steps:
-      - name: "[Debug] Print Variables"
-        run: |
-          echo branch_name:   ${{ needs.create-temp-branch.outputs.branch_name }}
-          echo inputs.test_run: ${{ inputs.test_run }}
-          echo needs.audit-changelog.outputs.exists: ${{ needs.audit-changelog.outputs.exists }}
-          echo needs.audit-version-in-code.outputs.up_to_date: ${{ needs.audit-version-in-code.outputs.up_to_date }}
+  #   steps:
+  #     - name: "[Debug] Print Variables"
+  #       run: |
+  #         echo branch_name:   ${{ needs.create-temp-branch.outputs.branch_name }}
+  #         echo inputs.test_run: ${{ inputs.test_run }}
+  #         echo needs.audit-changelog.outputs.exists: ${{ needs.audit-changelog.outputs.exists }}
+  #         echo needs.audit-version-in-code.outputs.up_to_date: ${{ needs.audit-version-in-code.outputs.up_to_date }}
 
-      - name: "Checkout Repo ${{ github.repository }}"
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
-          token: ${{ secrets.FISHTOWN_BOT_PAT }}
+  #     - name: "Checkout Repo ${{ github.repository }}"
+  #       uses: actions/checkout@v4
+  #       with:
+  #         ref: ${{ github.ref }}
+  #         token: ${{ secrets.FISHTOWN_BOT_PAT }}
 
-      - name: "Set Git User"
-        run: |
-          git config user.name "Github Build Bot"
-          git config user.email "buildbot@fishtownanalytics.com"
+  #     - name: "Set Git User"
+  #       run: |
+  #         git config user.name "Github Build Bot"
+  #         git config user.email "buildbot@fishtownanalytics.com"
 
-      - name: "Merge in changes"
-        run: |
-          git fetch origin ${{ needs.create-temp-branch.outputs.branch_name }}
-          if ! git merge origin/${{ needs.create-temp-branch.outputs.branch_name }} --no-ff -m "Merge version bump and changelogs"; then
-            echo "::error::Merge failed"
-            exit 1
-          fi
-          git push origin HEAD || {
-            echo "::error::Push failed"
-            exit 1
-          }
+  #     - name: "Merge in changes"
+  #       run: |
+  #         git fetch origin ${{ needs.create-temp-branch.outputs.branch_name }}
+  #         if ! git merge origin/${{ needs.create-temp-branch.outputs.branch_name }} --no-ff -m "Merge version bump and changelogs"; then
+  #           echo "::error::Merge failed"
+  #           exit 1
+  #         fi
+  #         git push origin HEAD || {
+  #           echo "::error::Push failed"
+  #           exit 1
+  #         }
 
-      - name: "Delete Temp Branch"
-        env:
-          GH_TOKEN: ${{ secrets.FISHTOWN_BOT_PAT }}
-        run: |
-          gh api -X DELETE repos/${{ github.repository }}/git/refs/heads/${{ needs.create-temp-branch.outputs.branch_name }}
+  #     - name: "Delete Temp Branch"
+  #       env:
+  #         GH_TOKEN: ${{ secrets.FISHTOWN_BOT_PAT }}
+  #       run: |
+  #         gh api -X DELETE repos/${{ github.repository }}/git/refs/heads/${{ needs.create-temp-branch.outputs.branch_name }}
 
-      - name: "[Notification] Changes Merged"
-        run: |
-          title="Changelog and Version Bump Branch Merge"
-          message="The ${{ needs.create-temp-branch.outputs.branch_name }} branch was merged into ${{ github.ref }}"
-          echo "::notice title=${{ env.NOTIFICATION_PREFIX }}: $title::$message"
+  #     - name: "[Notification] Changes Merged"
+  #       run: |
+  #         title="Changelog and Version Bump Branch Merge"
+  #         message="The ${{ needs.create-temp-branch.outputs.branch_name }} branch was merged into ${{ github.ref }}"
+  #         echo "::notice title=${{ env.NOTIFICATION_PREFIX }}: $title::$message"

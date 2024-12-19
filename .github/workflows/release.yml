@@ -31,7 +31,7 @@ jobs:
     permissions:
       contents: write
     name: "Version bump and Changelog update"
-    uses: ./.github/actions/release-prep
+    uses: ./.github/workflows/pre_release.yml
     with:
       version_number: ${{ inputs.version_number }}
     secrets:

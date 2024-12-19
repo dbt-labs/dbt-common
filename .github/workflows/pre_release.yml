@@ -29,14 +29,22 @@ name: Version Bump and Changelog Generation
 run-name: "${{ inputs.version_number }} - Version Bump and Changelog Generation"
 
 on:
+  workflow_call:
+    inputs:
+      version_number:
+        description: "Version to bump to: ex. 1.14.5"
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       version_number:
+        description: "Version to bump to: ex. 1.14.5"
         required: true
         type: string
       test_run:
+        description: "Test run - do not commit changes"
         required: false
-        default: true
+        default: false
         type: boolean
 
 permissions:
@@ -210,7 +218,7 @@ jobs:
         id: variables
         run: |
           name="prep-release/"
-          if [[ ${{ inputs.test_run }} == true ]]
+          if [[ "${{ inputs.test_run }}" == "true" ]]
           then
             name+="test-run/"
           fi
@@ -238,15 +246,15 @@ jobs:
     needs: [audit-changelog, audit-version-in-code, create-temp-branch]
 
     steps:
-      - name: "Set Git User"
-        run: |
-          git config user.name "Github Build Bot"
-          git config user.email "buildbot@fishtownanalytics.com"
-
       - name: "Checkout ${{ github.repository }} Branch ${{ needs.create-temp-branch.outputs.branch_name }}"
         uses: actions/checkout@v4
         with:
           ref: ${{ needs.create-temp-branch.outputs.branch_name }}
+
+      - name: "Set Git User"
+        run: |
+          git config user.name "Github Build Bot"
+          git config user.email "buildbot@fishtownanalytics.com"
 
       - name: "Add Homebrew To PATH"
         run: |
@@ -328,13 +336,13 @@ jobs:
       # this step will fail on whitespace errors but also correct them, so add a `| true` to avoid failure
       - name: "Remove Trailing Whitespace Via Pre-commit"
         run: |
-          pre-commit run trailing-whitespace --files .bumpversion.cfg CHANGELOG.md .changes/* | true
+          pre-commit run trailing-whitespace --files .bumpversion.cfg CHANGELOG.md .changes/* || true
           git status
 
       # this step will fail on newline errors but also correct them, so add a `| true` to avoid failure
       - name: "Removing Extra Newlines Via Pre-commit"
         run: |
-          pre-commit run end-of-file-fixer --files .bumpversion.cfg CHANGELOG.md .changes/* | true
+          pre-commit run end-of-file-fixer --files .bumpversion.cfg CHANGELOG.md .changes/* || true
           git status
 
       - name: "Commit & Push Changes"
@@ -374,7 +382,7 @@ jobs:
     needs: [run-unit-tests, create-temp-branch, audit-version-in-code, audit-changelog]
     if: |
         !failure() && !cancelled() &&
-        inputs.test_run == false &&
+        inputs.test_run != true &&
         (
           needs.audit-changelog.outputs.exists == 'false' ||
           needs.audit-version-in-code.outputs.up_to_date == 'false'
@@ -388,16 +396,16 @@ jobs:
           echo needs.audit-changelog.outputs.exists: ${{ needs.audit-changelog.outputs.exists }}
           echo needs.audit-version-in-code.outputs.up_to_date: ${{ needs.audit-version-in-code.outputs.up_to_date }}
 
-      - name: "Set Git User"
-        run: |
-          git config user.name "Github Build Bot"
-          git config user.email "buildbot@fishtownanalytics.com"
-
       - name: "Checkout Repo ${{ github.repository }}"
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
           token: ${{ secrets.FISHTOWN_BOT_PAT }}
+
+      - name: "Set Git User"
+        run: |
+          git config user.name "Github Build Bot"
+          git config user.email "buildbot@fishtownanalytics.com"
 
       - name: "Merge in changes"
         run: |

@@ -131,12 +131,12 @@ class MacroFuzzParser(jinja2.parser.Parser):
             arg = self.parse_assign_target(name_only=True)
             arg.set_ctx("param")
 
-            type_name: Optional[str]
+            type_name: Optional[MacroType]
             if self.stream.skip_if("colon"):
                 node.has_type_annotations = True  # type: ignore
                 type_name = self.parse_type_name()
             else:
-                type_name = ""
+                type_name = None
 
             node.arg_types.append(type_name)  # type: ignore
 

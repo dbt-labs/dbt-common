@@ -1,0 +1,6 @@
+kind: Features
+body: Move type checking code into dbt-common
+time: 2025-01-13T16:14:39.573226-05:00
+custom:
+  Author: peterallenwebb
+  Issue: "230"

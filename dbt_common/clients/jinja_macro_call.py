@@ -1,6 +1,6 @@
 import dataclasses
 from enum import Enum
-from typing import Any, Dict, List, Optional, Iterable
+from typing import Any, Dict, List, Optional
 
 import jinja2
 import jinja2.nodes
@@ -18,10 +18,12 @@ class FailureType(Enum):
     EXTRA_ARGUMENT = "extra_arg"
     MISSING_ARGUMENT = "missing_arg"
 
+
 @dataclasses.dataclass
 class TypeCheckFailure:
     type: FailureType
     msg: str
+
 
 @dataclasses.dataclass
 class MacroCallChecker:
@@ -56,31 +58,61 @@ class MacroCallChecker:
             target_type = macro_checker.arg_types[i]
             unassigned_args.remove(target_name)
             if arg_type is not None and target_type is not None and arg_type != target_type:
-                failures.append(TypeCheckFailure(FailureType.TYPE_MISMATCH, f"Expected type {target_type.name} for argument {target_name} but found {arg_type.name}/"))
+                failures.append(
+                    TypeCheckFailure(
+                        FailureType.TYPE_MISMATCH,
+                        f"Expected type {target_type.name} for argument {target_name} but found {arg_type.name}/",
+                    )
+                )
 
         # Each keyword argument in this call should correspond to an expected
         # argument that has not already been assigned, and have a compatible type.
         for arg_name, arg_type in self.kwarg_types.items():
             if arg_name not in macro_checker.args:
-                failures.append(TypeCheckFailure(FailureType.EXTRA_ARGUMENT, f"Unexpected keyword argument {arg_name}."))
+                failures.append(
+                    TypeCheckFailure(
+                        FailureType.EXTRA_ARGUMENT, f"Unexpected keyword argument {arg_name}."
+                    )
+                )
             elif arg_name not in unassigned_args:
-                failures.append(TypeCheckFailure(FailureType.EXTRA_ARGUMENT, f"Argument {arg_name} was specified more than once."))
+                failures.append(
+                    TypeCheckFailure(
+                        FailureType.EXTRA_ARGUMENT,
+                        f"Argument {arg_name} was specified more than once.",
+                    )
+                )
             else:
                 unassigned_args.remove(arg_name)
                 expected_type = macro_checker.get_arg_type(arg_name)
-                if arg_type is not None and expected_type is not None and arg_type != expected_type:
-                    failures.append(TypeCheckFailure(FailureType.TYPE_MISMATCH, f"Expected type {expected_type.name} for argument {arg_name} but found {arg_type.name}/"))
+                if (
+                    arg_type is not None
+                    and expected_type is not None
+                    and arg_type != expected_type
+                ):
+                    failures.append(
+                        TypeCheckFailure(
+                            FailureType.TYPE_MISMATCH,
+                            f"Expected type {expected_type.name} for argument {arg_name} but found {arg_type.name}/",
+                        )
+                    )
 
         # Any remaining unassigned parameters must have a default.
         for arg_name in unassigned_args:
             if not macro_checker.has_default(arg_name):
-                failures.append(TypeCheckFailure(FailureType.MISSING_ARGUMENT, f"Missing argument {arg_name}."))
+                failures.append(
+                    TypeCheckFailure(FailureType.MISSING_ARGUMENT, f"Missing argument {arg_name}.")
+                )
 
         # Check that any arguments specified by keyword have the correct type
         for arg_name, arg_type in self.kwarg_types.items():
             expected_type = macro_checker.get_arg_type(arg_name)
             if arg_type is not None and expected_type is not None and arg_type != expected_type:
-                failures.append(TypeCheckFailure(FailureType.TYPE_MISMATCH, f"Expected type {expected_type.name} as argument {arg_name} but found {arg_type.name}/"))
+                failures.append(
+                    TypeCheckFailure(
+                        FailureType.TYPE_MISMATCH,
+                        f"Expected type {expected_type.name} as argument {arg_name} but found {arg_type.name}/",
+                    )
+                )
 
         return failures
 
@@ -143,22 +175,38 @@ class TypeChecker:
         failures: List[TypeCheckFailure] = []
         if t.name == "Dict":
             if len(t.type_params) != 2:
-                failures.append(TypeCheckFailure(FailureType.PARAMETER_COUNT, f"Expected two type parameters for Dict[], found {len(t.type_params)}."))
+                failures.append(
+                    TypeCheckFailure(
+                        FailureType.PARAMETER_COUNT,
+                        f"Expected two type parameters for Dict[], found {len(t.type_params)}.",
+                    )
+                )
             else:
                 if t.type_params[0].name not in PRIMITIVE_TYPES:
-                    failures.append(TypeCheckFailure(FailureType.TYPE_MISMATCH, "First type parameter of Dict[] must be a primitive type."))
+                    failures.append(
+                        TypeCheckFailure(
+                            FailureType.TYPE_MISMATCH,
+                            "First type parameter of Dict[] must be a primitive type.",
+                        )
+                    )
 
                 failures.extend(TypeChecker.check(t.type_params[1]))
         elif t.name in ("List", "Optional"):
             if len(t.type_params) != 1:
-                failures.append(TypeCheckFailure(FailureType.PARAMETER_COUNT, f"Expected one type parameter for {t.name}[], found {len(t.type_params)}."))
+                failures.append(
+                    TypeCheckFailure(
+                        FailureType.PARAMETER_COUNT,
+                        f"Expected one type parameter for {t.name}[], found {len(t.type_params)}.",
+                    )
+                )
 
             failures.extend(TypeChecker.check(t.type_params[0]))
         else:
-            failures.append(TypeCheckFailure(FailureType.UNKNOWN_TYPE, f"Unknown type {t.name} encountered."))
+            failures.append(
+                TypeCheckFailure(FailureType.UNKNOWN_TYPE, f"Unknown type {t.name} encountered.")
+            )
 
         return failures
-
 
     @staticmethod
     def get_type(param: Any) -> Optional[MacroType]:

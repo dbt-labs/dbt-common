@@ -1,5 +1,11 @@
 from dbt_common.clients.jinja import MacroType
-from dbt_common.clients.jinja_macro_call import PRIMITIVE_TYPES, DBT_CLASSES, FailureType, MacroCallChecker, MacroChecker
+from dbt_common.clients.jinja_macro_call import (
+    PRIMITIVE_TYPES,
+    DBT_CLASSES,
+    FailureType,
+    MacroCallChecker,
+    MacroChecker,
+)
 
 single_param_macro_text = """{% macro call_me(param: TYPE) %}
 {% endmacro %}"""
@@ -22,6 +28,7 @@ def test_dbt_class_type_checks() -> None:
         call = MacroCallChecker("call_me", "call_me", [MacroType(type_name, [])], {})
         failures = call.check(macro_text)
         assert not failures
+
 
 def test_type_checks_wrong() -> None:
     """Test that calls to annotated macros with incorrect types fail type checks."""
@@ -62,7 +69,9 @@ def test_too_few_pos_args() -> None:
 
 
 def test_unknown_kwarg() -> None:
-    call = MacroCallChecker("call_me", "", [MacroType("int"), MacroType("int")], {"unk": MacroType("str")})
+    call = MacroCallChecker(
+        "call_me", "", [MacroType("int"), MacroType("int")], {"unk": MacroType("str")}
+    )
     failures = call.check(kwarg_param_macro_text)
     assert len(failures) == 1
     assert failures[0].type == FailureType.EXTRA_ARGUMENT
@@ -70,7 +79,9 @@ def test_unknown_kwarg() -> None:
 
 def test_kwarg_type() -> None:
     """Test that annotated kwargs pass type checks when used by name."""
-    call = MacroCallChecker("call_me", "", [MacroType("int"), MacroType("int")], {"arg3": MacroType("str")})
+    call = MacroCallChecker(
+        "call_me", "", [MacroType("int"), MacroType("int")], {"arg3": MacroType("str")}
+    )
     failures = call.check(kwarg_param_macro_text)
     assert not failures
 
@@ -80,6 +91,7 @@ def test_wrong_kwarg_type() -> None:
     call = MacroCallChecker("call_me", "", [], {"arg3": MacroType("int")})
     failures = call.check(kwarg_param_macro_text)
     assert failures[0].type == FailureType.TYPE_MISMATCH
+
 
 # TODO: Test detection of macro with invalid default value for param type
 # TODO: Test detection of macro called with invalid variable parameter, as known from macro parameter annotation.

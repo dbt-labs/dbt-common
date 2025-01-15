@@ -3,7 +3,7 @@ import pytest
 from dbt_common.events import functions
 from dbt_common.events.base_types import EventLevel, WarnLevel
 from dbt_common.events.event_manager import EventManager
-from dbt_common.events.event_manager_client import ctx_set_event_manager
+from dbt_common.events.event_manager_client import ctx_set_event_manager, get_event_manager
 from dbt_common.exceptions import EventCompilationError
 from dbt_common.helper_types import WarnErrorOptions
 from tests.unit.utils import EventCatcher
@@ -40,7 +40,7 @@ def valid_error_names() -> Set[str]:
 
 class TestWarnOrError:
     def test_fires_error(self, valid_error_names: Set[str]) -> None:
-        functions.WARN_ERROR_OPTIONS = WarnErrorOptions(
+        get_event_manager().warn_error_options = WarnErrorOptions(
             include="*", valid_error_names=valid_error_names
         )
         with pytest.raises(EventCompilationError):
@@ -52,7 +52,7 @@ class TestWarnOrError:
         event_catcher: EventCatcher,
         set_event_manager_with_catcher: None,
     ) -> None:
-        functions.WARN_ERROR_OPTIONS = WarnErrorOptions(
+        get_event_manager().warn_error_options = WarnErrorOptions(
             include="*", exclude=list(valid_error_names), valid_error_names=valid_error_names
         )
         functions.warn_or_error(Note(msg="hi"))
@@ -65,7 +65,7 @@ class TestWarnOrError:
         event_catcher: EventCatcher,
         set_event_manager_with_catcher: None,
     ) -> None:
-        functions.WARN_ERROR_OPTIONS = WarnErrorOptions(
+        get_event_manager().warn_error_options = WarnErrorOptions(
             include="*", silence=list(valid_error_names), valid_error_names=valid_error_names
         )
         functions.warn_or_error(Note(msg="hi"))

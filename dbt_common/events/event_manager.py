@@ -4,12 +4,15 @@ from typing import List, Optional, Protocol, Tuple
 
 from dbt_common.events.base_types import BaseEvent, EventLevel, msg_from_base_event, TCallback
 from dbt_common.events.logger import LoggerConfig, _Logger, _TextLogger, _JsonLogger, LineFormat
+from dbt_common.helper_types import WarnErrorOptions
 
 
 class EventManager:
     def __init__(self) -> None:
         self.loggers: List[_Logger] = []
         self.callbacks: List[TCallback] = []
+        self.warn_error: bool = False
+        self.warn_error_options: WarnErrorOptions = WarnErrorOptions(include=[], exclude=[])
 
     def fire_event(self, e: BaseEvent, level: Optional[EventLevel] = None) -> None:
         msg = msg_from_base_event(e, level=level)
@@ -48,6 +51,8 @@ class EventManager:
 class IEventManager(Protocol):
     callbacks: List[TCallback]
     loggers: List[_Logger]
+    warn_error: bool
+    warn_error_options: WarnErrorOptions
 
     def fire_event(self, e: BaseEvent, level: Optional[EventLevel] = None) -> None:
         ...

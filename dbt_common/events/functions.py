@@ -3,7 +3,6 @@ from pathlib import Path
 from dbt_common.events.event_manager_client import get_event_manager
 from dbt_common.exceptions import EventCompilationError
 from dbt_common.invocation import get_invocation_id
-from dbt_common.helper_types import WarnErrorOptions
 from dbt_common.utils.encoding import ForgivingJSONEncoder
 from dbt_common.events.base_types import BaseEvent, EventLevel, EventMsg
 from dbt_common.events.logger import LoggerConfig, LineFormat
@@ -19,8 +18,6 @@ from google.protobuf.json_format import MessageToDict
 LOG_VERSION = 3
 metadata_vars: Optional[Dict[str, str]] = None
 _METADATA_ENV_PREFIX = "DBT_ENV_CUSTOM_ENV_"
-WARN_ERROR_OPTIONS = WarnErrorOptions(include=[], exclude=[])
-WARN_ERROR = False
 
 # This global, and the following two functions for capturing stdout logs are
 # an unpleasant hack we intend to remove as part of API-ification. The GitHub
@@ -116,9 +113,10 @@ def msg_to_dict(msg: EventMsg) -> dict:
 
 def warn_or_error(event, node=None) -> None:
     event_name = type(event).__name__
-    if WARN_ERROR or WARN_ERROR_OPTIONS.includes(event_name):
+    manager = get_event_manager()
+    if manager.warn_error or manager.warn_error_options.includes(event_name):
         raise EventCompilationError(event.message(), node)
-    elif not WARN_ERROR_OPTIONS.silenced(event_name):
+    elif not manager.warn_error_options.silenced(event_name):
         fire_event(event)
 
 

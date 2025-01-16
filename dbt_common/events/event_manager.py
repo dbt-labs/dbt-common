@@ -16,11 +16,15 @@ class EventManager:
         self.warn_error_options: WarnErrorOptions = WarnErrorOptions(include=[], exclude=[])
 
     def fire_event(
-        self, e: BaseEvent, level: Optional[EventLevel] = None, node: Any = None
+        self,
+        e: BaseEvent,
+        level: Optional[EventLevel] = None,
+        node: Any = None,
+        force_warn_or_error_handling: bool = False,
     ) -> None:
         msg = msg_from_base_event(e, level=level)
 
-        if msg.info.level == "warn":
+        if force_warn_or_error_handling and msg.info.level == "warn":
             event_name = type(e).__name__
             if self.warn_error or self.warn_error_options.includes(event_name):
                 # This has the potential to create an infinite loop if the handling of the raised
@@ -68,7 +72,11 @@ class IEventManager(Protocol):
     warn_error_options: WarnErrorOptions
 
     def fire_event(
-        self, e: BaseEvent, level: Optional[EventLevel] = None, node: Any = None
+        self,
+        e: BaseEvent,
+        level: Optional[EventLevel] = None,
+        node: Any = None,
+        force_warn_or_error_handling: bool = False,
     ) -> None:
         ...
 

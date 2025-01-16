@@ -112,7 +112,7 @@ def msg_to_dict(msg: EventMsg) -> dict:
 
 # This function continues to exist to provide backwards compatibility
 def warn_or_error(event, node=None) -> None:
-    fire_event(e=event, node=node)
+    fire_event(e=event, node=node, force_warn_or_error_handling=True)
 
 
 # an alternative to fire_event which only creates and logs the event value
@@ -128,8 +128,15 @@ def fire_event_if(
 # this is where all the side effects happen branched by event type
 # (i.e. - mutating the event history, printing to stdout, logging
 # to files, etc.)
-def fire_event(e: BaseEvent, level: Optional[EventLevel] = None, node: Any = None) -> None:
-    get_event_manager().fire_event(e, level=level, node=node)
+def fire_event(
+    e: BaseEvent,
+    level: Optional[EventLevel] = None,
+    node: Any = None,
+    force_warn_or_error_handling: bool = False,
+) -> None:
+    get_event_manager().fire_event(
+        e, level=level, node=node, force_warn_or_error_handling=force_warn_or_error_handling
+    )
 
 
 def get_metadata_vars() -> Dict[str, str]:

@@ -38,7 +38,37 @@ def valid_error_names() -> Set[str]:
     return {Note.__name__}
 
 
-class TestWarnOrError:
+class TestFireEvent:
+    @pytest.mark.parametrize(
+        "force_warn_or_error_handling,should_raise",
+        [
+            (True, True),
+            (False, False),
+        ],
+    )
+    def test_warning_handling(
+        self,
+        set_event_manager_with_catcher: None,
+        force_warn_or_error_handling: bool,
+        should_raise: bool,
+    ) -> None:
+        get_event_manager().warn_error = True
+        try:
+            functions.fire_event(
+                e=Note(msg="hi"), force_warn_or_error_handling=force_warn_or_error_handling
+            )
+        except EventCompilationError:
+            assert (
+                should_raise
+            ), "`fire_event` raised an error from a warning when it shouldn't have"
+            return
+
+        assert (
+            not should_raise
+        ), "`fire_event` didn't raise an error from a warning when it should have"
+
+
+class TestDeprecatedWarnOrError:
     def test_fires_error(self, valid_error_names: Set[str]) -> None:
         get_event_manager().warn_error_options = WarnErrorOptions(
             include="*", valid_error_names=valid_error_names

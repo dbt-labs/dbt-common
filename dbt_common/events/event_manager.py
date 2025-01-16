@@ -1,9 +1,10 @@
 import os
 import traceback
-from typing import List, Optional, Protocol, Tuple
+from typing import Any, List, Optional, Protocol, Tuple
 
 from dbt_common.events.base_types import BaseEvent, EventLevel, msg_from_base_event, TCallback
 from dbt_common.events.logger import LoggerConfig, _Logger, _TextLogger, _JsonLogger, LineFormat
+from dbt_common.exceptions.events import EventCompilationError
 from dbt_common.helper_types import WarnErrorOptions
 
 
@@ -14,8 +15,20 @@ class EventManager:
         self.warn_error: bool = False
         self.warn_error_options: WarnErrorOptions = WarnErrorOptions(include=[], exclude=[])
 
-    def fire_event(self, e: BaseEvent, level: Optional[EventLevel] = None) -> None:
+    def fire_event(
+        self, e: BaseEvent, level: Optional[EventLevel] = None, node: Any = None
+    ) -> None:
         msg = msg_from_base_event(e, level=level)
+
+        if msg.info.level == "warn":
+            event_name = type(e).__name__
+            if self.warn_error or self.warn_error_options.includes(event_name):
+                # This has the potential to create an infinite loop if the handling of the raised
+                # EventCompilationError fires an event as a warning instead of an error.
+                raise EventCompilationError(e.message(), node)
+            elif self.warn_error_options.silenced(event_name):
+                # Return early if the event is silenced
+                return
 
         if os.environ.get("DBT_TEST_BINARY_SERIALIZATION"):
             print(f"--- {msg.info.name}")
@@ -54,7 +67,9 @@ class IEventManager(Protocol):
     warn_error: bool
     warn_error_options: WarnErrorOptions
 
-    def fire_event(self, e: BaseEvent, level: Optional[EventLevel] = None) -> None:
+    def fire_event(
+        self, e: BaseEvent, level: Optional[EventLevel] = None, node: Any = None
+    ) -> None:
         ...
 
     def add_logger(self, config: LoggerConfig) -> None:
@@ -71,7 +86,9 @@ class TestEventManager(IEventManager):
         self.event_history: List[Tuple[BaseEvent, Optional[EventLevel]]] = []
         self.loggers = []
 
-    def fire_event(self, e: BaseEvent, level: Optional[EventLevel] = None) -> None:
+    def fire_event(
+        self, e: BaseEvent, level: Optional[EventLevel] = None, node: Any = None
+    ) -> None:
         self.event_history.append((e, level))
 
     def add_logger(self, config: LoggerConfig) -> None:

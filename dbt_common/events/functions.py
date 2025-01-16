@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from dbt_common.events.event_manager_client import get_event_manager
-from dbt_common.exceptions import EventCompilationError
 from dbt_common.invocation import get_invocation_id
 from dbt_common.utils.encoding import ForgivingJSONEncoder
 from dbt_common.events.base_types import BaseEvent, EventLevel, EventMsg
@@ -12,7 +11,7 @@ from functools import partial
 import json
 import os
 import sys
-from typing import Callable, Dict, Optional, TextIO, Union
+from typing import Any, Callable, Dict, Optional, TextIO, Union
 from google.protobuf.json_format import MessageToDict
 
 LOG_VERSION = 3
@@ -111,13 +110,9 @@ def msg_to_dict(msg: EventMsg) -> dict:
     return msg_dict
 
 
+# This function continues to exist to provide backwards compatibility
 def warn_or_error(event, node=None) -> None:
-    event_name = type(event).__name__
-    manager = get_event_manager()
-    if manager.warn_error or manager.warn_error_options.includes(event_name):
-        raise EventCompilationError(event.message(), node)
-    elif not manager.warn_error_options.silenced(event_name):
-        fire_event(event)
+    fire_event(e=event, node=node)
 
 
 # an alternative to fire_event which only creates and logs the event value
@@ -133,8 +128,8 @@ def fire_event_if(
 # this is where all the side effects happen branched by event type
 # (i.e. - mutating the event history, printing to stdout, logging
 # to files, etc.)
-def fire_event(e: BaseEvent, level: Optional[EventLevel] = None) -> None:
-    get_event_manager().fire_event(e, level=level)
+def fire_event(e: BaseEvent, level: Optional[EventLevel] = None, node: Any = None) -> None:
+    get_event_manager().fire_event(e, level=level, node=node)
 
 
 def get_metadata_vars() -> Dict[str, str]:

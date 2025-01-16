@@ -9,6 +9,7 @@ import functools
 import dataclasses
 import json
 import os
+from dbt_common.utils.encoding import ForgivingJSONEncoder
 
 from enum import Enum
 from typing import Any, Callable, Dict, List, Mapping, Optional, Type
@@ -191,7 +192,7 @@ class Recorder:
 
     def write(self) -> None:
         with open(self.current_recording_path, "w") as file:
-            json.dump(self._to_dict(), file)
+            json.dump(self._to_dict(), file, cls=ForgivingJSONEncoder)
 
     def _to_dict(self) -> Dict:
         dct: Dict[str, Any] = {}

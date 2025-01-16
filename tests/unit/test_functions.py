@@ -40,19 +40,24 @@ def valid_error_names() -> Set[str]:
 
 class TestFireEvent:
     @pytest.mark.parametrize(
-        "force_warn_or_error_handling,should_raise",
+        "force_warn_or_error_handling,require_warn_or_error_handling,should_raise",
         [
-            (True, True),
-            (False, False),
+            (True, True, True),
+            (True, False, True),
+            (False, True, True),
+            (False, False, False),
         ],
     )
     def test_warning_handling(
         self,
         set_event_manager_with_catcher: None,
         force_warn_or_error_handling: bool,
+        require_warn_or_error_handling: bool,
         should_raise: bool,
     ) -> None:
-        get_event_manager().warn_error = True
+        manager = get_event_manager()
+        manager.warn_error = True
+        manager.require_warn_or_error_handling = require_warn_or_error_handling
         try:
             functions.fire_event(
                 e=Note(msg="hi"), force_warn_or_error_handling=force_warn_or_error_handling

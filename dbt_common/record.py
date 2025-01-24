@@ -11,7 +11,9 @@ import json
 import os
 
 from enum import Enum
-from typing import Any, Callable, Dict, List, Mapping, Optional, Type
+from inspect import getfullargspec, signature, FullArgSpec
+import typing as tt
+from typing import get_type_hints, Any, Callable, Dict, List, Mapping, Optional, Type
 import contextvars
 
 RECORDED_BY_HIGHER_FUNCTION = contextvars.ContextVar("RECORDED_BY_HIGHER_FUNCTION", default=False)
@@ -294,70 +296,94 @@ def get_record_types_from_dict(fp: str) -> List:
     return list(loaded_dct.keys())
 
 
+def auto_record_function(record_name: str, method: bool = False, group_name: Optional[str] = None) -> Callable:
+    return functools.partial(_record_function_inner, record_name, method, False, None)
+
 def record_function(
     record_type,
     method: bool = False,
     tuple_result: bool = False,
     id_field_name: Optional[str] = None,
 ) -> Callable:
-    def record_function_inner(func_to_record):
-        # To avoid runtime overhead and other unpleasantness, we only apply the
-        # record/replay decorator if a relevant env var is set.
-        if get_record_mode_from_env() is None:
-            return func_to_record
+    return functools.partial(_record_function_inner, record_type, method, tuple_result, id_field_name)
 
-        @functools.wraps(func_to_record)
-        def record_replay_wrapper(*args, **kwargs) -> Any:
-            recorder: Optional[Recorder] = None
-            try:
-                from dbt_common.context import get_invocation_context
+def get_arg_fields(spec: FullArgSpec):
+    arg_fields = []
+    defaults = len(spec.defaults)
+    for i, arg in enumerate(spec.args):
+        annotation = spec.annotations.get(arg)
+        if i >= len(spec.args) - defaults:
+            arg_fields.append((arg, annotation, dataclasses.field(default=spec.defaults[i - len(spec.args) + defaults])))
+        else:
+            arg_fields.append((arg, annotation,None))
 
-                recorder = get_invocation_context().recorder
-            except LookupError:
-                pass
 
-            if recorder is None:
-                return func_to_record(*args, **kwargs)
+    return arg_fields
 
-            if recorder.recorded_types is not None and not (
-                record_type.__name__ in recorder.recorded_types
-                or record_type.group in recorder.recorded_types
-            ):
-                return func_to_record(*args, **kwargs)
+def _record_function_inner(record_type, method, tuple_result, id_field_name, func_to_record):
+    # To avoid runtime overhead and other unpleasantness, we only apply the
+    # record/replay decorator if a relevant env var is set.
+    if get_record_mode_from_env() is None:
+        return func_to_record
 
-            # For methods, peel off the 'self' argument before calling the
-            # params constructor.
-            param_args = args[1:] if method else args
-            if method and id_field_name is not None:
-                param_args = (getattr(args[0], id_field_name),) + param_args
+    if isinstance(record_type, str):
+        return_type = signature(func_to_record).return_annotation
+        params_cls = dataclasses.make_dataclass(f"{record_type}Params", get_arg_fields(getfullargspec(func_to_record)))
+        result_cls = dataclasses.make_dataclass(f"{record_type}Result", [("return_val", return_type)])
 
-            params = record_type.params_cls(*param_args, **kwargs)
+        record_type = type(f"{record_type}Record", (Record,),
+                          {"params_cls": params_cls, "result_cls": result_cls})
 
-            include = True
-            if hasattr(params, "_include"):
-                include = params._include()
+    @functools.wraps(func_to_record)
+    def record_replay_wrapper(*args, **kwargs) -> Any:
+        recorder: Optional[Recorder] = None
+        try:
+            from dbt_common.context import get_invocation_context
 
-            if not include:
-                return func_to_record(*args, **kwargs)
+            recorder = get_invocation_context().recorder
+        except LookupError:
+            pass
 
-            if recorder.mode == RecorderMode.REPLAY:
-                return recorder.expect_record(params)
-            if RECORDED_BY_HIGHER_FUNCTION.get():
-                return func_to_record(*args, **kwargs)
+        if recorder is None:
+            return func_to_record(*args, **kwargs)
 
-            RECORDED_BY_HIGHER_FUNCTION.set(True)
-            r = func_to_record(*args, **kwargs)
-            result = (
-                None
-                if record_type.result_cls is None
-                else record_type.result_cls(*r)
-                if tuple_result
-                else record_type.result_cls(r)
-            )
-            RECORDED_BY_HIGHER_FUNCTION.set(False)
-            recorder.add_record(record_type(params=params, result=result))
-            return r
+        if recorder.recorded_types is not None and not (
+            record_type.__name__ in recorder.recorded_types
+            or record_type.group in recorder.recorded_types
+        ):
+            return func_to_record(*args, **kwargs)
 
-        return record_replay_wrapper
+        # For methods, peel off the 'self' argument before calling the
+        # params constructor.
+        param_args = args[1:] if method else args
+        if method and id_field_name is not None:
+            param_args = (getattr(args[0], id_field_name),) + param_args
 
-    return record_function_inner
+        params = record_type.params_cls(*param_args, **kwargs)
+
+        include = True
+        if hasattr(params, "_include"):
+            include = params._include()
+
+        if not include:
+            return func_to_record(*args, **kwargs)
+
+        if recorder.mode == RecorderMode.REPLAY:
+            return recorder.expect_record(params)
+        if RECORDED_BY_HIGHER_FUNCTION.get():
+            return func_to_record(*args, **kwargs)
+
+        RECORDED_BY_HIGHER_FUNCTION.set(True)
+        r = func_to_record(*args, **kwargs)
+        result = (
+            None
+            if record_type.result_cls is None
+            else record_type.result_cls(*r)
+            if tuple_result
+            else record_type.result_cls(r)
+        )
+        RECORDED_BY_HIGHER_FUNCTION.set(False)
+        recorder.add_record(record_type(params=params, result=result))
+        return r
+
+    return record_replay_wrapper

@@ -213,10 +213,6 @@ def test_auto_decorator_records(setup) -> None:
 
     test_func(123, "abc")
 
-    expected_record = TestRecord(
-        params=TestRecordParams(123, "abc"), result=TestRecordResult("123abc")
-    )
-
     assert recorder._records_by_type["TestAutoRecord"][-1].params.a == 123
     assert recorder._records_by_type["TestAutoRecord"][-1].params.b == "abc"
     assert recorder._records_by_type["TestAutoRecord"][-1].result.return_val == "123abc"

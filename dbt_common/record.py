@@ -12,8 +12,7 @@ import os
 
 from enum import Enum
 from inspect import getfullargspec, signature, FullArgSpec
-import typing as tt
-from typing import get_type_hints, Any, Callable, Dict, List, Mapping, Optional, Type
+from typing import Any, Callable, Dict, List, Mapping, Optional, Type
 import contextvars
 
 RECORDED_BY_HIGHER_FUNCTION = contextvars.ContextVar("RECORDED_BY_HIGHER_FUNCTION", default=False)
@@ -296,8 +295,11 @@ def get_record_types_from_dict(fp: str) -> List:
     return list(loaded_dct.keys())
 
 
-def auto_record_function(record_name: str, method: bool = False, group_name: Optional[str] = None) -> Callable:
+def auto_record_function(
+    record_name: str, method: bool = False, group_name: Optional[str] = None
+) -> Callable:
     return functools.partial(_record_function_inner, record_name, method, False, None)
+
 
 def record_function(
     record_type,
@@ -305,20 +307,33 @@ def record_function(
     tuple_result: bool = False,
     id_field_name: Optional[str] = None,
 ) -> Callable:
-    return functools.partial(_record_function_inner, record_type, method, tuple_result, id_field_name)
+    return functools.partial(
+        _record_function_inner, record_type, method, tuple_result, id_field_name
+    )
+
 
 def get_arg_fields(spec: FullArgSpec):
     arg_fields = []
-    defaults = len(spec.defaults)
+    defaults = len(spec.defaults) if spec.defaults else 0
     for i, arg in enumerate(spec.args):
         annotation = spec.annotations.get(arg)
         if i >= len(spec.args) - defaults:
-            arg_fields.append((arg, annotation, dataclasses.field(default=spec.defaults[i - len(spec.args) + defaults])))
+            arg_fields.append(
+                (
+                    arg,
+                    annotation,
+                    dataclasses.field(
+                        default=spec.defaults[i - len(spec.args) + defaults]
+                        if spec.defaults
+                        else None
+                    ),  # type: ignore
+                )
+            )
         else:
-            arg_fields.append((arg, annotation,None))
-
+            arg_fields.append((arg, annotation, None))
 
     return arg_fields
+
 
 def _record_function_inner(record_type, method, tuple_result, id_field_name, func_to_record):
     # To avoid runtime overhead and other unpleasantness, we only apply the
@@ -328,11 +343,16 @@ def _record_function_inner(record_type, method, tuple_result, id_field_name, fun
 
     if isinstance(record_type, str):
         return_type = signature(func_to_record).return_annotation
-        params_cls = dataclasses.make_dataclass(f"{record_type}Params", get_arg_fields(getfullargspec(func_to_record)))
-        result_cls = dataclasses.make_dataclass(f"{record_type}Result", [("return_val", return_type)])
+        params_cls = dataclasses.make_dataclass(
+            f"{record_type}Params", get_arg_fields(getfullargspec(func_to_record))
+        )
+        result_cls = dataclasses.make_dataclass(
+            f"{record_type}Result", [("return_val", return_type)]
+        )
 
-        record_type = type(f"{record_type}Record", (Record,),
-                          {"params_cls": params_cls, "result_cls": result_cls})
+        record_type = type(
+            f"{record_type}Record", (Record,), {"params_cls": params_cls, "result_cls": result_cls}
+        )
 
     @functools.wraps(func_to_record)
     def record_replay_wrapper(*args, **kwargs) -> Any:

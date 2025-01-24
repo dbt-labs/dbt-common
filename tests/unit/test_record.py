@@ -156,23 +156,23 @@ def test_nested_recording(setup) -> None:
         result2 = inner_func(a + 1, b)
         return result1 + result2
 
-    inner_func(1, "a")
     outer_func(123, "abc")
+    inner_func(1, "a")
 
     # Only two records should exist - one for inner_func and one for outter
     assert len(recorder._records_by_type["TestRecord"]) == 2
 
-    # Verify the first record is from inner_func
-    expected_inner = TestRecord(params=TestRecordParams(1, "a"), result=TestRecordResult("1a"))
-    assert recorder._records_by_type["TestRecord"][0].params == expected_inner.params
-    assert recorder._records_by_type["TestRecord"][0].result == expected_inner.result
-
-    # Verify the second record is from outer_func
+    # Verify the first record is from outer_func
     expected_outer = TestRecord(
         params=TestRecordParams(123, "abc"), result=TestRecordResult("123abc124abc")
     )
-    assert recorder._records_by_type["TestRecord"][1].params == expected_outer.params
-    assert recorder._records_by_type["TestRecord"][1].result == expected_outer.result
+    assert recorder._records_by_type["TestRecord"][0].params == expected_outer.params
+    assert recorder._records_by_type["TestRecord"][0].result == expected_outer.result
+
+    # Verify the second record is from inner_func
+    expected_inner = TestRecord(params=TestRecordParams(1, "a"), result=TestRecordResult("1a"))
+    assert recorder._records_by_type["TestRecord"][1].params == expected_inner.params
+    assert recorder._records_by_type["TestRecord"][1].result == expected_inner.result
 
 
 def test_nested_recording_replay(setup) -> None:

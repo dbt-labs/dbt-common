@@ -12,6 +12,9 @@ import os
 
 from enum import Enum
 from typing import Any, Callable, Dict, List, Mapping, Optional, Type
+import contextvars
+
+RECORDED_BY_HIGHER_FUNCTION = contextvars.ContextVar("RECORDED_BY_HIGHER_FUNCTION", default=False)
 
 
 class Record:
@@ -339,7 +342,10 @@ def record_function(
 
             if recorder.mode == RecorderMode.REPLAY:
                 return recorder.expect_record(params)
+            if RECORDED_BY_HIGHER_FUNCTION.get():
+                return func_to_record(*args, **kwargs)
 
+            RECORDED_BY_HIGHER_FUNCTION.set(True)
             r = func_to_record(*args, **kwargs)
             result = (
                 None
@@ -348,6 +354,7 @@ def record_function(
                 if tuple_result
                 else record_type.result_cls(r)
             )
+            RECORDED_BY_HIGHER_FUNCTION.set(False)
             recorder.add_record(record_type(params=params, result=result))
             return r
 

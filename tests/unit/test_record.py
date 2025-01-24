@@ -136,3 +136,66 @@ def test_decorator_replays(setup) -> None:
     res = test_func(123, "abc")
 
     assert res == "123abc"
+
+
+def test_nested_recording(setup) -> None:
+    os.environ["DBT_RECORDER_MODE"] = "Record"
+    recorder = Recorder(RecorderMode.RECORD, None)
+    set_invocation_context({})
+    get_invocation_context().recorder = recorder
+
+    @record_function(TestRecord)
+    def inner_func(a: int, b: str) -> str:
+        return str(a) + b
+
+    @record_function(TestRecord)
+    def outer_func(a: int, b: str) -> str:
+        # This should record
+        result1 = inner_func(a, b)
+        # This should not record again since it's nested
+        result2 = inner_func(a + 1, b)
+        return result1 + result2
+
+    inner_func(1, "a")
+    outer_func(123, "abc")
+
+    # Only two records should exist - one for inner_func and one for outter
+    assert len(recorder._records_by_type["TestRecord"]) == 2
+
+    # Verify the first record is from inner_func
+    expected_inner = TestRecord(params=TestRecordParams(1, "a"), result=TestRecordResult("1a"))
+    assert recorder._records_by_type["TestRecord"][0].params == expected_inner.params
+    assert recorder._records_by_type["TestRecord"][0].result == expected_inner.result
+
+    # Verify the second record is from outer_func
+    expected_outer = TestRecord(
+        params=TestRecordParams(123, "abc"), result=TestRecordResult("123abc124abc")
+    )
+    assert recorder._records_by_type["TestRecord"][1].params == expected_outer.params
+    assert recorder._records_by_type["TestRecord"][1].result == expected_outer.result
+
+
+def test_nested_recording_replay(setup) -> None:
+    os.environ["DBT_RECORDER_MODE"] = "Replay"
+    os.environ["DBT_RECORDER_FILE_PATH"] = "record.json"
+    recorder = Recorder(RecorderMode.REPLAY, None)
+    set_invocation_context({})
+    get_invocation_context().recorder = recorder
+
+    outer_record = TestRecord(
+        params=TestRecordParams(123, "abc"), result=TestRecordResult("123abc124abc")
+    )
+    recorder._records_by_type["TestRecord"] = [outer_record]
+
+    @record_function(TestRecord)
+    def inner_func(a: int, b: str) -> str:
+        raise Exception("This should not be called in replay mode")
+
+    @record_function(TestRecord)
+    def outer_func(a: int, b: str) -> str:
+        result1 = inner_func(a, b)
+        result2 = inner_func(a + 1, b)
+        return result1 + result2
+
+    result = outer_func(123, "abc")
+    assert result == "123abc124abc"

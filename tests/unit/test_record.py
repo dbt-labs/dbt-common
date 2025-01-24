@@ -4,7 +4,7 @@ import pytest
 from typing import Optional
 
 from dbt_common.context import set_invocation_context, get_invocation_context
-from dbt_common.record import record_function, Record, Recorder, RecorderMode
+from dbt_common.record import record_function, Record, Recorder, RecorderMode, auto_record_function
 
 
 @dataclasses.dataclass
@@ -199,3 +199,20 @@ def test_nested_recording_replay(setup) -> None:
 
     result = outer_func(123, "abc")
     assert result == "123abc124abc"
+
+
+def test_auto_decorator_records(setup) -> None:
+    os.environ["DBT_RECORDER_MODE"] = "Record"
+    recorder = Recorder(RecorderMode.RECORD, None)
+    set_invocation_context({})
+    get_invocation_context().recorder = recorder
+
+    @auto_record_function("TestAuto")
+    def test_func(a: int, b: str, c: Optional[str] = None) -> str:
+        return str(a) + b + (c if c else "")
+
+    test_func(123, "abc")
+
+    assert recorder._records_by_type["TestAutoRecord"][-1].params.a == 123
+    assert recorder._records_by_type["TestAutoRecord"][-1].params.b == "abc"
+    assert recorder._records_by_type["TestAutoRecord"][-1].result.return_val == "123abc"

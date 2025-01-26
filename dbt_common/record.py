@@ -1,6 +1,6 @@
-"""The record module provides a mechanism for recording dbt's interaction with
-external systems during a command invocation, so that the command can be re-run
-later with the recording 'replayed' to dbt.
+"""The record module provides a record/replay mechanism for recording dbt's
+interactions with external systems during a command invocation, so that the
+command can be re-run later with the recording 'replayed' to dbt.
 
 The rationale for and architecture of this module are described in detail in the
 docs/guides/record_replay.md document in this repository.
@@ -287,9 +287,7 @@ def get_record_types_from_env() -> Optional[List]:
 
 
 def get_record_types_from_dict(fp: str) -> List:
-    """
-    Get the record subset from the dict.
-    """
+    """Get the record subset from the dict."""
     with open(fp) as file:
         loaded_dct = json.load(file)
     return list(loaded_dct.keys())
@@ -298,6 +296,11 @@ def get_record_types_from_dict(fp: str) -> List:
 def auto_record_function(
     record_name: str, method: bool = False, group_name: Optional[str] = None
 ) -> Callable:
+    """This is the @auto_record_function decorator. It works in a similar way to
+    the @record_function decorator, except automatically generates boilerplate
+    classes for the Record, Params, and Result classes which would otherwise be
+    needed. That makes it suitable for quickly adding record support to simple
+    functions with simple parameters."""
     return functools.partial(_record_function_inner, record_name, method, False, None)
 
 
@@ -307,6 +310,9 @@ def record_function(
     tuple_result: bool = False,
     id_field_name: Optional[str] = None,
 ) -> Callable:
+    """This is the @record_function decorator, which marks functions which will
+    have their function calls recorded during record mode, and mocked out with
+    previously recorded replay data during replay."""
     return functools.partial(
         _record_function_inner, record_type, method, tuple_result, id_field_name
     )
@@ -336,8 +342,7 @@ def get_arg_fields(spec: FullArgSpec):
 
 
 def _record_function_inner(record_type, method, tuple_result, id_field_name, func_to_record):
-    # To avoid runtime overhead and other unpleasantness, we only apply the
-    # record/replay decorator if a relevant env var is set.
+    # When record/replay is not active, do nothing.
     if get_record_mode_from_env() is None:
         return func_to_record
 
@@ -406,4 +411,55 @@ def _record_function_inner(record_type, method, tuple_result, id_field_name, fun
         recorder.add_record(record_type(params=params, result=result))
         return r
 
+    setattr(
+        record_replay_wrapper,
+        "_record_metadata",
+        {
+            "record_type": record_type,
+            "method": method,
+            "tuple_result": tuple_result,
+            "id_field_name": id_field_name,
+        },
+    )
+
     return record_replay_wrapper
+
+
+def supports_replay(cls):
+    """Class decorator which adds record/replay support for a class. In particular,
+    this decorator ensures that calls to overriden functions are still recorded."""
+
+    # When record/replay is not active, do nothing.
+    if get_record_mode_from_env() is None:
+        return cls
+
+    # Replace the __init_subclass__ method of this class so that when it
+    # is subclassed, methods on the new subclass which override recorded
+    # functions are modified to be recorded as well.
+    original_init_subclass = cls.__init_subclass__
+
+    @classmethod
+    def wrapping_init_subclass(sub_cls):
+        for method_name in dir(cls):
+            method = getattr(cls, method_name)
+            metadata = getattr(method, "_record_metadata", None)
+            if method and getattr(method, "_record_metadata", None):
+                sub_method = getattr(sub_cls, method_name, None)
+                if sub_method is not None:
+                    setattr(
+                        sub_cls,
+                        method_name,
+                        _record_function_inner(
+                            metadata["record_type"],
+                            metadata["method"],
+                            metadata["tuple_result"],
+                            metadata["id_field_name"],
+                            sub_method,
+                        ),
+                    )
+
+        original_init_subclass()
+
+    cls.__init_subclass__ = wrapping_init_subclass
+
+    return cls

@@ -4,7 +4,14 @@ import pytest
 from typing import Optional
 
 from dbt_common.context import set_invocation_context, get_invocation_context
-from dbt_common.record import record_function, Record, Recorder, RecorderMode, auto_record_function
+from dbt_common.record import (
+    record_function,
+    Record,
+    Recorder,
+    RecorderMode,
+    auto_record_function,
+    supports_replay,
+)
 
 
 @dataclasses.dataclass
@@ -216,3 +223,27 @@ def test_auto_decorator_records(setup) -> None:
     assert recorder._records_by_type["TestAutoRecord"][-1].params.a == 123
     assert recorder._records_by_type["TestAutoRecord"][-1].params.b == "abc"
     assert recorder._records_by_type["TestAutoRecord"][-1].result.return_val == "123abc"
+
+
+def test_recorded_function_with_override() -> None:
+    os.environ["DBT_RECORDER_MODE"] = "Record"
+    recorder = Recorder(RecorderMode.RECORD, None)
+    set_invocation_context({})
+    get_invocation_context().recorder = recorder
+
+    @supports_replay
+    class Recordable:
+        @auto_record_function("TestAuto")
+        def test_func(self, a: int) -> int:
+            return 2 * a
+
+    class RecordableSubclass(Recordable):
+        def test_func(self, a: int) -> int:
+            return 3 * a
+
+    rs = RecordableSubclass()
+
+    rs.test_func(1)
+
+    assert recorder._records_by_type["TestAutoRecord"][-1].params.a == 1
+    assert recorder._records_by_type["TestAutoRecord"][-1].result.return_val == 3

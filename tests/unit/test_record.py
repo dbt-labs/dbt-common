@@ -1,7 +1,11 @@
 import dataclasses
 import os
+from io import StringIO
+
 import pytest
 from typing import Optional
+
+from mashumaro.types import SerializationStrategy
 
 from dbt_common.context import set_invocation_context, get_invocation_context
 from dbt_common.record import (
@@ -214,7 +218,7 @@ def test_auto_decorator_records(setup) -> None:
     set_invocation_context({})
     get_invocation_context().recorder = recorder
 
-    @auto_record_function("TestAuto")
+    @auto_record_function("TestAuto", index_on_thread_name=False, method=False)
     def test_func(a: int, b: str, c: Optional[str] = None) -> str:
         return str(a) + b + (c if c else "")
 
@@ -247,3 +251,36 @@ def test_recorded_function_with_override() -> None:
 
     assert recorder._records_by_type["TestAutoRecord"][-1].params.a == 1
     assert recorder._records_by_type["TestAutoRecord"][-1].result.return_val == 3
+
+
+class CustomType:
+    def __init__(self, n: int):
+        self.value = n
+
+
+class CustomSerializationStrategy(SerializationStrategy):
+    def serialize(self, obj: CustomType) -> int:
+        return obj.value
+
+    def deserialize(self, value: int) -> CustomType:
+        return CustomType(value)
+
+
+def test_recorded_with_custom_serializer() -> None:
+    os.environ["DBT_RECORDER_MODE"] = "Record"
+    recorder = Recorder(RecorderMode.RECORD, None)
+    set_invocation_context({})
+    get_invocation_context().recorder = recorder
+
+    recorder.register_serialization_strategy(CustomType, CustomSerializationStrategy())
+
+    @auto_record_function("TestAuto")
+    def test_func(a: CustomType) -> CustomType:
+        return CustomType(a.value * 2)
+
+    test_func(CustomType(21))
+
+    buffer = StringIO("")
+    recorder.write_json(buffer)
+    buffer.seek(0)
+    recorder.load_json(buffer)

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 # This converts a datetime to a json format datetime string which
@@ -9,6 +9,6 @@ def datetime_to_json_string(dt: datetime) -> str:
 
 # preformatted time stamp
 def get_json_string_utcnow() -> str:
-    ts = datetime.utcnow()
+    ts = datetime.now(timezone.utc)
     ts_rfc3339 = datetime_to_json_string(ts)
     return ts_rfc3339

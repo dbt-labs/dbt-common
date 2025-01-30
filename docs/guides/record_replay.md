@@ -36,11 +36,11 @@ Record/replay behavior is activated and configured via environment variables. Wh
 
 The record/replay subsystem is activated by setting the `DBT_RECORDER_MODE` variable to `replay`, `record`, or `diff`, case insensitive.  Invalid values are ignored and do not throw exceptions.
 
-`DBT_RECODER_TYPES` is optional.  It indicates which types to filter the results by and expects a list of strings values for the `Record` subclasses or groups of such classes. For example, all records of database/DWH interaction performed by adapters belong to the `Database` group. Any invalid type or group name will be ignored.  `all` is a valid value for this variable and has the same effect as not populating the variable.
+`DBT_RECORDER_TYPES` is optional.  It indicates which types to filter the results by and expects a list of strings values for the `Record` subclasses or groups of such classes. For example, all records of database/DWH interaction performed by adapters belong to the `Database` group. Any invalid type or group name will be ignored.  `all` is a valid value for this variable and has the same effect as not populating the variable.
 
 
 ```bash
-DBT_RECORDER_MODE=record DBT_RECODER_TYPES=Database dbt run
+DBT_RECORDER_MODE=record DBT_RECORDER_TYPES=Database dbt run
 ```
 
 replay need the file to replay

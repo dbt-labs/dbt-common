@@ -1,0 +1,6 @@
+kind: Fixes
+body: Replace depricated datetime.datetime.utcnow() for datetime.datetime.now(timezone.utc) to reduce stdout spam.
+time: 2025-01-29T21:59:12.261107+01:00
+custom:
+    Author: cfernhout
+    Issue: 238 99

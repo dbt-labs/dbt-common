@@ -405,11 +405,6 @@ def _record_function_inner(
     is_classmethod,
     func_to_record,
 ):
-    # When record/replay is not active, do nothing.
-    rec_types = get_record_types_from_env()
-    if get_record_mode_from_env() or (rec_types and group is not None and group not in rec_types):
-        return func_to_record
-
     if isinstance(record_type, str):
         return_type = inspect.signature(func_to_record).return_annotation
         fields = _get_arg_fields(inspect.getfullargspec(func_to_record), method)

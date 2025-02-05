@@ -10,7 +10,6 @@ import dataclasses
 import inspect
 import json
 import os
-import threading
 
 from enum import Enum
 from typing import Any, Callable, Dict, List, Mapping, Optional, TextIO, Tuple, Type
@@ -325,7 +324,14 @@ def auto_record_function(
     needed. That makes it suitable for quickly adding record support to simple
     functions with simple parameters."""
     return functools.partial(
-        _record_function_inner, record_name, method, False, None, group, index_on_thread_name
+        _record_function_inner,
+        record_name,
+        method,
+        False,
+        None,
+        group,
+        index_on_thread_name,
+        False,
     )
 
 
@@ -339,7 +345,14 @@ def record_function(
     have their function calls recorded during record mode, and mocked out with
     previously recorded replay data during replay."""
     return functools.partial(
-        _record_function_inner, record_type, method, tuple_result, id_field_name, None, False
+        _record_function_inner,
+        record_type,
+        method,
+        tuple_result,
+        id_field_name,
+        None,
+        False,
+        False,
     )
 
 
@@ -383,12 +396,15 @@ class AutoValues(DataClassJSONMixin):
 
 
 def _record_function_inner(
-    record_type, method, tuple_result, id_field_name, group, index_on_thread_id, func_to_record
+    record_type,
+    method,
+    tuple_result,
+    id_field_name,
+    group,
+    index_on_thread_id,
+    is_classmethod,
+    func_to_record,
 ):
-    # When record/replay is not active, do nothing.
-    if get_record_mode_from_env() is None:
-        return func_to_record
-
     if isinstance(record_type, str):
         return_type = inspect.signature(func_to_record).return_annotation
         fields = _get_arg_fields(inspect.getfullargspec(func_to_record), method)
@@ -426,21 +442,25 @@ def _record_function_inner(
         except LookupError:
             pass
 
+        call_args = args[1:] if is_classmethod else args
+
         if recorder is None:
-            return func_to_record(*args, **kwargs)
+            return func_to_record(*call_args, **kwargs)
 
         if recorder.recorded_types is not None and not (
             record_type.__name__ in recorder.recorded_types
             or record_type.group in recorder.recorded_types
         ):
-            return func_to_record(*args, **kwargs)
+            return func_to_record(*call_args, **kwargs)
 
         # For methods, peel off the 'self' argument before calling the
         # params constructor.
         param_args = args[1:] if method else args
         if method and id_field_name is not None:
             if index_on_thread_id:
-                param_args = (threading.current_thread().name,) + param_args
+                from dbt_common.context import get_invocation_context
+
+                param_args = (get_invocation_context().name,) + param_args
             else:
                 param_args = (getattr(args[0], id_field_name),) + param_args
 
@@ -451,15 +471,15 @@ def _record_function_inner(
             include = params._include()
 
         if not include:
-            return func_to_record(*args, **kwargs)
+            return func_to_record(*call_args, **kwargs)
 
         if recorder.mode == RecorderMode.REPLAY:
             return recorder.expect_record(params)
         if RECORDED_BY_HIGHER_FUNCTION.get():
-            return func_to_record(*args, **kwargs)
+            return func_to_record(*call_args, **kwargs)
 
         RECORDED_BY_HIGHER_FUNCTION.set(True)
-        r = func_to_record(*args, **kwargs)
+        r = func_to_record(*call_args, **kwargs)
         result = (
             None
             if record_type.result_cls is None
@@ -487,6 +507,11 @@ def _record_function_inner(
     return record_replay_wrapper
 
 
+def _is_classmethod(method):
+    b = inspect.ismethod(method) and isinstance(method.__self__, type)
+    return b
+
+
 def supports_replay(cls):
     """Class decorator which adds record/replay support for a class. In particular,
     this decorator ensures that calls to overriden functions are still recorded."""
@@ -507,19 +532,25 @@ def supports_replay(cls):
             metadata = getattr(method, "_record_metadata", None)
             if method and getattr(method, "_record_metadata", None):
                 sub_method = getattr(sub_cls, method_name, None)
+                recorded_sub_method = _record_function_inner(
+                    metadata["record_type"],
+                    metadata["method"],
+                    metadata["tuple_result"],
+                    metadata["id_field_name"],
+                    metadata["group"],
+                    metadata["index_on_thread_id"],
+                    _is_classmethod(method),
+                    sub_method,
+                )
+
+                if _is_classmethod(method):
+                    recorded_sub_method = classmethod(recorded_sub_method)
+
                 if sub_method is not None:
                     setattr(
                         sub_cls,
                         method_name,
-                        _record_function_inner(
-                            metadata["record_type"],
-                            metadata["method"],
-                            metadata["tuple_result"],
-                            metadata["id_field_name"],
-                            metadata["group"],
-                            metadata["index_on_thread_id"],
-                            sub_method,
-                        ),
+                        recorded_sub_method,
                     )
 
         original_init_subclass()

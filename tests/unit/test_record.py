@@ -245,12 +245,16 @@ def test_recorded_function_with_override() -> None:
         def test_func(self, a: int) -> int:
             return 3 * a
 
-    rs = RecordableSubclass()
+    class RecordableSubSubclass(RecordableSubclass):
+        def test_func(self, a: int) -> int:
+            return 4 * a
+
+    rs = RecordableSubSubclass()
 
     rs.test_func(1)
 
     assert recorder._records_by_type["TestAutoRecord"][-1].params.a == 1
-    assert recorder._records_by_type["TestAutoRecord"][-1].result.return_val == 3
+    assert recorder._records_by_type["TestAutoRecord"][-1].result.return_val == 4
 
 
 class CustomType:
@@ -284,3 +288,51 @@ def test_recorded_with_custom_serializer() -> None:
     recorder.write_json(buffer)
     buffer.seek(0)
     recorder.load_json(buffer)
+
+
+def test_record_classmethod() -> None:
+    os.environ["DBT_RECORDER_MODE"] = "Record"
+    recorder = Recorder(RecorderMode.RECORD, None)
+    set_invocation_context({})
+    get_invocation_context().recorder = recorder
+
+    @supports_replay
+    class Recordable:
+        @classmethod
+        @auto_record_function("TestAuto")
+        def test_func(cls, a: int) -> int:
+            return 2 * a
+
+    Recordable.test_func(1)
+
+    assert recorder._records_by_type["TestAutoRecord"][-1].params.a == 1
+    assert recorder._records_by_type["TestAutoRecord"][-1].result.return_val == 2
+
+
+def test_record_classmethod_override() -> None:
+    os.environ["DBT_RECORDER_MODE"] = "Record"
+    recorder = Recorder(RecorderMode.RECORD, None)
+    set_invocation_context({})
+    get_invocation_context().recorder = recorder
+
+    @supports_replay
+    class Recordable:
+        @classmethod
+        @auto_record_function("TestAuto")
+        def test_func(cls, a: int) -> int:
+            return 2 * a
+
+    class RecordableSubclass(Recordable):
+        @classmethod
+        def test_func(cls, a: int) -> int:
+            return 3 * a
+
+    RecordableSubclass.test_func(1)
+
+    rs = RecordableSubclass()
+    rs.test_func(2)
+
+    assert recorder._records_by_type["TestAutoRecord"][0].params.a == 1
+    assert recorder._records_by_type["TestAutoRecord"][0].result.return_val == 3
+    assert recorder._records_by_type["TestAutoRecord"][1].params.a == 2
+    assert recorder._records_by_type["TestAutoRecord"][1].result.return_val == 6

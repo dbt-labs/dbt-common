@@ -2,7 +2,7 @@ import json
 import logging
 import threading
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from logging.handlers import RotatingFileHandler
 from typing import Optional, TextIO, Any, Callable
@@ -156,7 +156,7 @@ class _TextLogger(_Logger):
         if _is_print_event(msg):
             # PrintEvent is a special case, we don't want to add a timestamp
             return scrubbed_msg
-        ts: str = datetime.utcnow().strftime("%H:%M:%S")
+        ts: str = datetime.now(timezone.utc).strftime("%H:%M:%S")
         return f"{self._get_color_tag()}{ts}  {scrubbed_msg}"
 
     def create_debug_line(self, msg: EventMsg) -> str:

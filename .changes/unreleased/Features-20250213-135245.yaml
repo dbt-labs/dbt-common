@@ -1,0 +1,6 @@
+kind: Features
+body: Add "invocation_started_at" global field
+time: 2025-02-13T13:52:45.156677-05:00
+custom:
+  Author: gshank
+  Issue: "245"

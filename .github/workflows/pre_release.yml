@@ -35,17 +35,6 @@ on:
         description: "Version to bump to: ex. 1.14.5"
         required: true
         type: string
-  workflow_dispatch:
-    inputs:
-      version_number:
-        description: "Version to bump to: ex. 1.14.5"
-        required: true
-        type: string
-      test_run:
-        description: "Test run - do not commit changes"
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: write
@@ -67,7 +56,6 @@ jobs:
         run: |
           # WORKFLOW INPUTS
           echo The release version number:           ${{ inputs.version_number }}
-          echo Test run:                             ${{ inputs.test_run }}
           # ENVIRONMENT VARIABLES
           echo Python target version:                ${{ env.PYTHON_TARGET_VERSION }}
           echo Notification prefix:                  ${{ env.NOTIFICATION_PREFIX }}

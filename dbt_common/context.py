@@ -39,6 +39,7 @@ class InvocationContext:
         else:
             self._env = env_public
 
+        self.name = "unset"
         self._env_secrets: Optional[List[str]] = None
         self._env_private = env_private
         self.recorder: Optional[Recorder] = None

@@ -1,4 +1,4 @@
-name: Release
+name: "Release (with Version Bump & Changelog Update)"
 
 on:
   workflow_dispatch:

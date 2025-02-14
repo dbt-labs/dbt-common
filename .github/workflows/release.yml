@@ -40,7 +40,7 @@ jobs:
   release:
     name: PyPI - ${{ inputs.deploy-to }}
     runs-on: ubuntu-latest
-    needs: release-prep
+    needs: [release-prep]
     environment:
       name: ${{ inputs.deploy-to }}
     permissions:
@@ -50,12 +50,21 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.ref }}
           persist-credentials: false
 
       - name: "Set up Python & Hatch - 3.11"
         uses: ./.github/actions/setup-python-hatch
         with:
           python-version: "3.11"
+
+      - name: "Validate version"
+        run: |
+          HATCH_VERSION=$(hatch version)
+          if [[ "${{ inputs.version_number }}" != "$HATCH_VERSION" ]]; then
+            echo "Version number (${{ inputs.version_number }}) does not match current version ($HATCH_VERSION)"
+            exit 1
+          fi
 
       - name: Build artifacts
         run: hatch build

@@ -1,6 +1,0 @@
-kind: Features
-body: Add syntax support for types on macro parameters.
-time: 2024-12-10T14:42:47.253157-05:00
-custom:
-  Author: peterallenwebb
-  Issue: "229"

@@ -1,6 +1,0 @@
-kind: Features
-body: Add '@auto_record_function' for less verbose record/replay annotaitons
-time: 2025-01-24T16:49:23.097806-05:00
-custom:
-    Author: peterallenwebb
-    Issue: "240"

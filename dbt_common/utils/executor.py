@@ -70,7 +70,7 @@ class HasThreadingConfig(Protocol):
     threads: Optional[int]
 
 
-def _thread_initializer(invocation_context: InvocationContext, context: Context) -> None:
+def _thread_initializer(invocation_context: InvocationContext, context: Optional[Context]) -> None:
     invocation_var = reliably_get_invocation_var()
     invocation_var.set(invocation_context)
     set_otel_context(context)

@@ -64,7 +64,7 @@ class InvocationContext:
 
 
 _INVOCATION_CONTEXT_VAR: ContextVar[InvocationContext] = ContextVar("DBT_INVOCATION_CONTEXT_VAR")
-_OTEL_CONTEXT_KEY = "current_context"
+_OTEL_CONTEXT_VAR: ContextVar[Context] = ContextVar("current_context", default=Context())
 
 
 def reliably_get_invocation_var() -> ContextVar[InvocationContext]:
@@ -78,21 +78,18 @@ def reliably_get_invocation_var() -> ContextVar[InvocationContext]:
     return invocation_var
 
 
-def get_otel_context_var() -> Optional[ContextVar[Context]]:
-    return next((cv for cv in copy_context() if cv.name == _OTEL_CONTEXT_KEY), None)
-
-
-def get_otel_context() -> Optional[Context]:
-    otel_context_var = get_otel_context_var()
+def get_otel_context_var() -> ContextVar[Context]:
+    otel_context_var: Optional[ContextVar[Context]] = next(
+        (cv for cv in copy_context() if cv.name == _OTEL_CONTEXT_VAR.name), None
+    )
     if otel_context_var is None:
-        return None
-    return otel_context_var.get()
+        return _OTEL_CONTEXT_VAR
+    return otel_context_var
 
 
-def set_otel_context(context: Optional[Context]):
+def set_otel_context(context: Context):
     otel_context_var = get_otel_context_var()
-    if otel_context_var is not None and context is not None:
-        otel_context_var.set(context)
+    otel_context_var.set(context)
 
 
 def set_invocation_context(env: Mapping[str, str]) -> None:

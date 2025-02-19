@@ -39,6 +39,7 @@ dependencies = [
   "python-dateutil>=2.0,<3.0",
   "requests<3.0.0",  # needs to match dbt-core
   "typing-extensions>=4.4,<5.0",
+    "opentelemetry-api",
 ]
 
 [project.optional-dependencies]

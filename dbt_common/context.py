@@ -4,6 +4,7 @@ from typing import List, Mapping, Optional, Iterator
 
 from dbt_common.constants import PRIVATE_ENV_PREFIX, SECRET_ENV_PREFIX
 from dbt_common.record import Recorder
+from opentelemetry.context.context import Context
 
 
 class CaseInsensitiveMapping(Mapping[str, str]):
@@ -63,6 +64,7 @@ class InvocationContext:
 
 
 _INVOCATION_CONTEXT_VAR: ContextVar[InvocationContext] = ContextVar("DBT_INVOCATION_CONTEXT_VAR")
+_OTEL_CONTEXT_KEY = "current_context"
 
 
 def reliably_get_invocation_var() -> ContextVar[InvocationContext]:
@@ -74,6 +76,23 @@ def reliably_get_invocation_var() -> ContextVar[InvocationContext]:
         invocation_var = _INVOCATION_CONTEXT_VAR
 
     return invocation_var
+
+
+def get_otel_context_var() -> Optional[ContextVar[Context]]:
+    return next((cv for cv in copy_context() if cv.name == _OTEL_CONTEXT_KEY), None)
+
+
+def get_otel_context() -> Optional[Context]:
+    otel_context_var = get_otel_context_var()
+    if otel_context_var is None:
+        return None
+    return otel_context_var.get()
+
+
+def set_otel_context(context: Optional[Context]):
+    otel_context_var = get_otel_context_var()
+    if otel_context_var is not None and context is not None:
+        otel_context_var.set(context)
 
 
 def set_invocation_context(env: Mapping[str, str]) -> None:

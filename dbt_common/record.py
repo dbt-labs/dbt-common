@@ -20,8 +20,6 @@ from mashumaro import field_options
 from mashumaro.mixins.json import DataClassJSONMixin
 from mashumaro.types import SerializationStrategy
 
-from tests.unit.test_connection_retries import counter
-
 RECORDED_BY_HIGHER_FUNCTION = contextvars.ContextVar("RECORDED_BY_HIGHER_FUNCTION", default=False)
 
 

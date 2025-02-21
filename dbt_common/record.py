@@ -10,6 +10,7 @@ import dataclasses
 import inspect
 import json
 import os
+import threading
 
 from enum import Enum
 from typing import Any, Callable, Dict, List, Mapping, Optional, TextIO, Tuple, Type
@@ -18,6 +19,8 @@ import contextvars
 from mashumaro import field_options
 from mashumaro.mixins.json import DataClassJSONMixin
 from mashumaro.types import SerializationStrategy
+
+from tests.unit.test_connection_retries import counter
 
 RECORDED_BY_HIGHER_FUNCTION = contextvars.ContextVar("RECORDED_BY_HIGHER_FUNCTION", default=False)
 
@@ -31,9 +34,10 @@ class Record:
     result_cls: Optional[type] = None
     group: Optional[str] = None
 
-    def __init__(self, params, result) -> None:
+    def __init__(self, params, result, seq = None) -> None:
         self.params = params
         self.result = result
+        self.seq = seq
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -45,6 +49,7 @@ class Record:
             else dataclasses.asdict(self.result)
             if self.result is not None
             else None,
+            "seq": self.seq,
         }
 
     @classmethod
@@ -61,7 +66,8 @@ class Record:
             if cls.result_cls is not None
             else None
         )
-        return cls(params=p, result=r)
+        s = dct.get("seq", None)
+        return cls(params=p, result=r, seq=s)
 
 
 class Diff:
@@ -138,6 +144,8 @@ class Recorder:
     _record_cls_by_name: Dict[str, Type] = {}
     _record_name_by_params_name: Dict[str, str] = {}
     _auto_serialization_strategies: Dict[Type, SerializationStrategy] = {}
+    _counter = 0
+    _counter_lock = threading.Lock()
 
     def __init__(
         self,
@@ -177,6 +185,11 @@ class Recorder:
         rec_cls_name = record.__class__.__name__  # type: ignore
         if rec_cls_name not in self._records_by_type:
             self._records_by_type[rec_cls_name] = []
+
+        with self._counter_lock:
+            record.seq = self._counter
+            self._counter += 1
+
         self._records_by_type[rec_cls_name].append(record)
 
     def pop_matching_record(self, params: Any) -> Optional[Record]:

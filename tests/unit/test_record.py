@@ -338,3 +338,8 @@ def test_record_classmethod_override() -> None:
     assert recorder._records_by_type["TestAutoRecord"][1].params.a == 2
     assert recorder._records_by_type["TestAutoRecord"][1].result.return_val == 6
     assert recorder._records_by_type["TestAutoRecord"][1].seq == a + 1
+
+    stream = StringIO()
+    recorder.write_json(stream)
+    strval = stream.getvalue()
+    pass

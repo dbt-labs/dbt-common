@@ -144,8 +144,6 @@ class Recorder:
     _record_cls_by_name: Dict[str, Type] = {}
     _record_name_by_params_name: Dict[str, str] = {}
     _auto_serialization_strategies: Dict[Type, SerializationStrategy] = {}
-    _counter = 0
-    _counter_lock = threading.Lock()
 
     def __init__(
         self,
@@ -174,6 +172,9 @@ class Recorder:
 
             if self.mode == RecorderMode.REPLAY:
                 self._unprocessed_records_by_type = self.load(self.previous_recording_path)
+
+        self._counter = 0
+        self._counter_lock = threading.Lock()
 
     @classmethod
     def register_record_type(cls, rec_type) -> Any:

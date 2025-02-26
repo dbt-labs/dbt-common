@@ -341,5 +341,5 @@ def test_record_classmethod_override() -> None:
 
     stream = StringIO()
     recorder.write_json(stream)
-    strval = stream.getvalue()
+    stream.getvalue()
     pass

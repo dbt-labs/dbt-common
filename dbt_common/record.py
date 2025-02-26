@@ -32,7 +32,7 @@ class Record:
     result_cls: Optional[type] = None
     group: Optional[str] = None
 
-    def __init__(self, params, result, seq = None) -> None:
+    def __init__(self, params, result, seq=None) -> None:
         self.params = params
         self.result = result
         self.seq = seq

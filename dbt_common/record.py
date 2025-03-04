@@ -211,21 +211,27 @@ class Recorder:
         return match
 
     def write_json(self, out_stream: TextIO):
-        d = self._to_dict()
+        d = self._to_list()
         json.dump(d, out_stream)
 
     def write(self) -> None:
         with open(self.current_recording_path, "w") as file:
             self.write_json(file)
 
-    def _to_dict(self) -> Dict:
-        dct: Dict[str, Any] = {}
+    def _to_list(self) -> List[Dict]:
 
+        def get_tagged_dict(record: Record, record_type: str) -> Dict :
+            d = record.to_dict()
+            d["type"] = record_type
+            return d
+
+        record_list: List[Dict] = []
         for record_type in self._records_by_type:
-            record_list = [r.to_dict() for r in self._records_by_type[record_type]]
-            dct[record_type] = record_list
+            record_list.extend(get_tagged_dict(r, record_type) for r in self._records_by_type[record_type])
 
-        return dct
+        record_list.sort(key=lambda r: r["seq"])
+
+        return record_list
 
     @classmethod
     def load(cls, file_name: str) -> Dict[str, List[Dict[str, Any]]]:
@@ -470,9 +476,14 @@ def _record_function_inner(
         param_args = args[1:] if method else args
         if method and id_field_name is not None:
             if index_on_thread_id:
-                from dbt_common.context import get_invocation_context
-
-                param_args = (get_invocation_context().name,) + param_args
+                from dbt_common.events.contextvars import get_node_info
+                node_info = get_node_info()
+                if node_info and "unique_id" in node_info:
+                    thread_name = node_info["unique_id"]
+                else:
+                    from dbt_common.context import get_invocation_context
+                    thread_name = get_invocation_context().name
+                param_args = (thread_name,) + param_args
             else:
                 param_args = (getattr(args[0], id_field_name),) + param_args
 

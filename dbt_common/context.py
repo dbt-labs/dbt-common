@@ -43,6 +43,12 @@ class InvocationContext:
         self._env_secrets: Optional[List[str]] = None
         self._env_private = env_private
         self.recorder: Optional[Recorder] = None
+
+        # If set to True later, this flag will prevent dbt from creating a new
+        # invocation context for every invocation, which is useful for testing
+        # scenarios.
+        self.do_not_reset = False
+
         # This class will also eventually manage the invocation_id, flags, event manager, etc.
 
     @property
@@ -85,3 +91,10 @@ def get_invocation_context() -> InvocationContext:
     invocation_var = reliably_get_invocation_var()
     ctx = invocation_var.get()
     return ctx
+
+
+def try_get_invocation_context() -> Optional[InvocationContext]:
+    try:
+        return get_invocation_context()
+    except Exception:
+        return None

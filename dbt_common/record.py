@@ -10,6 +10,7 @@ import dataclasses
 import inspect
 import json
 import os
+import threading
 
 from enum import Enum
 from typing import Any, Callable, Dict, List, Mapping, Optional, TextIO, Tuple, Type
@@ -31,9 +32,10 @@ class Record:
     result_cls: Optional[type] = None
     group: Optional[str] = None
 
-    def __init__(self, params, result) -> None:
+    def __init__(self, params, result, seq=None) -> None:
         self.params = params
         self.result = result
+        self.seq = seq
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -45,6 +47,7 @@ class Record:
             else dataclasses.asdict(self.result)
             if self.result is not None
             else None,
+            "seq": self.seq,
         }
 
     @classmethod
@@ -61,7 +64,8 @@ class Record:
             if cls.result_cls is not None
             else None
         )
-        return cls(params=p, result=r)
+        s = dct.get("seq", None)
+        return cls(params=p, result=r, seq=s)
 
 
 class Diff:
@@ -167,6 +171,9 @@ class Recorder:
             if self.mode == RecorderMode.REPLAY:
                 self._unprocessed_records_by_type = self.load(self.previous_recording_path)
 
+        self._counter = 0
+        self._counter_lock = threading.Lock()
+
     @classmethod
     def register_record_type(cls, rec_type) -> Any:
         cls._record_cls_by_name[rec_type.__name__] = rec_type
@@ -177,6 +184,11 @@ class Recorder:
         rec_cls_name = record.__class__.__name__  # type: ignore
         if rec_cls_name not in self._records_by_type:
             self._records_by_type[rec_cls_name] = []
+
+        with self._counter_lock:
+            record.seq = self._counter
+            self._counter += 1
+
         self._records_by_type[rec_cls_name].append(record)
 
     def pop_matching_record(self, params: Any) -> Optional[Record]:
@@ -199,21 +211,27 @@ class Recorder:
         return match
 
     def write_json(self, out_stream: TextIO):
-        d = self._to_dict()
+        d = self._to_list()
         json.dump(d, out_stream)
 
     def write(self) -> None:
         with open(self.current_recording_path, "w") as file:
             self.write_json(file)
 
-    def _to_dict(self) -> Dict:
-        dct: Dict[str, Any] = {}
+    def _to_list(self) -> List[Dict]:
 
+        def get_tagged_dict(record: Record, record_type: str) -> Dict :
+            d = record.to_dict()
+            d["type"] = record_type
+            return d
+
+        record_list: List[Dict] = []
         for record_type in self._records_by_type:
-            record_list = [r.to_dict() for r in self._records_by_type[record_type]]
-            dct[record_type] = record_list
+            record_list.extend(get_tagged_dict(r, record_type) for r in self._records_by_type[record_type])
 
-        return dct
+        record_list.sort(key=lambda r: r["seq"])
+
+        return record_list
 
     @classmethod
     def load(cls, file_name: str) -> Dict[str, List[Dict[str, Any]]]:
@@ -458,9 +476,14 @@ def _record_function_inner(
         param_args = args[1:] if method else args
         if method and id_field_name is not None:
             if index_on_thread_id:
-                from dbt_common.context import get_invocation_context
-
-                param_args = (get_invocation_context().name,) + param_args
+                from dbt_common.events.contextvars import get_node_info
+                node_info = get_node_info()
+                if node_info and "unique_id" in node_info:
+                    thread_name = node_info["unique_id"]
+                else:
+                    from dbt_common.context import get_invocation_context
+                    thread_name = get_invocation_context().name
+                param_args = (thread_name,) + param_args
             else:
                 param_args = (getattr(args[0], id_field_name),) + param_args
 

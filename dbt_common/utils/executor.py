@@ -6,7 +6,11 @@ from dbt_common.context import (
     get_invocation_context,
     reliably_get_invocation_var,
     InvocationContext,
+    set_otel_context,
 )
+
+from opentelemetry.context.context import Context
+from opentelemetry import context as opentelemetry_context
 
 
 class ConnectingExecutor(concurrent.futures.Executor):
@@ -66,9 +70,10 @@ class HasThreadingConfig(Protocol):
     threads: Optional[int]
 
 
-def _thread_initializer(invocation_context: InvocationContext) -> None:
+def _thread_initializer(invocation_context: InvocationContext, context: Context) -> None:
     invocation_var = reliably_get_invocation_var()
     invocation_var.set(invocation_context)
+    set_otel_context(context)
 
 
 def executor(config: HasThreadingConfig) -> ConnectingExecutor:
@@ -78,5 +83,5 @@ def executor(config: HasThreadingConfig) -> ConnectingExecutor:
         return MultiThreadedExecutor(
             max_workers=config.threads,
             initializer=_thread_initializer,  # type: ignore
-            initargs=(get_invocation_context(),),  # type: ignore
+            initargs=(get_invocation_context(), opentelemetry_context.get_current()),  # type: ignore
         )

@@ -221,15 +221,16 @@ class Recorder:
             self.write_json(file)
 
     def _to_list(self) -> List[Dict]:
-
-        def get_tagged_dict(record: Record, record_type: str) -> Dict :
+        def get_tagged_dict(record: Record, record_type: str) -> Dict:
             d = record.to_dict()
             d["type"] = record_type
             return d
 
         record_list: List[Dict] = []
         for record_type in self._records_by_type:
-            record_list.extend(get_tagged_dict(r, record_type) for r in self._records_by_type[record_type])
+            record_list.extend(
+                get_tagged_dict(r, record_type) for r in self._records_by_type[record_type]
+            )
 
         record_list.sort(key=lambda r: r["seq"])
 
@@ -479,11 +480,13 @@ def _record_function_inner(
         if method and id_field_name is not None:
             if index_on_thread_id:
                 from dbt_common.events.contextvars import get_node_info
+
                 node_info = get_node_info()
                 if node_info and "unique_id" in node_info:
                     thread_name = node_info["unique_id"]
                 else:
                     from dbt_common.context import get_invocation_context
+
                     thread_name = get_invocation_context().name
                 param_args = (thread_name,) + param_args
             else:

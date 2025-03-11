@@ -10,15 +10,17 @@ import dataclasses
 import inspect
 import json
 import os
-import threading
 
 from enum import Enum
+from threading import Lock
 from typing import Any, Callable, Dict, List, Mapping, Optional, TextIO, Tuple, Type
-import contextvars
 
 from mashumaro import field_options
 from mashumaro.mixins.json import DataClassJSONMixin
 from mashumaro.types import SerializationStrategy
+
+import contextvars
+
 
 RECORDED_BY_HIGHER_FUNCTION = contextvars.ContextVar("RECORDED_BY_HIGHER_FUNCTION", default=False)
 
@@ -172,7 +174,7 @@ class Recorder:
                 self._unprocessed_records_by_type = self.load(self.previous_recording_path)
 
         self._counter = 0
-        self._counter_lock = threading.Lock()
+        self._counter_lock = Lock()
 
     @classmethod
     def register_record_type(cls, rec_type) -> Any:

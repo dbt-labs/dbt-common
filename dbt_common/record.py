@@ -361,7 +361,7 @@ def record_function(
     method: bool = False,
     tuple_result: bool = False,
     id_field_name: Optional[str] = None,
-    index_on_thread_id: bool = True,
+    index_on_thread_id: bool = False,
 ) -> Callable:
     """This is the @record_function decorator, which marks functions which will
     have their function calls recorded during record mode, and mocked out with

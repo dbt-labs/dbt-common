@@ -1,6 +1,0 @@
-kind: Breaking Changes
-body: Update `fire_event` to handle `warn_or_error` logic
-time: 2025-01-17T14:40:53.08567-06:00
-custom:
-  Author: QMalcolm
-  Issue: "236"

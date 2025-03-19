@@ -121,9 +121,16 @@ class TestEventManager(IEventManager):
     def __init__(self) -> None:
         self.event_history: List[Tuple[BaseEvent, Optional[EventLevel]]] = []
         self.loggers = []
+        self.warn_error = False
+        self.warn_error_options = WarnErrorOptions(include=[], exclude=[])
+        self.require_warn_or_error_handling = False
 
     def fire_event(
-        self, e: BaseEvent, level: Optional[EventLevel] = None, node: Any = None
+        self,
+        e: BaseEvent,
+        level: Optional[EventLevel] = None,
+        node: Any = None,
+        force_warn_or_error_handling: bool = False,
     ) -> None:
         self.event_history.append((e, level))
 

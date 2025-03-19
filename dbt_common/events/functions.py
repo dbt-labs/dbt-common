@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from dbt_common.events.event_manager_client import get_event_manager
+from dbt_common.helper_types import WarnErrorOptions
 from dbt_common.invocation import get_invocation_id
 from dbt_common.utils.encoding import ForgivingJSONEncoder
 from dbt_common.events.base_types import BaseEvent, EventLevel, EventMsg
@@ -17,6 +18,8 @@ from google.protobuf.json_format import MessageToDict
 LOG_VERSION = 3
 metadata_vars: Optional[Dict[str, str]] = None
 _METADATA_ENV_PREFIX = "DBT_ENV_CUSTOM_ENV_"
+WARN_ERROR_OPTIONS = WarnErrorOptions(include=[], exclude=[])
+WARN_ERROR = False
 
 # This global, and the following two functions for capturing stdout logs are
 # an unpleasant hack we intend to remove as part of API-ification. The GitHub

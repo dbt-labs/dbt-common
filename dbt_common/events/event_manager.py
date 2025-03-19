@@ -12,9 +12,33 @@ class EventManager:
     def __init__(self) -> None:
         self.loggers: List[_Logger] = []
         self.callbacks: List[TCallback] = []
-        self.warn_error: bool = False
-        self.warn_error_options: WarnErrorOptions = WarnErrorOptions(include=[], exclude=[])
+        self._warn_error: Optional[bool] = None
+        self._warn_error_options: Optional[WarnErrorOptions] = None
         self.require_warn_or_error_handling: bool = False
+
+    @property
+    def warn_error(self) -> bool:
+        if self._warn_error is None:
+            from dbt_common.events.functions import WARN_ERROR
+
+            return WARN_ERROR
+        return self._warn_error
+
+    @warn_error.setter
+    def warn_error(self, warn_error: bool) -> None:
+        self._warn_error = warn_error
+
+    @property
+    def warn_error_options(self) -> WarnErrorOptions:
+        if self._warn_error_options is None:
+            from dbt_common.events.functions import WARN_ERROR_OPTIONS
+
+            return WARN_ERROR_OPTIONS
+        return self._warn_error_options
+
+    @warn_error_options.setter
+    def warn_error_options(self, warn_error_options: WarnErrorOptions) -> None:
+        self._warn_error_options = warn_error_options
 
     def fire_event(
         self,

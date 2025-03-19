@@ -49,9 +49,9 @@ class EventManager:
     ) -> None:
         msg = msg_from_base_event(e, level=level)
 
-        if (
-            force_warn_or_error_handling or self.require_warn_or_error_handling
-        ) and msg.info.level == "warn":
+        if force_warn_or_error_handling or (
+            self.require_warn_or_error_handling and msg.info.level == "warn"
+        ):
             event_name = type(e).__name__
             if self.warn_error or self.warn_error_options.includes(event_name):
                 # This has the potential to create an infinite loop if the handling of the raised

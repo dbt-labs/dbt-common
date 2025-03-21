@@ -151,6 +151,7 @@ class Recorder:
         types: Optional[List],
         current_recording_path: str = "recording.json",
         previous_recording_path: Optional[str] = None,
+        in_memory: bool = False,
     ) -> None:
         self.mode = mode
         self.recorded_types = types
@@ -178,7 +179,7 @@ class Recorder:
 
         self._record_added = False
         self._recording_file: Optional[TextIO] = None
-        if mode == RecorderMode.RECORD:
+        if mode == RecorderMode.RECORD and not in_memory:
             self._recording_file = open(current_recording_path, "w")
             self._recording_file.write("[")
 

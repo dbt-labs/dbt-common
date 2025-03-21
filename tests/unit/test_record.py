@@ -1,4 +1,5 @@
 import dataclasses
+import json
 import os
 from io import StringIO
 
@@ -82,7 +83,7 @@ def setup():
 
 def test_decorator_records(setup) -> None:
     os.environ["DBT_RECORDER_MODE"] = "Record"
-    recorder = Recorder(RecorderMode.RECORD, None)
+    recorder = Recorder(RecorderMode.RECORD, None, in_memory=True)
     set_invocation_context({})
     get_invocation_context().recorder = recorder
 
@@ -103,7 +104,7 @@ def test_decorator_records(setup) -> None:
 def test_record_types(setup):
     os.environ["DBT_RECORDER_MODE"] = "Record"
     os.environ["DBT_RECORDER_TYPES"] = "TestRecord"
-    recorder = Recorder(RecorderMode.RECORD, ["TestRecord"])
+    recorder = Recorder(RecorderMode.RECORD, ["TestRecord"], in_memory=True)
     set_invocation_context({})
     get_invocation_context().recorder = recorder
 
@@ -127,10 +128,45 @@ def test_record_types(setup):
     assert NotTestRecord not in recorder._records_by_type
 
 
+def test_record_types_streamed(setup):
+    # Same as test above except in_memory mode is not used, so that we can
+    # test file streaming.
+    os.environ["DBT_RECORDER_MODE"] = "Record"
+    os.environ["DBT_RECORDER_TYPES"] = "TestRecord"
+    recorder = Recorder(RecorderMode.RECORD, ["TestRecord"])
+    set_invocation_context({})
+    get_invocation_context().recorder = recorder
+
+    @record_function(TestRecord)
+    def test_func(a: int, b: str, c: Optional[str] = None) -> str:
+        return str(a) + b + (c if c else "")
+
+    @record_function(NotTestRecord)
+    def not_test_func(a: int, b: str, c: Optional[str] = None) -> str:
+        return str(a) + b + (c if c else "")
+
+    test_func(123, "abc")
+    not_test_func(456, "def")
+
+    expected_record = TestRecord(
+        params=TestRecordParams(123, "abc"), result=TestRecordResult("123abc")
+    )
+
+    recorder.write()
+
+    rec = {}
+    with open("recording.json", "r") as f:
+        rec = json.load(f)
+
+    assert rec[-1]["params"] == { "a": 123, "b": "abc", "c": None }
+    assert rec[-1]["result"] == { "return_val" : "123abc" }
+    assert NotTestRecord not in recorder._records_by_type
+
+
 def test_decorator_replays(setup) -> None:
     os.environ["DBT_RECORDER_MODE"] = "Replay"
     os.environ["DBT_RECORDER_FILE_PATH"] = "record.json"
-    recorder = Recorder(RecorderMode.REPLAY, None)
+    recorder = Recorder(RecorderMode.REPLAY, None, in_memory=True)
     set_invocation_context({})
     get_invocation_context().recorder = recorder
 
@@ -151,7 +187,7 @@ def test_decorator_replays(setup) -> None:
 
 def test_nested_recording(setup) -> None:
     os.environ["DBT_RECORDER_MODE"] = "Record"
-    recorder = Recorder(RecorderMode.RECORD, None)
+    recorder = Recorder(RecorderMode.RECORD, None, in_memory=True)
     set_invocation_context({})
     get_invocation_context().recorder = recorder
 
@@ -214,7 +250,7 @@ def test_nested_recording_replay(setup) -> None:
 
 def test_auto_decorator_records(setup) -> None:
     os.environ["DBT_RECORDER_MODE"] = "Record"
-    recorder = Recorder(RecorderMode.RECORD, None)
+    recorder = Recorder(RecorderMode.RECORD, None, in_memory=True)
     set_invocation_context({})
     get_invocation_context().recorder = recorder
 
@@ -231,7 +267,7 @@ def test_auto_decorator_records(setup) -> None:
 
 def test_recorded_function_with_override() -> None:
     os.environ["DBT_RECORDER_MODE"] = "Record"
-    recorder = Recorder(RecorderMode.RECORD, None)
+    recorder = Recorder(RecorderMode.RECORD, None, in_memory=True)
     set_invocation_context({})
     get_invocation_context().recorder = recorder
 
@@ -292,7 +328,7 @@ def test_recorded_with_custom_serializer() -> None:
 
 def test_record_classmethod() -> None:
     os.environ["DBT_RECORDER_MODE"] = "Record"
-    recorder = Recorder(RecorderMode.RECORD, None)
+    recorder = Recorder(RecorderMode.RECORD, None, in_memory=True)
     set_invocation_context({})
     get_invocation_context().recorder = recorder
 
@@ -311,7 +347,7 @@ def test_record_classmethod() -> None:
 
 def test_record_classmethod_override() -> None:
     os.environ["DBT_RECORDER_MODE"] = "Record"
-    recorder = Recorder(RecorderMode.RECORD, None)
+    recorder = Recorder(RecorderMode.RECORD, None, in_memory=True)
     set_invocation_context({})
     get_invocation_context().recorder = recorder
 

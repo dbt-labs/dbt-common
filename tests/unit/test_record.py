@@ -148,18 +148,14 @@ def test_record_types_streamed(setup):
     test_func(123, "abc")
     not_test_func(456, "def")
 
-    expected_record = TestRecord(
-        params=TestRecordParams(123, "abc"), result=TestRecordResult("123abc")
-    )
-
     recorder.write()
 
     rec = {}
     with open("recording.json", "r") as f:
         rec = json.load(f)
 
-    assert rec[-1]["params"] == { "a": 123, "b": "abc", "c": None }
-    assert rec[-1]["result"] == { "return_val" : "123abc" }
+    assert rec[-1]["params"] == {"a": 123, "b": "abc", "c": None}
+    assert rec[-1]["result"] == {"return_val": "123abc"}
     assert NotTestRecord not in recorder._records_by_type
 
 

@@ -151,6 +151,7 @@ class Recorder:
         types: Optional[List],
         current_recording_path: str = "recording.json",
         previous_recording_path: Optional[str] = None,
+        in_memory: bool = False,
     ) -> None:
         self.mode = mode
         self.recorded_types = types
@@ -176,6 +177,15 @@ class Recorder:
         self._counter = 0
         self._counter_lock = Lock()
 
+        self._record_added = False
+        self._recording_file: Optional[TextIO] = None
+        if mode == RecorderMode.RECORD and not in_memory:
+            self._recording_file = open(current_recording_path, "w")
+            self._recording_file.write("[")
+
+    def __del__(self):
+        self.clean_up_stream()
+
     @classmethod
     def register_record_type(cls, rec_type) -> Any:
         cls._record_cls_by_name[rec_type.__name__] = rec_type
@@ -184,14 +194,21 @@ class Recorder:
 
     def add_record(self, record: Record) -> None:
         rec_cls_name = record.__class__.__name__  # type: ignore
-        if rec_cls_name not in self._records_by_type:
-            self._records_by_type[rec_cls_name] = []
 
         with self._counter_lock:
             record.seq = self._counter
             self._counter += 1
 
-        self._records_by_type[rec_cls_name].append(record)
+        if self._recording_file is not None:
+            if self._record_added:
+                self._recording_file.write(",")
+            dct = Recorder._get_tagged_dict(record, rec_cls_name)
+            json.dump(dct, self._recording_file)
+            self._record_added = True
+        else:
+            if rec_cls_name not in self._records_by_type:
+                self._records_by_type[rec_cls_name] = []
+            self._records_by_type[rec_cls_name].append(record)
 
     def pop_matching_record(self, params: Any) -> Optional[Record]:
         rec_type_name = self._record_name_by_params_name.get(type(params).__name__)
@@ -217,19 +234,30 @@ class Recorder:
         json.dump(d, out_stream)
 
     def write(self) -> None:
-        with open(self.current_recording_path, "w") as file:
-            self.write_json(file)
+        if self._recording_file is not None:
+            self.clean_up_stream()
+        else:
+            with open(self.current_recording_path, "w") as file:
+                self.write_json(file)
+
+    def clean_up_stream(self) -> None:
+        if self._recording_file is not None:
+            self._recording_file.write("]")
+            self._recording_file.close()
+            self._recording_file = None
+
+    @staticmethod
+    def _get_tagged_dict(record: Record, record_type: str) -> Dict:
+        d = record.to_dict()
+        d["type"] = record_type
+        return d
 
     def _to_list(self) -> List[Dict]:
-        def get_tagged_dict(record: Record, record_type: str) -> Dict:
-            d = record.to_dict()
-            d["type"] = record_type
-            return d
-
         record_list: List[Dict] = []
         for record_type in self._records_by_type:
             record_list.extend(
-                get_tagged_dict(r, record_type) for r in self._records_by_type[record_type]
+                Recorder._get_tagged_dict(r, record_type)
+                for r in self._records_by_type[record_type]
             )
 
         record_list.sort(key=lambda r: r["seq"])

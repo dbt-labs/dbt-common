@@ -206,8 +206,10 @@ class Recorder:
                 dct = Recorder._get_tagged_dict(record, rec_cls_name)
                 json.dump(dct, self._recording_file)
                 self._record_added = True
-            except Exception as e:
-                pass
+            except Exception:
+                json.dump(
+                    {"type": "RecordingError", "record_type": rec_cls_name}, self._recording_file
+                )
         else:
             if rec_cls_name not in self._records_by_type:
                 self._records_by_type[rec_cls_name] = []
@@ -599,7 +601,9 @@ def supports_replay(cls):
                         metadata["id_field_name"],
                         metadata["group"],
                         metadata["index_on_thread_id"],
-                        sub_method.__func__ if _is_classmethod(method) else sub_method, # unwrap if classmethod
+                        sub_method.__func__
+                        if _is_classmethod(method)
+                        else sub_method,  # unwrap if classmethod
                     )
 
                     if _is_classmethod(method):

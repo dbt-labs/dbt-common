@@ -202,9 +202,12 @@ class Recorder:
         if self._recording_file is not None:
             if self._record_added:
                 self._recording_file.write(",")
-            dct = Recorder._get_tagged_dict(record, rec_cls_name)
-            json.dump(dct, self._recording_file)
-            self._record_added = True
+            try:
+                dct = Recorder._get_tagged_dict(record, rec_cls_name)
+                json.dump(dct, self._recording_file)
+                self._record_added = True
+            except Exception as e:
+                pass
         else:
             if rec_cls_name not in self._records_by_type:
                 self._records_by_type[rec_cls_name] = []
@@ -380,7 +383,6 @@ def auto_record_function(
         None,
         group,
         index_on_thread_name,
-        False,
     )
 
 
@@ -402,7 +404,6 @@ def record_function(
         id_field_name,
         None,
         index_on_thread_id,
-        False,
     )
 
 
@@ -452,7 +453,6 @@ def _record_function_inner(
     id_field_name,
     group,
     index_on_thread_id,
-    is_classmethod,
     func_to_record,
 ):
     if isinstance(record_type, str):
@@ -492,7 +492,7 @@ def _record_function_inner(
         except LookupError:
             pass
 
-        call_args = args[1:] if is_classmethod else args
+        call_args = args
 
         if recorder is None:
             return func_to_record(*call_args, **kwargs)
@@ -589,21 +589,23 @@ def supports_replay(cls):
             metadata = getattr(method, "_record_metadata", None)
             if method and getattr(method, "_record_metadata", None):
                 sub_method = getattr(sub_cls, method_name, None)
-                recorded_sub_method = _record_function_inner(
-                    metadata["record_type"],
-                    metadata["method"],
-                    metadata["tuple_result"],
-                    metadata["id_field_name"],
-                    metadata["group"],
-                    metadata["index_on_thread_id"],
-                    _is_classmethod(method),
-                    sub_method,
-                )
+                sub_method_metadata = getattr(sub_method, "_record_metadata", None)
 
-                if _is_classmethod(method):
-                    recorded_sub_method = classmethod(recorded_sub_method)
+                if not sub_method_metadata:
+                    recorded_sub_method = _record_function_inner(
+                        metadata["record_type"],
+                        metadata["method"],
+                        metadata["tuple_result"],
+                        metadata["id_field_name"],
+                        metadata["group"],
+                        metadata["index_on_thread_id"],
+                        sub_method.__func__ if _is_classmethod(method) else sub_method, # unwrap if classmethod
+                    )
 
-                if sub_method is not None:
+                    if _is_classmethod(method):
+                        # rewrap if submethod
+                        recorded_sub_method = classmethod(recorded_sub_method)
+
                     setattr(
                         sub_cls,
                         method_name,

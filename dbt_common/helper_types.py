@@ -93,8 +93,31 @@ class WarnErrorOptions(IncludeExclude):
         super().__init__(include=include, exclude=(exclude or []))
 
     def __post_init__(self):
-        super().__post_init__()
-        self._validate_items(self.silence)
+        if isinstance(self.include, str) and self.include not in self.INCLUDE_ALL:
+            raise ValidationError(
+                f"include must be one of {self.INCLUDE_ALL} or a list of strings"
+            )
+
+        # To specify exclude, either `include` must be "all" or "deprecations" must be
+        # in `include` or `silence`.
+        if self.exclude and not (
+            self.include in self.INCLUDE_ALL
+            or self.DEPRECATIONS in self.include
+            or self.DEPRECATIONS in self.silence
+        ):
+            raise ValidationError(
+                f"exclude can only be specified if include is one of {self.INCLUDE_ALL} or "
+                f"{self.DEPRECATIONS} is in include or silence."
+            )
+
+        if isinstance(self.include, list):
+            self._validate_items(self.include)
+
+        if isinstance(self.exclude, list):
+            self._validate_items(self.exclude)
+
+        if isinstance(self.silence, list):
+            self._validate_items(self.silence)
 
     def _includes_all(self) -> bool:
         """Is `*` or `all` set as include?"""

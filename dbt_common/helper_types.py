@@ -64,6 +64,19 @@ class IncludeExclude(dbtClassMixin):
 
 
 class WarnErrorOptions(IncludeExclude):
+    """
+    This class is used to configure the behavior of the warn_error feature (now part of fire_event).
+
+    include: "all", "*", or a list of event names.
+    exclude: a list of event names.
+    silence: a list of event names.
+    valid_error_names: a set of event names that are can be named in include, exclude, and silence.
+
+    In a hierarchy of configuration, the following rules apply:
+    - named > "all"/"*"
+    - silence > exclude > include
+    """
+
     def __init__(
         self,
         include: Union[str, List[str]],

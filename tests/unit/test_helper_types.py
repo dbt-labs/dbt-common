@@ -77,23 +77,56 @@ class TestWarnErrorOptions:
         assert my_options.silence == all_events
 
     @pytest.mark.parametrize(
-        "include,silence,expected_includes",
+        "include,exclude,silence,expected_includes",
         [
-            (["ItemA"], ["ItemA"], False),
-            ("*", ["ItemA"], False),
-            ("*", ["ItemB"], True),
+            ([], [], [], False),
+            (["ItemA"], [], ["ItemA"], False),
+            (["ItemA"], [], [], True),
+            ("*", ["ItemA"], ["ItemA"], False),
+            ("*", [], ["ItemA"], False),
+            ("*", ["ItemA"], [], False),
+            ("*", [], [], True),
+            ("*", ["ItemB"], [], True),
+            ("*", [], ["ItemB"], True),
         ],
     )
     def test_includes(
-        self, include: Union[str, List[str]], silence: List[str], expected_includes: bool
+        self,
+        include: Union[str, List[str]],
+        exclude: List[str],
+        silence: List[str],
+        expected_includes: bool,
     ) -> None:
         include_exclude = WarnErrorOptions(
-            include=include, silence=silence, valid_error_names={"ItemA", "ItemB"}
+            include=include,
+            exclude=exclude,
+            silence=silence,
+            valid_error_names={"ItemA", "ItemB"},
         )
 
         assert include_exclude.includes("ItemA") == expected_includes
 
-    def test_silenced(self) -> None:
-        my_options = WarnErrorOptions(include="*", silence=["ItemA"], valid_error_names={"ItemA"})
-        assert my_options.silenced("ItemA")
-        assert not my_options.silenced("ItemB")
+    @pytest.mark.parametrize(
+        "include,exclude,silence,expected_silence",
+        [
+            (["ItemA"], [], ["ItemA"], True),
+            ("all", ["ItemA"], ["ItemA"], True),
+            ([], [], ["ItemA"], True),
+            ("*", [], ["ItemA"], True),
+            (["ItemA"], [], [], False),
+            ("*", [], [], False),
+            ("*", ["ItemA"], [], False),
+            ([], [], [], False),
+        ],
+    )
+    def test_silenced(
+        self,
+        include: Union[str, List[str]],
+        exclude: List[str],
+        silence: List[str],
+        expected_silence: bool,
+    ) -> None:
+        my_options = WarnErrorOptions(
+            include=include, exclude=exclude, silence=silence, valid_error_names={"ItemA", "ItemB"}
+        )
+        assert my_options.silenced("ItemA") == expected_silence

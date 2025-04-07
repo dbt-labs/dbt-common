@@ -12,6 +12,7 @@ from dbt_common.dataclass_schema import (
     ValidationError,
     StrEnum,
 )
+from dbt_common.events.base_types import BaseEvent
 
 Port = NewType("Port", int)
 
@@ -73,9 +74,11 @@ class WarnErrorOptions(IncludeExclude):
     valid_error_names: a set of event names that are can be named in include, exclude, and silence.
 
     In a hierarchy of configuration, the following rules apply:
-    - named > "all"/"*"
+    - named > deprecations > "all"/"*"
     - silence > exclude > include
     """
+
+    DEPRECATIONS = "deprecations"
 
     def __init__(
         self,
@@ -86,17 +89,107 @@ class WarnErrorOptions(IncludeExclude):
     ):
         self.silence = silence or []
         self._valid_error_names: Set[str] = valid_error_names or set()
+        self._valid_error_names.add(self.DEPRECATIONS)
         super().__init__(include=include, exclude=(exclude or []))
 
     def __post_init__(self):
         super().__post_init__()
         self._validate_items(self.silence)
 
-    def includes(self, item_name: str) -> bool:
-        return super().includes(item_name) and not self.silenced(item_name)
+    def _includes_all(self) -> bool:
+        """Is `*` or `all` set as include?"""
+        return self.include in self.INCLUDE_ALL
 
-    def silenced(self, item_name: str) -> bool:
+    def _named_inclusion(self, item_name: str) -> bool:
+        """Is the item_name named in the include list?"""
+        return item_name in self.include
+
+    def _named_exclusion(self, item_name: str) -> bool:
+        """Is the item_name named in the exclude list?"""
+        return item_name in self.exclude
+
+    def _named_silence(self, item_name: str) -> bool:
+        """Is the item_name named in the silence list?"""
         return item_name in self.silence
+
+    def _include_as_deprecation(self, event: Optional[BaseEvent]) -> bool:
+        """Is event included as a deprecation?"""
+        return (
+            event is not None
+            and event.code().startswith("D")
+            and self.DEPRECATIONS in self.include
+        )
+
+    def _exclude_as_deprecation(self, event: Optional[BaseEvent]) -> bool:
+        """Is event excluded as a deprecation?"""
+        return (
+            event is not None
+            and event.code().startswith("D")
+            and self.DEPRECATIONS in self.exclude
+        )
+
+    def _silence_as_deprecation(self, event: Optional[BaseEvent]) -> bool:
+        """Is event silenced as a deprecation?"""
+        return (
+            event is not None
+            and event.code().startswith("D")
+            and self.DEPRECATIONS in self.silence
+        )
+
+    def includes(self, item_name: Union[str, BaseEvent]) -> bool:
+        """Is the event included?
+
+        An event included if any of the following are true:
+        - The event is named in `include` and not named in `exclude` or `silence`
+        - "*" or "all" is specified for `include`, and the event is not named in `exclude` or `silence`
+        - The event is a deprecation, "deprecations" is in `include`, and the event is not named in `exclude` or `silence`
+          nor is "deprecations" in `exclude` or `silence`
+        """
+        if isinstance(item_name, str):
+            event_name = item_name
+            event = None
+        else:
+            event_name = type(item_name).__name__
+            event = item_name
+
+        named_elsewhere = self._named_exclusion(event_name) or self._named_silence(event_name)
+        deprecation_elsewhere = self._exclude_as_deprecation(
+            event
+        ) or self._silence_as_deprecation(event)
+
+        if self._named_inclusion(event_name) and not named_elsewhere:
+            return True
+        elif self._include_as_deprecation(event) and not (
+            named_elsewhere or deprecation_elsewhere
+        ):
+            return True
+        elif self._includes_all() and not (named_elsewhere or deprecation_elsewhere):
+            return True
+        else:
+            return False
+
+    def silenced(self, item_name: Union[str, BaseEvent]) -> bool:
+        """Is the event silenced?
+
+        An event silenced if any of the following are true:
+        - The event is named in `silence`
+        - "*" or "all" is specified for `include`, and the event is not named in `include` or `exclude`
+        - The event is a deprecation and is named in `silence`
+        """
+        if isinstance(item_name, str):
+            event_name = item_name
+            event = None
+        else:
+            event_name = type(item_name).__name__
+            event = item_name
+
+        named_elsewhere = self._named_inclusion(event_name) or self._named_exclusion(event_name)
+        if self._named_silence(event_name):
+            return True
+        elif self._silence_as_deprecation(event) and not named_elsewhere:
+            return True
+        else:
+            return False
 
     def _validate_items(self, items: List[str]):
         for item in items:

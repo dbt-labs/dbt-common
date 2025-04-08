@@ -168,6 +168,7 @@ class WarnErrorOptions(IncludeExclude):
         - The event is a deprecation, "deprecations" is in `include`, and the event is not named in `exclude` or `silence`
           nor is "deprecations" in `exclude` or `silence`
         """
+        # Setup based on item_name type
         if isinstance(item_name, str):
             event_name = item_name
             event = None
@@ -175,11 +176,13 @@ class WarnErrorOptions(IncludeExclude):
             event_name = type(item_name).__name__
             event = item_name
 
+        # Pre-compute checks that will be used multiple times
         named_elsewhere = self._named_exclusion(event_name) or self._named_silence(event_name)
         deprecation_elsewhere = self._exclude_as_deprecation(
             event
         ) or self._silence_as_deprecation(event)
 
+        # Calculate result
         if self._named_inclusion(event_name) and not named_elsewhere:
             return True
         elif self._include_as_deprecation(event) and not (
@@ -199,6 +202,7 @@ class WarnErrorOptions(IncludeExclude):
         - "*" or "all" is specified for `include`, and the event is not named in `include` or `exclude`
         - The event is a deprecation and is named in `silence`
         """
+        # Setup based on item_name type
         if isinstance(item_name, str):
             event_name = item_name
             event = None
@@ -206,7 +210,10 @@ class WarnErrorOptions(IncludeExclude):
             event_name = type(item_name).__name__
             event = item_name
 
+        # Pre-compute checks that will be used multiple times
         named_elsewhere = self._named_inclusion(event_name) or self._named_exclusion(event_name)
+
+        # Calculate result
         if self._named_silence(event_name):
             return True
         elif self._silence_as_deprecation(event) and not named_elsewhere:

@@ -78,7 +78,7 @@ class WarnErrorOptions(IncludeExclude):
     - silence > exclude > include
     """
 
-    DEPRECATIONS = "deprecations"
+    DEPRECATIONS = "Deprecations"
 
     def __init__(
         self,

@@ -80,11 +80,11 @@ class TestWarnErrorOptions:
         "include,exclude,silence,expected_includes",
         [
             ([], [], [], False),
-            (["ItemA"], [], ["ItemA"], False),
-            (["ItemA"], [], [], True),
-            ("*", ["ItemA"], ["ItemA"], False),
-            ("*", [], ["ItemA"], False),
-            ("*", ["ItemA"], [], False),
+            (["BehaviorChangeEvent"], [], ["BehaviorChangeEvent"], False),
+            (["BehaviorChangeEvent"], [], [], True),
+            ("*", ["BehaviorChangeEvent"], ["BehaviorChangeEvent"], False),
+            ("*", [], ["BehaviorChangeEvent"], False),
+            ("*", ["BehaviorChangeEvent"], [], False),
             ("*", [], [], True),
             ("*", ["ItemB"], [], True),
             ("*", [], ["ItemB"], True),
@@ -101,21 +101,21 @@ class TestWarnErrorOptions:
             include=include,
             exclude=exclude,
             silence=silence,
-            valid_error_names={"ItemA", "ItemB"},
+            valid_error_names={"BehaviorChangeEvent", "ItemB"},
         )
 
-        assert include_exclude.includes("ItemA") == expected_includes
+        assert include_exclude.includes("BehaviorChangeEvent") == expected_includes
 
     @pytest.mark.parametrize(
         "include,exclude,silence,expected_silence",
         [
-            (["ItemA"], [], ["ItemA"], True),
-            ("all", ["ItemA"], ["ItemA"], True),
-            ([], [], ["ItemA"], True),
-            ("*", [], ["ItemA"], True),
-            (["ItemA"], [], [], False),
+            (["BehaviorChangeEvent"], [], ["BehaviorChangeEvent"], True),
+            ("all", ["BehaviorChangeEvent"], ["BehaviorChangeEvent"], True),
+            ([], [], ["BehaviorChangeEvent"], True),
+            ("*", [], ["BehaviorChangeEvent"], True),
+            (["BehaviorChangeEvent"], [], [], False),
             ("*", [], [], False),
-            ("*", ["ItemA"], [], False),
+            ("*", ["BehaviorChangeEvent"], [], False),
             ([], [], [], False),
         ],
     )
@@ -127,6 +127,9 @@ class TestWarnErrorOptions:
         expected_silence: bool,
     ) -> None:
         my_options = WarnErrorOptions(
-            include=include, exclude=exclude, silence=silence, valid_error_names={"ItemA", "ItemB"}
+            include=include,
+            exclude=exclude,
+            silence=silence,
+            valid_error_names={"BehaviorChangeEvent", "ItemB"},
         )
-        assert my_options.silenced("ItemA") == expected_silence
+        assert my_options.silenced("BehaviorChangeEvent") == expected_silence

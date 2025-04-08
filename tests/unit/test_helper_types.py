@@ -1,3 +1,4 @@
+from dbt_common.events.types import BehaviorChangeEvent
 import pytest
 from typing import List, Union
 
@@ -88,6 +89,13 @@ class TestWarnErrorOptions:
             ("*", [], [], True),
             ("*", ["ItemB"], [], True),
             ("*", [], ["ItemB"], True),
+            (["BehaviorChangeEvent"], [], ["deprecations"], True),
+            (["deprecations"], [], ["BehaviorChangeEvent"], False),
+            (["deprecations"], ["BehaviorChangeEvent"], [], False),
+            (["deprecations"], [], [], True),
+            ("*", ["deprecations"], [], False),
+            ("*", [], ["deprecations"], False),
+            (["deprecations"], ["deprecations"], ["deprecations"], False),
         ],
     )
     def test_includes(
@@ -104,7 +112,7 @@ class TestWarnErrorOptions:
             valid_error_names={"BehaviorChangeEvent", "ItemB"},
         )
 
-        assert include_exclude.includes("BehaviorChangeEvent") == expected_includes
+        assert include_exclude.includes(BehaviorChangeEvent()) == expected_includes
 
     @pytest.mark.parametrize(
         "include,exclude,silence,expected_silence",
@@ -117,6 +125,12 @@ class TestWarnErrorOptions:
             ("*", [], [], False),
             ("*", ["BehaviorChangeEvent"], [], False),
             ([], [], [], False),
+            (["BehaviorChangeEvent"], [], ["deprecations"], False),
+            ([], ["BehaviorChangeEvent"], ["deprecations"], False),
+            (["deprecations"], [], ["BehaviorChangeEvent"], True),
+            ([], [], ["deprecations"], True),
+            ("*", [], ["deprecations"], True),
+            (["deprecations"], ["deprecations"], ["deprecations"], True),
         ],
     )
     def test_silenced(
@@ -132,4 +146,4 @@ class TestWarnErrorOptions:
             silence=silence,
             valid_error_names={"BehaviorChangeEvent", "ItemB"},
         )
-        assert my_options.silenced("BehaviorChangeEvent") == expected_silence
+        assert my_options.silenced(BehaviorChangeEvent()) == expected_silence

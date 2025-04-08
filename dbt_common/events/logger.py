@@ -156,7 +156,7 @@ class _TextLogger(_Logger):
         if _is_print_event(msg):
             # PrintEvent is a special case, we don't want to add a timestamp
             return scrubbed_msg
-        ts: str = datetime.now(timezone.utc).strftime("%H:%M:%S")
+        ts: str = datetime.now(timezone.utc).replace(tzinfo=None).strftime("%H:%M:%S")
         return f"{self._get_color_tag()}{ts}  {scrubbed_msg}"
 
     def create_debug_line(self, msg: EventMsg) -> str:

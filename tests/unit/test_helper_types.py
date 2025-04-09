@@ -77,6 +77,7 @@ class TestWarnErrorOptions:
         )
         assert my_options.silence == all_events
 
+    # NOTE: BehaviorChangeEvent is a deprecation event
     @pytest.mark.parametrize(
         "include,exclude,silence,expected_includes",
         [
@@ -114,6 +115,7 @@ class TestWarnErrorOptions:
 
         assert include_exclude.includes(BehaviorChangeEvent()) == expected_includes
 
+    # NOTE: BehaviorChangeEvent is a deprecation event
     @pytest.mark.parametrize(
         "include,exclude,silence,expected_silence",
         [

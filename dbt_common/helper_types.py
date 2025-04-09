@@ -71,11 +71,12 @@ class WarnErrorOptions(IncludeExclude):
     include: "all", "*", or a list of event names.
     exclude: a list of event names.
     silence: a list of event names.
-    valid_error_names: a set of event names that are can be named in include, exclude, and silence.
+    valid_error_names: a set of event names that can be named in include, exclude, and silence.
 
     In a hierarchy of configuration, the following rules apply:
-    - named > deprecations > "all"/"*"
-    - silence > exclude > include
+    1. named > Deprecations > "all"/"*"
+    2. silence > exclude > include
+    3. (1) > (2)
     """
 
     DEPRECATIONS = "Deprecations"
@@ -199,8 +200,7 @@ class WarnErrorOptions(IncludeExclude):
 
         An event silenced if any of the following are true:
         - The event is named in `silence`
-        - "*" or "all" is specified for `include`, and the event is not named in `include` or `exclude`
-        - The event is a deprecation and is named in `silence`
+        - "Deprecations" is in `silence` and the event is not named in `include` or `exclude`
         """
         # Setup based on item_name type
         if isinstance(item_name, str):

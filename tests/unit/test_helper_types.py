@@ -1,3 +1,4 @@
+from dbt_common.events.types import BehaviorChangeEvent
 import pytest
 from typing import List, Union
 
@@ -76,24 +77,75 @@ class TestWarnErrorOptions:
         )
         assert my_options.silence == all_events
 
+    # NOTE: BehaviorChangeEvent is a deprecation event
     @pytest.mark.parametrize(
-        "include,silence,expected_includes",
+        "include,exclude,silence,expected_includes",
         [
-            (["ItemA"], ["ItemA"], False),
-            ("*", ["ItemA"], False),
-            ("*", ["ItemB"], True),
+            ([], [], [], False),
+            (["BehaviorChangeEvent"], [], ["BehaviorChangeEvent"], False),
+            (["BehaviorChangeEvent"], [], [], True),
+            ("*", ["BehaviorChangeEvent"], ["BehaviorChangeEvent"], False),
+            ("*", [], ["BehaviorChangeEvent"], False),
+            ("*", ["BehaviorChangeEvent"], [], False),
+            ("*", [], [], True),
+            ("*", ["ItemB"], [], True),
+            ("*", [], ["ItemB"], True),
+            (["BehaviorChangeEvent"], [], ["Deprecations"], True),
+            (["Deprecations"], [], ["BehaviorChangeEvent"], False),
+            (["Deprecations"], ["BehaviorChangeEvent"], [], False),
+            (["Deprecations"], [], [], True),
+            ("*", ["Deprecations"], [], False),
+            ("*", [], ["Deprecations"], False),
+            (["Deprecations"], ["Deprecations"], ["Deprecations"], False),
         ],
     )
     def test_includes(
-        self, include: Union[str, List[str]], silence: List[str], expected_includes: bool
+        self,
+        include: Union[str, List[str]],
+        exclude: List[str],
+        silence: List[str],
+        expected_includes: bool,
     ) -> None:
         include_exclude = WarnErrorOptions(
-            include=include, silence=silence, valid_error_names={"ItemA", "ItemB"}
+            include=include,
+            exclude=exclude,
+            silence=silence,
+            valid_error_names={"BehaviorChangeEvent", "ItemB"},
         )
 
-        assert include_exclude.includes("ItemA") == expected_includes
+        assert include_exclude.includes(BehaviorChangeEvent()) == expected_includes
 
-    def test_silenced(self) -> None:
-        my_options = WarnErrorOptions(include="*", silence=["ItemA"], valid_error_names={"ItemA"})
-        assert my_options.silenced("ItemA")
-        assert not my_options.silenced("ItemB")
+    # NOTE: BehaviorChangeEvent is a deprecation event
+    @pytest.mark.parametrize(
+        "include,exclude,silence,expected_silence",
+        [
+            (["BehaviorChangeEvent"], [], ["BehaviorChangeEvent"], True),
+            ("all", ["BehaviorChangeEvent"], ["BehaviorChangeEvent"], True),
+            ([], [], ["BehaviorChangeEvent"], True),
+            ("*", [], ["BehaviorChangeEvent"], True),
+            (["BehaviorChangeEvent"], [], [], False),
+            ("*", [], [], False),
+            ("*", ["BehaviorChangeEvent"], [], False),
+            ([], [], [], False),
+            (["BehaviorChangeEvent"], [], ["Deprecations"], False),
+            ([], ["BehaviorChangeEvent"], ["Deprecations"], False),
+            (["Deprecations"], [], ["BehaviorChangeEvent"], True),
+            ([], [], ["Deprecations"], True),
+            ("*", [], ["Deprecations"], True),
+            (["Deprecations"], ["Deprecations"], ["Deprecations"], True),
+        ],
+    )
+    def test_silenced(
+        self,
+        include: Union[str, List[str]],
+        exclude: List[str],
+        silence: List[str],
+        expected_silence: bool,
+    ) -> None:
+        my_options = WarnErrorOptions(
+            include=include,
+            exclude=exclude,
+            silence=silence,
+            valid_error_names={"BehaviorChangeEvent", "ItemB"},
+        )
+        assert my_options.silenced(BehaviorChangeEvent()) == expected_silence

@@ -160,6 +160,7 @@ class PrintEvent(InfoLevel):
 
 class RecordReplayIssue(InfoLevel):
     """General event for reporting record/replay issues at runtime."""
+
     def code(self) -> str:
         return "Z053"
 

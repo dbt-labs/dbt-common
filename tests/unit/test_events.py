@@ -76,6 +76,7 @@ class TestEventJSONSerialization:
         types.Formatting(),
         types.Note(msg="This is a note."),
         types.PrintEvent(msg="This is a print event."),
+        types.RecordReplayIssue(msg="This is a record replay issue."),
     ]
 
     def test_all_serializable(self):

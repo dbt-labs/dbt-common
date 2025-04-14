@@ -459,7 +459,6 @@ def _record_function_inner(
 ):
     recorded_types = get_record_types_from_env()
     if recorded_types is not None and not (getattr(record_type, "__name__", record_type) in recorded_types or getattr(record_type, "group", group) in recorded_types):
-        print("SKIPPING" + getattr(record_type, "__name__", record_type))
         return func_to_record
 
     if isinstance(record_type, str):

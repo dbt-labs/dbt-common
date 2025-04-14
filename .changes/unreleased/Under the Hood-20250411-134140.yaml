@@ -1,0 +1,6 @@
+kind: Under the Hood
+body: Add new event to signal issues during record/replay
+time: 2025-04-11T13:41:40.791695-04:00
+custom:
+    Author: peterallenwebb
+    Issue: "268"

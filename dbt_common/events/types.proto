@@ -144,3 +144,13 @@ message PrintEventMsg {
     EventInfo info = 1;
     PrintEvent data = 2;
 }
+
+// Z053
+message RecordReplayIssue {
+    string msg = 1;
+}
+
+message RecordReplayIssueMsg {
+    EventInfo info = 1;
+    RecordReplayIssue data = 2;
+}

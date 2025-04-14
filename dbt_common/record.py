@@ -457,6 +457,10 @@ def _record_function_inner(
     index_on_thread_id,
     func_to_record,
 ):
+    recorded_types = get_record_types_from_env()
+    if recorded_types is not None and not (getattr(record_type, "__name__", record_type) in recorded_types or getattr(record_type, "group", group) in recorded_types):
+        return func_to_record
+
     if isinstance(record_type, str):
         return_type = inspect.signature(func_to_record).return_annotation
         fields = _get_arg_fields(inspect.getfullargspec(func_to_record), method)

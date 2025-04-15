@@ -38,7 +38,13 @@ from dbt_common.utils.jinja import (
     get_materialization_macro_name,
     get_test_macro_name,
 )
-from dbt_common.clients._jinja_blocks import BlockIterator, BlockData, BlockTag, TagIterator
+from dbt_common.clients._jinja_blocks import (
+    BlockIterator,
+    BlockData,
+    BlockTag,
+    TagIterator,
+    ExtractWarning,
+)
 
 from dbt_common.exceptions import (
     CompilationError,
@@ -659,6 +665,7 @@ def extract_toplevel_blocks(
     text: str,
     allowed_blocks: Optional[Set[str]] = None,
     collect_raw_data: bool = True,
+    warning_callback: Optional[Callable[[ExtractWarning], None]] = None,
 ) -> List[Union[BlockData, BlockTag]]:
     """Extract the top-level blocks with matching block types from a jinja file.
 
@@ -672,6 +679,8 @@ def extract_toplevel_blocks(
         be part of the results, as `BlockData` objects. They have a
         `block_type_name` field of `'__dbt_data'` and will never have a
         `block_name`.
+    :param warning_callback: An optional callback that will be called if there
+        are recoverable issues detected in the template.
     :return: A list of `BlockTag`s matching the allowed block types and (if
         `collect_raw_data` is `True`) `BlockData` objects.
     """
@@ -682,7 +691,7 @@ def extract_toplevel_blocks(
             return _TESTING_BLOCKS_CACHE[hash]
 
     tag_iterator = TagIterator(text)
-    blocks = BlockIterator(tag_iterator).lex_for_blocks(
+    blocks = BlockIterator(tag_iterator, warning_callback).lex_for_blocks(
         allowed_blocks=allowed_blocks, collect_raw_data=collect_raw_data
     )
 

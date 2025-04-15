@@ -1,9 +1,9 @@
 import jinja2
 import unittest
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
-from dbt_common.clients._jinja_blocks import BlockTag
+from dbt_common.clients._jinja_blocks import BlockTag, ExtractWarning
 from dbt_common.clients.jinja import (
     extract_toplevel_blocks,
     get_template,
@@ -568,3 +568,25 @@ def test_macro_parser_parses_complex_types() -> None:
     assert arg_types[3] == MacroType(
         "Dict", [MacroType("str"), MacroType("Dict", [MacroType("bool"), MacroType("Any")])]
     )
+
+
+def test_stray_endmacro_block_warns() -> None:
+    problem_template = """
+    {% endmacro %}
+    {% macro foo() %}
+    {% endmacro %}
+    {% endmacro %}
+    """
+
+    warnings: List[ExtractWarning] = []
+
+    def warning_callback(warning: ExtractWarning):
+        warnings.append(warning)
+
+    blocks = extract_toplevel_blocks(
+        problem_template, collect_raw_data=False, warning_callback=warning_callback
+    )
+    assert len(blocks) == 1
+    assert len(warnings) == 2
+    assert warnings[0].warning_type == "unexpected_block"
+    assert warnings[1].warning_type == "unexpected_block"

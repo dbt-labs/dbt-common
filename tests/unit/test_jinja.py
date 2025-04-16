@@ -570,9 +570,9 @@ def test_macro_parser_parses_complex_types() -> None:
     )
 
 
-def test_stray_endmacro_block_warns() -> None:
+def test_stray_block_warnings() -> None:
     problem_template = """
-    {% endmacro %}
+    {% unknown %}
     {% macro foo() %}
     {% endmacro %}
     {% endmacro %}
@@ -589,4 +589,6 @@ def test_stray_endmacro_block_warns() -> None:
     assert len(blocks) == 1
     assert len(warnings) == 2
     assert warnings[0].warning_type == "unexpected_block"
+    assert "unknown" in warnings[0].msg
     assert warnings[1].warning_type == "unexpected_block"
+    assert "endmacro" in warnings[1].msg

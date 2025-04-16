@@ -1,7 +1,7 @@
 import dataclasses
 import re
 from collections import namedtuple
-from typing import Dict, Iterator, List, Optional, Set, Union, Callable
+from typing import Callable, Dict, Iterator, List, Optional, Set, Union
 
 from dbt_common.exceptions import (
     BlockDefinitionNotAtTopError,
@@ -406,7 +406,9 @@ class BlockIterator:
                 self.current = None
             elif self.warning_callback:
                 self.warning_callback(
-                    ExtractWarning("unexpected_block", f"Found unexpected '{tag.block_type_name}' block tag.")
+                    ExtractWarning(
+                        "unexpected_block", f"Found unexpected '{tag.block_type_name}' block tag."
+                    )
                 )
 
         if self.current:

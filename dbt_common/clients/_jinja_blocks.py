@@ -1,7 +1,7 @@
 import dataclasses
 import re
 from collections import namedtuple
-from typing import Dict, Iterator, List, Optional, Set, Union
+from typing import Callable, Dict, Iterator, List, Optional, Set, Union
 
 from dbt_common.exceptions import (
     BlockDefinitionNotAtTopError,
@@ -113,6 +113,12 @@ class PositionedMatch:
 
     start_pos: int
     match: Optional[re.Match]
+
+
+@dataclasses.dataclass
+class ExtractWarning:
+    warning_type: str
+    msg: str
 
 
 class TagIterator:
@@ -326,8 +332,13 @@ _CONTROL_FLOW_END_TAGS = {v: k for k, v in _CONTROL_FLOW_TAGS.items()}
 
 
 class BlockIterator:
-    def __init__(self, tag_iterator: TagIterator) -> None:
+    def __init__(
+        self,
+        tag_iterator: TagIterator,
+        warning_callback: Optional[Callable[[ExtractWarning], None]] = None,
+    ) -> None:
         self.tag_parser = tag_iterator
+        self.warning_callback = warning_callback
         self.current: Optional[Tag] = None
         self.stack: List[str] = []
         self.last_position: int = 0
@@ -393,6 +404,12 @@ class BlockIterator:
                     full_block=self.data[self.current.start : tag.end],
                 )
                 self.current = None
+            elif self.warning_callback:
+                self.warning_callback(
+                    ExtractWarning(
+                        "unexpected_block", f"Found unexpected '{tag.block_type_name}' block tag."
+                    )
+                )
 
         if self.current:
             linecount = self.data[: self.current.end].count("\n") + 1

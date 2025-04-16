@@ -404,7 +404,8 @@ class BlockIterator:
                     full_block=self.data[self.current.start : tag.end],
                 )
                 self.current = None
-            elif self.warning_callback:
+            elif self.current is None and self.warning_callback:
+                # Warn on unexpected top-level tags
                 self.warning_callback(
                     ExtractWarning(
                         "unexpected_block", f"Found unexpected '{tag.block_type_name}' block tag."

@@ -574,7 +574,11 @@ def test_stray_block_warnings() -> None:
     problem_template = """
     {% unknown %}
     {% macro foo() %}
+      {% set my_var = "something" %}
+      {%- do my_func() -%}
+      {{ "test text" }}
     {% endmacro %}
+    {% set my_var = "something" %}
     {% endmacro %}
     """
 
@@ -587,8 +591,10 @@ def test_stray_block_warnings() -> None:
         problem_template, collect_raw_data=False, warning_callback=warning_callback
     )
     assert len(blocks) == 1
-    assert len(warnings) == 2
+    assert len(warnings) == 3
     assert warnings[0].warning_type == "unexpected_block"
     assert "unknown" in warnings[0].msg
     assert warnings[1].warning_type == "unexpected_block"
-    assert "endmacro" in warnings[1].msg
+    assert "set" in warnings[1].msg
+    assert warnings[2].warning_type == "unexpected_block"
+    assert "endmacro" in warnings[2].msg

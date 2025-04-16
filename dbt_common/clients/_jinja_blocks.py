@@ -404,9 +404,9 @@ class BlockIterator:
                     full_block=self.data[self.current.start : tag.end],
                 )
                 self.current = None
-            elif self.warning_callback is not None and tag.block_type_name == "endmacro":
+            elif self.warning_callback:
                 self.warning_callback(
-                    ExtractWarning("unexpected_block", "Found unexpected block tag.")
+                    ExtractWarning("unexpected_block", f"Found unexpected '{tag.block_type_name}' block tag.")
                 )
 
         if self.current:

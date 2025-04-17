@@ -82,5 +82,9 @@ def warning_tag(msg: str) -> str:
     return f'[{yellow("WARNING")}]: {msg}'
 
 
+def deprecation_tag(msg: str) -> str:
+    return warning_tag(f"Deprecated functionality\n\n{msg}")
+
+
 def error_tag(msg: str) -> str:
     return f'[{red("ERROR")}]: {msg}'

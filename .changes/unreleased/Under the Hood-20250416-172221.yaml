@@ -1,0 +1,6 @@
+kind: Under the Hood
+body: Add a `deprecation_tag` helper function
+time: 2025-04-16T17:22:21.964177-07:00
+custom:
+  Author: QMalcolm
+  Issue: "273"

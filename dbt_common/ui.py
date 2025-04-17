@@ -83,7 +83,7 @@ def warning_tag(msg: str) -> str:
 
 
 def deprecation_tag(msg: str) -> str:
-    return warning_tag(f"Deprecated functionality\n\n{msg}")
+    return warning_tag(f"Deprecated functionality\n{msg}")
 
 
 def error_tag(msg: str) -> str:

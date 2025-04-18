@@ -1,0 +1,6 @@
+kind: Fixes
+body: Ensure `fire_event` allows for the silencing of deprecations
+time: 2025-04-18T09:49:50.164836-07:00
+custom:
+  Author: QMalcolm
+  Issue: "276"

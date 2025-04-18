@@ -52,12 +52,11 @@ class EventManager:
         if force_warn_or_error_handling or (
             self.require_warn_or_error_handling and msg.info.level == "warn"
         ):
-            event_name = type(e).__name__
-            if self.warn_error or self.warn_error_options.includes(event_name):
+            if self.warn_error or self.warn_error_options.includes(e):
                 # This has the potential to create an infinite loop if the handling of the raised
                 # EventCompilationError fires an event as a warning instead of an error.
                 raise EventCompilationError(e.message(), node)
-            elif self.warn_error_options.silenced(event_name):
+            elif self.warn_error_options.silenced(e):
                 # Return early if the event is silenced
                 return
 

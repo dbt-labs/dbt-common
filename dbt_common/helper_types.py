@@ -64,7 +64,8 @@ class IncludeExclude(dbtClassMixin):
         pass
 
 
-class WarnErrorOptions(IncludeExclude):
+@dataclass
+class WarnErrorOptions(dbtClassMixin):
     """
     This class is used to configure the behavior of the warn_error feature (now part of fire_event).
 
@@ -79,7 +80,12 @@ class WarnErrorOptions(IncludeExclude):
     3. (1) > (2)
     """
 
+    INCLUDE_ALL = ("all", "*")
     DEPRECATIONS = "Deprecations"
+
+    include: Union[str, List[str]]
+    exclude: List[str]
+    silence: List[str]
 
     def __init__(
         self,
@@ -88,10 +94,15 @@ class WarnErrorOptions(IncludeExclude):
         valid_error_names: Optional[Set[str]] = None,
         silence: Optional[List[str]] = None,
     ):
-        self.silence = silence or []
         self._valid_error_names: Set[str] = valid_error_names or set()
         self._valid_error_names.add(self.DEPRECATIONS)
-        super().__init__(include=include, exclude=(exclude or []))
+
+        self.include = include
+        self.exclude = exclude or []
+        self.silence = silence or []
+
+        # since we're overriding the dataclass auto __init__, we need to call __post_init__ manually
+        self.__post_init__()
 
     def __post_init__(self):
         if isinstance(self.include, str) and self.include not in self.INCLUDE_ALL:
@@ -119,6 +130,11 @@ class WarnErrorOptions(IncludeExclude):
 
         if isinstance(self.silence, list):
             self._validate_items(self.silence)
+
+    def _validate_items(self, items: List[str]):
+        for item in items:
+            if item not in self._valid_error_names:
+                raise ValidationError(f"{item} is not a valid dbt error name.")
 
     def _includes_all(self) -> bool:
         """Is `*` or `all` set as include?"""
@@ -220,11 +236,6 @@ class WarnErrorOptions(IncludeExclude):
             return True
         else:
             return False
-
-    def _validate_items(self, items: List[str]):
-        for item in items:
-            if item not in self._valid_error_names:
-                raise ValidationError(f"{item} is not a valid dbt error name.")
 
 
 FQNPath = Tuple[str, ...]

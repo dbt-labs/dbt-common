@@ -162,3 +162,18 @@ class TestWarnErrorOptions:
         assert my_options.warn == warn
         assert my_options.exclude == warn  # deprecated but accessible
         assert my_options.includes("BehaviorChangeEvent")  # deprecated but accessible
+
+    def test_serialization(self) -> None:
+        my_options = WarnErrorOptions(
+            include="*",
+            exclude=["ItemB"],
+            silence=["BehaviorChangeEvent"],
+            valid_error_names={"BehaviorChangeEvent", "ItemB"},
+        )
+
+        dictified = my_options.to_dict()
+        assert "error" in dictified
+        assert "warn" in dictified
+        assert "silence" in dictified
+        assert "include" not in dictified
+        assert "exclude" not in dictified

@@ -150,6 +150,10 @@ class TestWarnErrorOptions:
         )
         assert my_options.silenced(BehaviorChangeEvent()) == expected_silence
 
+    def test_dictification(self) -> None:
+        my_options = WarnErrorOptions(include=[], exclude=[])
+        assert my_options.to_dict() == {"include": [], "exclude": []}
+
 
 class TestWarnErrorOptionsV2:
     def test_init_invalid_error(self) -> None:
@@ -268,3 +272,7 @@ class TestWarnErrorOptionsV2:
             valid_error_names={"BehaviorChangeEvent", "ItemB"},
         )
         assert my_options.silenced(BehaviorChangeEvent()) == expected_silence
+
+    def test_dictification(self) -> None:
+        my_options = WarnErrorOptionsV2(error=[], warn=[], silence=[])
+        assert my_options.to_dict() == {"error": [], "warn": [], "silence": []}

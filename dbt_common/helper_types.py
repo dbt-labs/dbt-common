@@ -133,9 +133,11 @@ class WarnErrorOptionsV2(dbtClassMixin):
         self._valid_error_names: Set[str] = valid_error_names or set()
         self._valid_error_names.add(self.DEPRECATIONS)
 
-        self.error = error or []
-        self.warn = warn or []
-        self.silence = silence or []
+        # We can't do `= error or []` because if someone passes in an empty list, and latter appends to that list
+        # they would expect references to the original list to be updated.
+        self.error = error if error is not None else []
+        self.warn = warn if warn is not None else []
+        self.silence = silence if silence is not None else []
 
         # since we're overriding the dataclass auto __init__, we need to call __post_init__ manually
         self.__post_init__()

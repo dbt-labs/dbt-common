@@ -35,51 +35,51 @@ class TestIncludeExclude:
 class TestWarnErrorOptions:
     def test_init_invalid_error(self) -> None:
         with pytest.raises(ValidationError):
-            WarnErrorOptions(include=["InvalidError"], valid_error_names=set(["ValidError"]))
+            WarnErrorOptions(error=["InvalidError"], valid_error_names=set(["ValidError"]))
 
         with pytest.raises(ValidationError):
             WarnErrorOptions(
-                include="*", exclude=["InvalidError"], valid_error_names=set(["ValidError"])
+                error="*", warn=["InvalidError"], valid_error_names=set(["ValidError"])
             )
 
     def test_init_invalid_error_default_valid_error_names(self) -> None:
         with pytest.raises(ValidationError):
-            WarnErrorOptions(include=["InvalidError"])
+            WarnErrorOptions(error=["InvalidError"])
 
         with pytest.raises(ValidationError):
-            WarnErrorOptions(include="*", exclude=["InvalidError"])
+            WarnErrorOptions(error="*", warn=["InvalidError"])
 
     def test_init_valid_error(self) -> None:
         warn_error_options = WarnErrorOptions(
-            include=["ValidError"], valid_error_names=set(["ValidError"])
+            error=["ValidError"], valid_error_names=set(["ValidError"])
         )
-        assert warn_error_options.include == ["ValidError"]
-        assert warn_error_options.exclude == []
+        assert warn_error_options.error == ["ValidError"]
+        assert warn_error_options.warn == []
 
         warn_error_options = WarnErrorOptions(
-            include="*", exclude=["ValidError"], valid_error_names=set(["ValidError"])
+            error="*", warn=["ValidError"], valid_error_names=set(["ValidError"])
         )
-        assert warn_error_options.include == "*"
-        assert warn_error_options.exclude == ["ValidError"]
+        assert warn_error_options.error == "*"
+        assert warn_error_options.warn == ["ValidError"]
 
     def test_init_default_silence(self) -> None:
-        my_options = WarnErrorOptions(include="*")
+        my_options = WarnErrorOptions(error="*")
         assert my_options.silence == []
 
     def test_init_invalid_silence_event(self) -> None:
         with pytest.raises(ValidationError):
-            WarnErrorOptions(include="*", silence=["InvalidError"])
+            WarnErrorOptions(error="*", silence=["InvalidError"])
 
     def test_init_valid_silence_event(self) -> None:
         all_events = ["MySilencedEvent"]
         my_options = WarnErrorOptions(
-            include="*", silence=all_events, valid_error_names=set(all_events)
+            error="*", silence=all_events, valid_error_names=set(all_events)
         )
         assert my_options.silence == all_events
 
     # NOTE: BehaviorChangeEvent is a deprecation event
     @pytest.mark.parametrize(
-        "include,exclude,silence,expected_includes",
+        "error,warn,silence,expected_errors",
         [
             ([], [], [], False),
             (["BehaviorChangeEvent"], [], ["BehaviorChangeEvent"], False),
@@ -99,25 +99,25 @@ class TestWarnErrorOptions:
             (["Deprecations"], ["Deprecations"], ["Deprecations"], False),
         ],
     )
-    def test_includes(
+    def test_errors(
         self,
-        include: Union[str, List[str]],
-        exclude: List[str],
+        error: Union[str, List[str]],
+        warn: List[str],
         silence: List[str],
-        expected_includes: bool,
+        expected_errors: bool,
     ) -> None:
-        include_exclude = WarnErrorOptions(
-            include=include,
-            exclude=exclude,
+        error_warn = WarnErrorOptions(
+            error=error,
+            warn=warn,
             silence=silence,
             valid_error_names={"BehaviorChangeEvent", "ItemB"},
         )
 
-        assert include_exclude.includes(BehaviorChangeEvent()) == expected_includes
+        assert error_warn.errors(BehaviorChangeEvent()) == expected_errors
 
     # NOTE: BehaviorChangeEvent is a deprecation event
     @pytest.mark.parametrize(
-        "include,exclude,silence,expected_silence",
+        "error,warn,silence,expected_silence",
         [
             (["BehaviorChangeEvent"], [], ["BehaviorChangeEvent"], True),
             ("all", ["BehaviorChangeEvent"], ["BehaviorChangeEvent"], True),
@@ -137,14 +137,14 @@ class TestWarnErrorOptions:
     )
     def test_silenced(
         self,
-        include: Union[str, List[str]],
-        exclude: List[str],
+        error: Union[str, List[str]],
+        warn: List[str],
         silence: List[str],
         expected_silence: bool,
     ) -> None:
         my_options = WarnErrorOptions(
-            include=include,
-            exclude=exclude,
+            error=error,
+            warn=warn,
             silence=silence,
             valid_error_names={"BehaviorChangeEvent", "ItemB"},
         )

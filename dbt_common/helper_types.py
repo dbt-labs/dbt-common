@@ -65,7 +65,7 @@ class IncludeExclude(dbtClassMixin):
 
 
 @dataclass
-class WarnErrorOptions(dbtClassMixin):
+class WarnErrorOptionsV2(dbtClassMixin):
     """
     This class is used to configure the behavior of the warn_error feature (now part of fire_event).
 
@@ -89,30 +89,16 @@ class WarnErrorOptions(dbtClassMixin):
 
     def __init__(
         self,
-        include: Optional[Union[str, List[str]]] = None,  # deprecated for error
-        exclude: Optional[List[str]] = None,  # deprecated for warn
-        valid_error_names: Optional[Set[str]] = None,
-        silence: Optional[List[str]] = None,
         error: Optional[Union[str, List[str]]] = None,
         warn: Optional[List[str]] = None,
+        silence: Optional[List[str]] = None,
+        valid_error_names: Optional[Set[str]] = None,
     ):
         self._valid_error_names: Set[str] = valid_error_names or set()
         self._valid_error_names.add(self.DEPRECATIONS)
 
-        if include and error:
-            raise RuntimeError(
-                "can specify either error or include, but not both, when instantiating WarnErrorOptions"
-            )
-        else:
-            self.error = error or include or []
-
-        if warn and exclude:
-            raise RuntimeError(
-                "can specify either warn or exclude, but not both, when instantiating WarnErrorOptions"
-            )
-        else:
-            self.warn = warn or exclude or []
-
+        self.error = error or []
+        self.warn = warn or []
         self.silence = silence or []
 
         # since we're overriding the dataclass auto __init__, we need to call __post_init__ manually
@@ -247,21 +233,6 @@ class WarnErrorOptions(dbtClassMixin):
             return True
         else:
             return False
-
-    @property
-    def include(self) -> Union[str, List[str]]:
-        """Deprecated, use `error` instead."""
-        return self.error
-
-    @property
-    def exclude(self) -> List[str]:
-        """Deprecated, use `warn` instead."""
-        return self.warn
-
-    @property
-    def INCLUDE_ALL(self) -> Tuple[str, str]:
-        """Deprecated, use `ERROR_ALL` instead."""
-        return self.ERROR_ALL
 
 
 FQNPath = Tuple[str, ...]

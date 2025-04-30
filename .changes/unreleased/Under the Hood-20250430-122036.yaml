@@ -1,0 +1,6 @@
+kind: Under the Hood
+body: Split `WarnErrorOptions` from `IncludeExclude`
+time: 2025-04-30T12:20:36.000652-05:00
+custom:
+  Author: QMalcolm
+  Issue: "278"

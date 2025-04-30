@@ -258,6 +258,11 @@ class WarnErrorOptions(dbtClassMixin):
         """Deprecated, use `warn` instead."""
         return self.warn
 
+    @property
+    def INCLUDE_ALL(self) -> Tuple[str, str]:
+        """Deprecated, use `ERROR_ALL` instead."""
+        return self.ERROR_ALL
+
 
 FQNPath = Tuple[str, ...]
 PathSet = AbstractSet[FQNPath]

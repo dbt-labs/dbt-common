@@ -149,16 +149,3 @@ class TestWarnErrorOptions:
             valid_error_names={"BehaviorChangeEvent", "ItemB"},
         )
         assert my_options.silenced(BehaviorChangeEvent()) == expected_silence
-
-    def test_deprecated_functionality(self) -> None:
-        errors = "all"
-        warn = ["ItemB"]
-        my_options = WarnErrorOptions(
-            include=errors, exclude=warn, valid_error_names={"BehaviorChangeEvent", "ItemB"}
-        )
-
-        assert my_options.error == errors
-        assert my_options.include == errors  # deprecated but accessible
-        assert my_options.warn == warn
-        assert my_options.exclude == warn  # deprecated but accessible
-        assert my_options.includes("BehaviorChangeEvent")  # deprecated but accessible

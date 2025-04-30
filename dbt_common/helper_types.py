@@ -64,6 +64,42 @@ class IncludeExclude(dbtClassMixin):
         pass
 
 
+class WarnErrorOptions(IncludeExclude):
+    """Deprecated, use WarnErrorOptionsV2 instead."""
+
+    DEPRECATIONS = "Deprecations"
+
+    def __init__(
+        self,
+        include: Union[str, List[str]],
+        exclude: Optional[List[str]] = None,
+        valid_error_names: Optional[Set[str]] = None,
+        silence: Optional[List[str]] = None,
+    ):
+        self.silence = silence or []
+        self._valid_error_names: Set[str] = valid_error_names or set()
+        self._valid_error_names.add(self.DEPRECATIONS)
+        super().__init__(include=include, exclude=(exclude or []))
+
+        self._warn_erro_options_v2 = WarnErrorOptionsV2(
+            error=self.include,
+            warn=self.exclude,
+            silence=self.silence,
+            valid_error_names=self._valid_error_names,
+        )
+
+    def __post_init__(self):
+        # We don't want IncludeExclude's post_init to run, so we override it.
+        # We are fine with just having the WarnErrorOptionsV2's post_init run on instantiation.
+        pass
+
+    def includes(self, item_name: Union[str, BaseEvent]) -> bool:
+        return self._warn_erro_options_v2.includes(item_name)
+
+    def silenced(self, item_name: Union[str, BaseEvent]) -> bool:
+        return self._warn_erro_options_v2.silenced(item_name)
+
+
 @dataclass
 class WarnErrorOptionsV2(dbtClassMixin):
     """

@@ -76,7 +76,7 @@ class TestFireEvent:
 class TestDeprecatedWarnOrError:
     def test_fires_error(self, valid_error_names: Set[str]) -> None:
         get_event_manager().warn_error_options = WarnErrorOptions(
-            error="*", valid_error_names=valid_error_names
+            include="*", valid_error_names=valid_error_names
         )
         with pytest.raises(EventCompilationError):
             functions.warn_or_error(Note(msg="hi"))
@@ -88,7 +88,7 @@ class TestDeprecatedWarnOrError:
         set_event_manager_with_catcher: None,
     ) -> None:
         get_event_manager().warn_error_options = WarnErrorOptions(
-            error="*", warn=list(valid_error_names), valid_error_names=valid_error_names
+            include="*", exclude=list(valid_error_names), valid_error_names=valid_error_names
         )
         functions.warn_or_error(Note(msg="hi"))
         assert len(event_catcher.caught_events) == 1
@@ -101,7 +101,7 @@ class TestDeprecatedWarnOrError:
         set_event_manager_with_catcher: None,
     ) -> None:
         get_event_manager().warn_error_options = WarnErrorOptions(
-            error="*", silence=list(valid_error_names), valid_error_names=valid_error_names
+            include="*", silence=list(valid_error_names), valid_error_names=valid_error_names
         )
         functions.warn_or_error(Note(msg="hi"))
         assert len(event_catcher.caught_events) == 0

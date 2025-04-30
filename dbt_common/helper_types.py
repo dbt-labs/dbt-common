@@ -96,6 +96,10 @@ class WarnErrorOptions(IncludeExclude):
     def includes(self, item_name: Union[str, BaseEvent]) -> bool:
         return self._warn_erro_options_v2.includes(item_name)
 
+    def errors(self, item_name: Union[str, BaseEvent]) -> bool:
+        """Exists for forward compatibility with WarnErrorOptionsV2."""
+        return self._warn_erro_options_v2.errors(item_name)
+
     def silenced(self, item_name: Union[str, BaseEvent]) -> bool:
         return self._warn_erro_options_v2.silenced(item_name)
 

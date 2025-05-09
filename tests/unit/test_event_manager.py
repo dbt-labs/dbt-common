@@ -1,5 +1,6 @@
 from dbt_common.events.event_manager import EventManager
 from dbt_common.events.types import BehaviorChangeEvent
+from dbt_common.helper_types import WarnErrorOptionsV2
 from tests.unit.utils import EventCatcher
 
 
@@ -10,6 +11,10 @@ class TestEventManager:
 
         event_manager.add_callback(EventCatcher().catch)
         assert len(event_manager.callbacks) == 1
+
+    def test_default_warn_error_options(self) -> None:
+        event_manager = EventManager()
+        assert event_manager.warn_error_options.to_dict() == WarnErrorOptionsV2().to_dict()
 
 
 class TestEventManagerSilencedDeprecation:

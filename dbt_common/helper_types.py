@@ -81,7 +81,7 @@ class WarnErrorOptions(IncludeExclude):
         self._valid_error_names.add(self.DEPRECATIONS)
         super().__init__(include=include, exclude=(exclude or []))
 
-        self._warn_erro_options_v2 = WarnErrorOptionsV2(
+        self._warn_error_options_v2 = WarnErrorOptionsV2(
             error=self.include,
             warn=self.exclude,
             silence=self.silence,
@@ -94,14 +94,14 @@ class WarnErrorOptions(IncludeExclude):
         pass
 
     def includes(self, item_name: Union[str, BaseEvent]) -> bool:
-        return self._warn_erro_options_v2.includes(item_name)
+        return self._warn_error_options_v2.includes(item_name)
 
     def errors(self, item_name: Union[str, BaseEvent]) -> bool:
         """Exists for forward compatibility with WarnErrorOptionsV2."""
-        return self._warn_erro_options_v2.errors(item_name)
+        return self._warn_error_options_v2.errors(item_name)
 
     def silenced(self, item_name: Union[str, BaseEvent]) -> bool:
-        return self._warn_erro_options_v2.silenced(item_name)
+        return self._warn_error_options_v2.silenced(item_name)
 
 
 @dataclass

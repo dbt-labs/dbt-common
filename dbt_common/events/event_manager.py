@@ -33,7 +33,7 @@ class EventManager:
         if self._warn_error_options is None:
             from dbt_common.events.functions import WARN_ERROR_OPTIONS
 
-            return WARN_ERROR_OPTIONS._warn_erro_options_v2
+            return WARN_ERROR_OPTIONS._warn_error_options_v2
 
         return self._warn_error_options
 

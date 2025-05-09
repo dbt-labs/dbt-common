@@ -1,7 +1,7 @@
 from os import getenv as os_getenv
 import sys
 import textwrap
-from typing import Dict
+from typing import Dict, Optional
 
 import colorama
 
@@ -78,13 +78,19 @@ def line_wrap_message(msg: str, subtract: int = 0, dedent: bool = True, prefix: 
     return "\n".join(textwrap.fill(chunk, width=width, break_on_hyphens=False) for chunk in chunks)
 
 
-def warning_tag(msg: str) -> str:
-    return f'[{yellow("WARNING")}]: {msg}'
+def warning_tag(msg: str, event_name: Optional[str] = None) -> str:
+    tag = f'[{yellow("WARNING")}]'
+    if event_name:
+        tag += f"[{event_name}]"
+    return f"{tag}: {msg}"
 
 
-def deprecation_tag(msg: str) -> str:
-    return warning_tag(f"Deprecated functionality\n\n{msg}")
+def deprecation_tag(msg: str, event_name: Optional[str] = None) -> str:
+    return warning_tag(f"Deprecated functionality\n\n{msg}", event_name)
 
 
-def error_tag(msg: str) -> str:
-    return f'[{red("ERROR")}]: {msg}'
+def error_tag(msg: str, event_name: Optional[str] = None) -> str:
+    tag = f'[{red("ERROR")}]'
+    if event_name:
+        tag += f"[{event_name}]"
+    return f"{tag}: {msg}"

@@ -1,11 +1,11 @@
 import os
 import traceback
-from typing import Any, List, Optional, Protocol, Tuple
+from typing import Any, List, Optional, Protocol, Tuple, Union
 
 from dbt_common.events.base_types import BaseEvent, EventLevel, msg_from_base_event, TCallback
 from dbt_common.events.logger import LoggerConfig, _Logger, _TextLogger, _JsonLogger, LineFormat
 from dbt_common.exceptions.events import EventCompilationError
-from dbt_common.helper_types import WarnErrorOptions
+from dbt_common.helper_types import WarnErrorOptions, WarnErrorOptionsV2
 
 
 class EventManager:
@@ -13,7 +13,7 @@ class EventManager:
         self.loggers: List[_Logger] = []
         self.callbacks: List[TCallback] = []
         self._warn_error: Optional[bool] = None
-        self._warn_error_options: Optional[WarnErrorOptions] = None
+        self._warn_error_options: Optional[Union[WarnErrorOptions, WarnErrorOptionsV2]] = None
         self.require_warn_or_error_handling: bool = False
 
     @property
@@ -29,15 +29,18 @@ class EventManager:
         self._warn_error = warn_error
 
     @property
-    def warn_error_options(self) -> WarnErrorOptions:
+    def warn_error_options(self) -> Union[WarnErrorOptions, WarnErrorOptionsV2]:
         if self._warn_error_options is None:
             from dbt_common.events.functions import WARN_ERROR_OPTIONS
 
-            return WARN_ERROR_OPTIONS
+            return WARN_ERROR_OPTIONS._warn_error_options_v2
+
         return self._warn_error_options
 
     @warn_error_options.setter
-    def warn_error_options(self, warn_error_options: WarnErrorOptions) -> None:
+    def warn_error_options(
+        self, warn_error_options: Union[WarnErrorOptions, WarnErrorOptionsV2]
+    ) -> None:
         self._warn_error_options = warn_error_options
 
     def fire_event(
@@ -52,7 +55,7 @@ class EventManager:
         if force_warn_or_error_handling or (
             self.require_warn_or_error_handling and msg.info.level == "warn"
         ):
-            if self.warn_error or self.warn_error_options.includes(e):
+            if self.warn_error or self.warn_error_options.errors(e):
                 # This has the potential to create an infinite loop if the handling of the raised
                 # EventCompilationError fires an event as a warning instead of an error.
                 raise EventCompilationError(e.message(), node)
@@ -95,7 +98,7 @@ class IEventManager(Protocol):
     callbacks: List[TCallback]
     loggers: List[_Logger]
     warn_error: bool
-    warn_error_options: WarnErrorOptions
+    warn_error_options: Union[WarnErrorOptions, WarnErrorOptionsV2]
     require_warn_or_error_handling: bool
 
     def fire_event(

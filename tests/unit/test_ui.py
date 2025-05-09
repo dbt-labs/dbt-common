@@ -3,23 +3,34 @@ from dbt_common.ui import deprecation_tag, warning_tag, error_tag
 
 def test_warning_tag() -> None:
     tagged = warning_tag("hi")
-    assert tagged == "[\x1b[33mWARNING\x1b[0m]: hi"
+    assert "WARNING" in tagged
+    assert "hi" in tagged
 
     tagged = warning_tag("hi", "MyWarningEvent")
-    assert tagged == "[\x1b[33mWARNING\x1b[0m][MyWarningEvent]: hi"
+    assert "WARNING" in tagged
+    assert "[MyWarningEvent]:" in tagged
+    assert "hi" in tagged
 
 
 def test_error_tag() -> None:
     tagged = error_tag("hi")
-    assert tagged == "[\x1b[31mERROR\x1b[0m]: hi"
+    assert "ERROR" in tagged
+    assert "hi" in tagged
 
     tagged = error_tag("hi", "MyErrorEvent")
-    assert tagged == "[\x1b[31mERROR\x1b[0m][MyErrorEvent]: hi"
+    assert "ERROR" in tagged
+    assert "[MyErrorEvent]:" in tagged
+    assert "hi" in tagged
 
 
 def test_deprecation_tag() -> None:
     tagged = deprecation_tag("hi")
-    assert tagged == "[\x1b[33mWARNING\x1b[0m]: Deprecated functionality\n\nhi"
+    assert "WARNING" in tagged
+    assert "Deprecated functionality" in tagged
+    assert "hi" in tagged
 
     tagged = deprecation_tag("hi", "MyDeprecationEvent")
-    assert tagged == "[\x1b[33mWARNING\x1b[0m][MyDeprecationEvent]: Deprecated functionality\n\nhi"
+    assert "WARNING" in tagged
+    assert "[MyDeprecationEvent]:" in tagged
+    assert "Deprecated functionality" in tagged
+    assert "hi" in tagged

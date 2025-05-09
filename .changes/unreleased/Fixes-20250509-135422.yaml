@@ -1,0 +1,7 @@
+kind: Fixes
+body: Ensure event manager doesn't break if `WARN_ERROR_OPTIONS` global is overwritten
+  with `WarnErrorOptionsV2` object
+time: 2025-05-09T13:54:22.789975-05:00
+custom:
+  Author: QMalcolm
+  Issue: "283"

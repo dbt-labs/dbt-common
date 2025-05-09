@@ -177,6 +177,13 @@ class WarnErrorOptionsV2(dbtClassMixin):
             if item not in self._valid_error_names:
                 raise ValidationError(f"{item} is not a valid dbt error name.")
 
+    @property
+    def _warn_error_options_v2(self) -> WarnErrorOptionsV2:
+        # This is necessary because in core we directly set the WARN_ERROR_OPTIONS global variable
+        # without this we'd need to do isinstance checks in `EventManager.warn_error_options`, which
+        # would be costly as it gets called every time an event is fired.
+        return self
+
     def _error_all(self) -> bool:
         """Is `*` or `all` set as error?"""
         return self.error in self.ERROR_ALL

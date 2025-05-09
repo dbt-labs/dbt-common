@@ -30,12 +30,15 @@ class EventManager:
 
     @property
     def warn_error_options(self) -> Union[WarnErrorOptions, WarnErrorOptionsV2]:
+        # Technically this always returns a WarnErrorOptionsV2, but to remain backwards compatible
+        # with the protocol, we need to type the function as being able to return either.
+
         if self._warn_error_options is None:
             from dbt_common.events.functions import WARN_ERROR_OPTIONS
 
             return WARN_ERROR_OPTIONS._warn_error_options_v2
 
-        return self._warn_error_options
+        return self._warn_error_options._warn_error_options_v2
 
     @warn_error_options.setter
     def warn_error_options(

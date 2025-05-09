@@ -79,10 +79,10 @@ def line_wrap_message(msg: str, subtract: int = 0, dedent: bool = True, prefix: 
 
 
 def warning_tag(msg: str, event_name: Optional[str] = None) -> str:
+    tag = f'[{yellow("WARNING")}]'
     if event_name:
-        return f'[{yellow("WARNING")}][{event_name}]: {msg}'
-    else:
-        return f'[{yellow("WARNING")}]: {msg}'
+        tag += f"[{event_name}]"
+    return f"{tag}: {msg}"
 
 
 def deprecation_tag(msg: str, event_name: Optional[str] = None) -> str:
@@ -90,7 +90,7 @@ def deprecation_tag(msg: str, event_name: Optional[str] = None) -> str:
 
 
 def error_tag(msg: str, event_name: Optional[str] = None) -> str:
+    tag = f'[{red("ERROR")}]'
     if event_name:
-        return f'[{red("ERROR")}][{event_name}]: {msg}'
-    else:
-        return f'[{red("ERROR")}]: {msg}'
+        tag += f"[{event_name}]"
+    return f"{tag}: {msg}"

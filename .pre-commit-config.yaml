@@ -1,7 +1,5 @@
 # Configuration for pre-commit hooks (see https://pre-commit.com/).
 
-exclude: ^(dbt_common/events/types_pb2.py)
-
 # Force all unspecified python hooks to run python 3.8
 default_language_version:
   python: python3

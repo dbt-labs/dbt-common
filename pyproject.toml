@@ -30,6 +30,7 @@ classifiers = [
 dependencies = [
   "agate>=1.7.0,<1.10",
   "colorama>=0.3.9,<0.5",
+  "dbt-protos>=1.0.291,<2.0.0",
   "deepdiff>=7.0,<8.0",
   "isodate>=0.6,<0.7",
   "jsonschema>=4.0,<5.0",
@@ -115,7 +116,6 @@ flake8 = "python -m flake8 ."
 mypy = "python -m mypy ."
 
 [tool.black]
-extend-exclude = "dbt_common/events/types_pb2.py"
 line-length = 99
 target-version = ['py38']
 
@@ -124,7 +124,6 @@ max-line-length = 99
 select = ["E", "W", "F"]
 ignore = ["E203", "E501", "E741", "W503", "W504"]
 exclude = [
-    "dbt_common/events/types_pb2.py",
     "venv",
     ".venv",
     "env*",
@@ -143,7 +142,6 @@ disallow_untyped_defs = false # TODO: add type annotations everywhere
 warn_redundant_casts = true
 ignore_missing_imports = true
 exclude = [
-    "dbt_common/events/types_pb2.py",
     "env*",
     "third-party-stubs/*",
 ]

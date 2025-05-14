@@ -3,7 +3,7 @@ import threading
 from enum import Enum
 from typing import Callable, Optional, Protocol
 
-from dbtlabs.proto.public.v1.fields import common_types_pb2 as types_pb2
+from dbt_common.events import types_pb2
 from google.protobuf.json_format import MessageToDict, MessageToJson, ParseDict
 from google.protobuf.message import Message
 

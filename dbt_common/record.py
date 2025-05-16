@@ -603,7 +603,9 @@ def supports_replay(cls):
                 # Handle classmethod overrides. This logic goes above and beyond
                 # to handle the situation where the method is a classmethod, but
                 # the submethod is not (and therefore lacks a __func__ attribute).
-                override_as_classmethod = _is_classmethod(method) and hasattr(sub_method, "__func__")
+                override_as_classmethod = _is_classmethod(method) and hasattr(
+                    sub_method, "__func__"
+                )
 
                 if not sub_method_metadata:
                     recorded_sub_method = _record_function_inner(

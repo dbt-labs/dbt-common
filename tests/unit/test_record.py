@@ -532,4 +532,3 @@ def test_record_classmethod_override_by_non_classmethod() -> None:
     assert recorder._records_by_type["TestAutoRecord"][1].params.a == 2
     assert recorder._records_by_type["TestAutoRecord"][1].result.return_val == "222"
     assert recorder._records_by_type["TestAutoRecord"][1].seq == a + 1
-

@@ -432,24 +432,24 @@ def test_record_override() -> None:
         static_val = "1"
 
         @auto_record_function("TestAuto")
-        def test_func(cls, a: int) -> str:
-            return "1" + cls.static_val + str(a)
+        def test_func(self, a: int) -> str:
+            return "1" + self.static_val + str(a)
 
     class RecordableSubclass(Recordable):
         # This sub-class validates that recording works when there was
         # an override
         static_val = "2"
 
-        def test_func(cls, a: int) -> str:
-            return "2" + cls.static_val + str(a)
+        def test_func(self, a: int) -> str:
+            return "2" + self.static_val + str(a)
 
     class RecordableSubSubclass(RecordableSubclass):
         # This sub-class validates that recording works when there was
         # a second override
         static_val = "3"
 
-        def test_func(cls, a: int) -> str:
-            return "3" + cls.static_val + str(a)
+        def test_func(self, a: int) -> str:
+            return "3" + self.static_val + str(a)
 
     class RecordableSubclassNoDef(Recordable):
         # This sub-class validates that recording works when there was
@@ -465,8 +465,8 @@ def test_record_override() -> None:
         # Mark this sub-sub-class with a unique value of static_val
         static_val = "5"
 
-        def test_func(cls, a: int) -> str:
-            return "5" + cls.static_val + str(a)
+        def test_func(self, a: int) -> str:
+            return "5" + self.static_val + str(a)
 
     Recordable().test_func(1)
     RecordableSubclass().test_func(2)
@@ -491,3 +491,44 @@ def test_record_override() -> None:
     assert recorder._records_by_type["TestAutoRecord"][4].params.a == 5
     assert recorder._records_by_type["TestAutoRecord"][4].result.return_val == "555"
     assert recorder._records_by_type["TestAutoRecord"][4].seq == a + 4
+
+
+def test_record_classmethod_override_by_non_classmethod() -> None:
+    # Validate that when a classmethod is overriden by an instance method, recording
+    # still works as best as can be expected.
+
+    os.environ["DBT_RECORDER_MODE"] = "Record"
+    recorder = Recorder(RecorderMode.RECORD, None, in_memory=True)
+    set_invocation_context({})
+    get_invocation_context().recorder = recorder
+
+    @supports_replay
+    class Recordable:
+        # Static class variable facilitates checking that the recorded function
+        # is called with the correct value of cls.
+        static_val = "1"
+
+        @classmethod
+        @auto_record_function("TestAuto")
+        def test_func(cls, a: int) -> str:
+            return "1" + cls.static_val + str(a)
+
+    class RecordableSubclass(Recordable):
+        # This sub-class validates that recording works when there was
+        # an override
+        static_val = "2"
+
+        def test_func(cls, a: int) -> str:
+            return "2" + cls.static_val + str(a)
+
+    Recordable.test_func(1)
+    RecordableSubclass().test_func(2)
+
+    assert len(recorder._records_by_type["TestAutoRecord"]) == 2
+
+    assert recorder._records_by_type["TestAutoRecord"][0].params.a == 1
+    assert recorder._records_by_type["TestAutoRecord"][0].result.return_val == "111"
+    a = recorder._records_by_type["TestAutoRecord"][0].seq
+    assert recorder._records_by_type["TestAutoRecord"][1].params.a == 2
+    assert recorder._records_by_type["TestAutoRecord"][1].result.return_val == "222"
+    assert recorder._records_by_type["TestAutoRecord"][1].seq == a + 1

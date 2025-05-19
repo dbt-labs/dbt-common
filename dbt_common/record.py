@@ -600,6 +600,13 @@ def supports_replay(cls):
                 sub_method = getattr(sub_cls, method_name, None)
                 sub_method_metadata = getattr(sub_method, "_record_metadata", None)
 
+                # Handle classmethod overrides. This logic goes above and beyond
+                # to handle the situation where the method is a classmethod, but
+                # the submethod is not (and therefore lacks a __func__ attribute).
+                override_as_classmethod = _is_classmethod(method) and hasattr(
+                    sub_method, "__func__"
+                )
+
                 if not sub_method_metadata:
                     recorded_sub_method = _record_function_inner(
                         metadata["record_type"],
@@ -609,12 +616,12 @@ def supports_replay(cls):
                         metadata["group"],
                         metadata["index_on_thread_id"],
                         sub_method.__func__
-                        if _is_classmethod(method)
-                        else sub_method,  # unwrap if classmethod
+                        if override_as_classmethod
+                        else sub_method,  # Unwrap if method and submethod are both classmethods
                     )
 
-                    if _is_classmethod(method):
-                        # rewrap if submethod
+                    if _is_classmethod(method) and hasattr(sub_method, "__func__"):
+                        # Rewrap if method and submethod are both classmethods
                         recorded_sub_method = classmethod(recorded_sub_method)
 
                     setattr(

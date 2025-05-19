@@ -275,4 +275,3 @@
 
 ### Contributors
 - [@truls-p](https://github.com/truls-p) ([#6073](https://github.com/dbt-labs/dbt-common/issues/6073))
-

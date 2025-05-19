@@ -15,6 +15,7 @@
 ### Under the Hood
 
 - Centralize event definitions for dbt-common, dbt-adapters, and dbt-core into a central repository. This major re-organization of events requires a major version release. ([#285](https://github.com/dbt-labs/dbt-common/issues/285))
+
 ## dbt-common 1.24.0 - May 09, 2025
 
 ### Features
@@ -274,3 +275,4 @@
 
 ### Contributors
 - [@truls-p](https://github.com/truls-p) ([#6073](https://github.com/dbt-labs/dbt-common/issues/6073))
+

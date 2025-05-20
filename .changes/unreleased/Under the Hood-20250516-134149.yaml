@@ -1,6 +1,0 @@
-kind: Under the Hood
-body: Support recording classmethods that are overriden by instance methods
-time: 2025-05-16T13:41:49.984342-04:00
-custom:
-    Author: peterallenwebb
-    Issue: "287"

@@ -1,3 +1,4 @@
+import gzip
 import requests
 import tarfile
 import unittest
@@ -31,6 +32,11 @@ class TestCommonDbtUtils(unittest.TestCase):
     def test_connection_exception_retry_success_failed_eofexception(self) -> None:
         Counter._reset()
         connection_exception_retry(lambda: Counter._add_with_eof_exception(), 5)
+        self.assertEqual(2, counter)  # 2 = original attempt returned EOFError, plus 1 retry
+
+    def test_connection_exception_retry_success_failed_badgzipfileexception(self) -> None:
+        Counter._reset()
+        connection_exception_retry(lambda: Counter._add_with_bad_gzip_file_exception(), 5)
         self.assertEqual(2, counter)  # 2 = original attempt returned EOFError, plus 1 retry
 
 
@@ -72,6 +78,13 @@ class Counter:
         counter += 1
         if counter < 2:
             raise EOFError
+
+    @classmethod
+    def _add_with_bad_gzip_file_exception(cls) -> None:
+        global counter
+        counter += 1
+        if counter < 2:
+            raise gzip.BadGzipFile
 
     @classmethod
     def _reset(cls) -> None:

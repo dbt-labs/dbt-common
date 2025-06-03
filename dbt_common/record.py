@@ -206,7 +206,8 @@ class Recorder:
                 dct = Recorder._get_tagged_dict(record, rec_cls_name)
                 json.dump(dct, self._recording_file)
                 self._record_added = True
-            except Exception:
+            except Exception as e:
+                raise Exception(f"Error recording {rec_cls_name}: {e}")
                 json.dump(
                     {"type": "RecordingError", "record_type": rec_cls_name}, self._recording_file
                 )

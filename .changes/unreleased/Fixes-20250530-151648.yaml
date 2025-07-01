@@ -1,0 +1,6 @@
+kind: Fixes
+body: Capturing BadGzipFile exception in connection_exception_retry
+time: 2025-05-30T15:16:48.995145-07:00
+custom:
+    Author: leaomatheus
+    Issue: "290"

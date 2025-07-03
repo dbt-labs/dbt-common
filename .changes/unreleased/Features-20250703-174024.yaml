@@ -1,0 +1,6 @@
+kind: Features
+body: Add new `DBT_ENGINE` env var prefix to known constants module
+time: 2025-07-03T17:40:24.66261-05:00
+custom:
+  Author: QMalcolm
+  Issue: "294"

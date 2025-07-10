@@ -43,6 +43,7 @@ class InvocationContext:
         self._env_secrets: Optional[List[str]] = None
         self._env_private = env_private
         self.recorder: Optional[Recorder] = None
+        self._adapter_type: Optional[str] = None
 
         # If set to True later, this flag will prevent dbt from creating a new
         # invocation context for every invocation, which is useful for testing
@@ -66,6 +67,14 @@ class InvocationContext:
                 v for k, v in self.env.items() if k.startswith(SECRET_ENV_PREFIX) and v.strip()
             ]
         return self._env_secrets
+
+    @property
+    def adapter_type(self) -> Optional[str]:
+        return self._adapter_type
+
+    @adapter_type.setter
+    def adapter_type(self, adapter_type: str) -> None:
+        self._adapter_type = adapter_type
 
 
 _INVOCATION_CONTEXT_VAR: ContextVar[InvocationContext] = ContextVar("DBT_INVOCATION_CONTEXT_VAR")

@@ -38,7 +38,7 @@ from dbt_common.ui import warning_tag
 
 class BehaviorChangeEvent(WarnLevel):
     def code(self) -> str:
-        return "D018"
+        return "D000"
 
     def message(self) -> str:
         return warning_tag(

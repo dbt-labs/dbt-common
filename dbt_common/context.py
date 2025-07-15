@@ -1,6 +1,6 @@
 import os
 from contextvars import ContextVar, copy_context
-from typing import List, Mapping, Optional, Iterator
+from typing import List, Mapping, Optional, Iterator, Set
 
 from dbt_common.constants import PRIVATE_ENV_PREFIX, SECRET_ENV_PREFIX
 from dbt_common.record import Recorder
@@ -43,6 +43,7 @@ class InvocationContext:
         self._env_secrets: Optional[List[str]] = None
         self._env_private = env_private
         self.recorder: Optional[Recorder] = None
+        self._adapter_types: Set[str] = set()
 
         # If set to True later, this flag will prevent dbt from creating a new
         # invocation context for every invocation, which is useful for testing
@@ -66,6 +67,17 @@ class InvocationContext:
                 v for k, v in self.env.items() if k.startswith(SECRET_ENV_PREFIX) and v.strip()
             ]
         return self._env_secrets
+
+    @property
+    def adapter_types(self) -> Set[str]:
+        return self._adapter_types
+
+    @adapter_types.setter
+    def adapter_types(self, adapters: Set[str]) -> None:
+        self._adapter_types = adapters
+
+    def uses_adapter(self, adapter_type: str) -> None:
+        self._adapter_types.add(adapter_type)
 
 
 _INVOCATION_CONTEXT_VAR: ContextVar[InvocationContext] = ContextVar("DBT_INVOCATION_CONTEXT_VAR")

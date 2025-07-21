@@ -1,8 +1,8 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 _INVOCATION_ID = str(uuid.uuid4())
-_INVOCATION_STARTED_AT = datetime.utcnow()
+_INVOCATION_STARTED_AT = datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 def get_invocation_id() -> str:
@@ -16,4 +16,4 @@ def get_invocation_started_at() -> datetime:
 def reset_invocation_id() -> None:
     global _INVOCATION_ID, _INVOCATION_STARTED_AT
     _INVOCATION_ID = str(uuid.uuid4())
-    _INVOCATION_STARTED_AT = datetime.utcnow()
+    _INVOCATION_STARTED_AT = datetime.now(timezone.utc).replace(tzinfo=None)

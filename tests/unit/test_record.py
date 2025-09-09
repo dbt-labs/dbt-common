@@ -1,5 +1,6 @@
 import dataclasses
 import json
+import sys
 import os
 from io import StringIO
 
@@ -158,6 +159,8 @@ def test_record_types_streamed(setup):
     assert rec[-1]["result"] == {"return_val": "123abc"}
     assert NotTestRecord not in recorder._records_by_type
 
+    assert recorder.in_memory_recording_size > 0
+
 
 def test_decorator_replays(setup) -> None:
     os.environ["DBT_RECORDER_MODE"] = "Replay"
@@ -259,6 +262,8 @@ def test_auto_decorator_records(setup) -> None:
     assert recorder._records_by_type["TestAutoRecord"][-1].params.a == 123
     assert recorder._records_by_type["TestAutoRecord"][-1].params.b == "abc"
     assert recorder._records_by_type["TestAutoRecord"][-1].result.return_val == "123abc"
+
+    assert recorder.in_memory_recording_size == sys.getsizeof(recorder._records_by_type["TestAutoRecord"][-1])
 
 
 def test_recorded_function_with_override() -> None:

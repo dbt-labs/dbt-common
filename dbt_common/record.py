@@ -10,6 +10,7 @@ import dataclasses
 import inspect
 import json
 import os
+import sys 
 
 from enum import Enum
 from threading import Lock
@@ -175,6 +176,7 @@ class Recorder:
                 self._unprocessed_records_by_type = self.load(self.previous_recording_path)
 
         self._counter = 0
+        self._in_memory_recording_size = 0
         self._counter_lock = Lock()
 
         self._record_added = False
@@ -198,6 +200,7 @@ class Recorder:
         with self._counter_lock:
             record.seq = self._counter
             self._counter += 1
+            self._in_memory_recording_size += sys.getsizeof(record)
 
         if self._recording_file is not None:
             if self._record_added:
@@ -315,6 +318,10 @@ class Recorder:
         cls, t: Type, serialization_strategy: SerializationStrategy
     ) -> None:
         cls._auto_serialization_strategies[t] = serialization_strategy
+    
+    @property
+    def in_memory_recording_size(self) -> int:
+        return self._in_memory_recording_size
 
 
 def get_record_mode_from_env() -> Optional[RecorderMode]:

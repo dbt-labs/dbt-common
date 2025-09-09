@@ -10,7 +10,7 @@ import dataclasses
 import inspect
 import json
 import os
-import sys 
+import sys
 
 from enum import Enum
 from threading import Lock
@@ -318,7 +318,7 @@ class Recorder:
         cls, t: Type, serialization_strategy: SerializationStrategy
     ) -> None:
         cls._auto_serialization_strategies[t] = serialization_strategy
-    
+
     @property
     def in_memory_recording_size(self) -> int:
         return self._in_memory_recording_size

@@ -263,7 +263,9 @@ def test_auto_decorator_records(setup) -> None:
     assert recorder._records_by_type["TestAutoRecord"][-1].params.b == "abc"
     assert recorder._records_by_type["TestAutoRecord"][-1].result.return_val == "123abc"
 
-    assert recorder.in_memory_recording_size == sys.getsizeof(recorder._records_by_type["TestAutoRecord"][-1])
+    assert recorder.in_memory_recording_size == sys.getsizeof(
+        recorder._records_by_type["TestAutoRecord"][-1]
+    )
 
 
 def test_recorded_function_with_override() -> None:

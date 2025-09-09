@@ -63,6 +63,19 @@ class SystemClient(unittest.TestCase):
         dbt_common.clients.system.make_directory(test_dir_pathobj)
         self.assertTrue(test_dir_pathobj.is_dir())
 
+    def test__rename_same_path(self) -> None:
+        test_file_path = os.path.join(self.tmp_dir, "rename_test.txt")
+        test_content = "test content"
+        
+        with open(test_file_path, "w") as f:
+            f.write(test_content)
+        
+        dbt_common.clients.system.rename(test_file_path, test_file_path)
+        
+        self.assertTrue(os.path.exists(test_file_path))
+        with open(test_file_path, "r") as f:
+            self.assertEqual(f.read(), test_content)
+
 
 class TestRunCmd(unittest.TestCase):
     """Test `run_cmd`.
@@ -283,3 +296,4 @@ class TestUntarPackage(unittest.TestCase):
         assert tarfile.is_tarfile(tar.name)
         with self.assertRaises(tarfile.OutsideDestinationError):
             dbt_common.clients.system.untar_package(tar_file_full_path, self.tempdest)
+

@@ -1,0 +1,6 @@
+kind: Fixes
+body: Fix edge-case in system.rename that deleted source before moving cuasing FileNotFoundError
+time: 2025-09-09T13:56:05.6255452+02:00
+custom:
+    Author: ahaugerud
+    Issue: "307"

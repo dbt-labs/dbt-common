@@ -201,7 +201,7 @@ class Recorder:
             self._counter += 1
 
         if self._recording_file is not None:
-            # Lock file during streamed recording to avoid race conditions across recording threads
+            # Lock recording file during streamed recording to avoid race conditions across recording threads
             with self._recording_file_lock:
                 if self._record_added:
                     self._recording_file.write(",")
@@ -211,7 +211,8 @@ class Recorder:
                     self._record_added = True
                 except Exception:
                     json.dump(
-                        {"type": "RecordingError", "record_type": rec_cls_name}, self._recording_file
+                        {"type": "RecordingError", "record_type": rec_cls_name},
+                        self._recording_file,
                     )
         else:
             if rec_cls_name not in self._records_by_type:

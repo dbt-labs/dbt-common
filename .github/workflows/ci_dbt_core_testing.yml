@@ -117,7 +117,7 @@ jobs:
 
     steps:
       - name: "Check out dbt-core@${{ needs.job-prep.outputs.dbt-core-ref }}"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: dbt-labs/dbt-core
           ref: ${{ needs.job-prep.outputs.dbt-core-ref }}
@@ -223,7 +223,7 @@ jobs:
 
     steps:
       - name: "Check out the repository@${{ needs.job-prep.outputs.dbt-core-ref }}"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: dbt-labs/dbt-core
           ref: ${{ needs.job-prep.outputs.dbt-core-ref }}
@@ -289,7 +289,7 @@ jobs:
 
     steps:
       - name: "Check out the repository@${{ needs.job-prep.outputs.dbt-core-ref }}"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: dbt-labs/dbt-core
           ref: ${{ needs.job-prep.outputs.dbt-core-ref }}

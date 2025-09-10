@@ -1,0 +1,6 @@
+kind: Under the Hood
+body: Lock recordings.json during streamed recording
+time: 2025-09-10T14:00:11.747166-04:00
+custom:
+    Author: michelleark
+    Issue: "312"

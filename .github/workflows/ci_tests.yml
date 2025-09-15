@@ -46,7 +46,7 @@ jobs:
 
     steps:
       - name: "Check out the repository"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: "Set up Python & Hatch - ${{ matrix.python-version }}"
         uses: ./.github/actions/setup-python-hatch

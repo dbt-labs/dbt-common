@@ -179,6 +179,7 @@ class Recorder:
 
         self._record_added = False
         self._recording_file: Optional[TextIO] = None
+        self._recording_file_lock = Lock()
         if mode == RecorderMode.RECORD and not in_memory:
             self._recording_file = open(current_recording_path, "w")
             self._recording_file.write("[")
@@ -200,16 +201,19 @@ class Recorder:
             self._counter += 1
 
         if self._recording_file is not None:
-            if self._record_added:
-                self._recording_file.write(",")
-            try:
-                dct = Recorder._get_tagged_dict(record, rec_cls_name)
-                json.dump(dct, self._recording_file)
-                self._record_added = True
-            except Exception:
-                json.dump(
-                    {"type": "RecordingError", "record_type": rec_cls_name}, self._recording_file
-                )
+            # Lock recording file during streamed recording to avoid race conditions across recording threads
+            with self._recording_file_lock:
+                if self._record_added:
+                    self._recording_file.write(",")
+                try:
+                    dct = Recorder._get_tagged_dict(record, rec_cls_name)
+                    json.dump(dct, self._recording_file)
+                    self._record_added = True
+                except Exception:
+                    json.dump(
+                        {"type": "RecordingError", "record_type": rec_cls_name},
+                        self._recording_file,
+                    )
         else:
             if rec_cls_name not in self._records_by_type:
                 self._records_by_type[rec_cls_name] = []

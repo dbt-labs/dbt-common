@@ -556,7 +556,7 @@ def _record_function_inner(
             pass
 
         include = True
-        if hasattr(params, "_include"):
+        if params is not None and hasattr(params, "_include"):
             include = params._include()
 
         if not include:

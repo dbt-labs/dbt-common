@@ -379,6 +379,7 @@ def test_recorded_function_with_override_and_removed_fields() -> None:
 
     assert "TestAutoRecord" not in recorder._records_by_type.keys()
 
+
 class CustomType:
     def __init__(self, n: int):
         self.value = n

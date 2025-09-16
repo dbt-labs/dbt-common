@@ -289,7 +289,7 @@ def test_recorded_function_with_override() -> None:
     assert recorder._records_by_type["TestAutoRecord"][-1].result.return_val == 4
 
 
-def test_recorded_function_with_override_and_additional_properties() -> None:
+def test_recorded_function_with_override_and_additional_fields() -> None:
     os.environ["DBT_RECORDER_MODE"] = "Record"
     recorder = Recorder(RecorderMode.RECORD, None, in_memory=True)
     set_invocation_context({})
@@ -313,6 +313,39 @@ def test_recorded_function_with_override_and_additional_properties() -> None:
 
     rs.test_func(1, 2)
 
+    assert recorder._records_by_type["TestAutoRecord"][-1].params.a == 1
+    assert not hasattr(recorder._records_by_type["TestAutoRecord"][-1].params, "b")
+    assert recorder._records_by_type["TestAutoRecord"][-1].result.return_val == 6
+
+def test_recorded_function_with_override_and_additional_optional_fields() -> None:
+    os.environ["DBT_RECORDER_MODE"] = "Record"
+    recorder = Recorder(RecorderMode.RECORD, None, in_memory=True)
+    set_invocation_context({})
+    get_invocation_context().recorder = recorder
+
+    @supports_replay
+    class Recordable:
+        @auto_record_function("TestAuto")
+        def test_func(self, a: int) -> int:
+            return 2 * a
+
+    class RecordableSubclass(Recordable):
+        def test_func(self, a: int) -> int:
+            return 3 * a
+
+    class RecordableSubSubclass(RecordableSubclass):
+        def test_func(self, a: int, b: int = 1) -> int:  # type: ignore
+            return (4 * a) + b
+
+    rs = RecordableSubSubclass()
+
+    rs.test_func(1)
+
+    assert recorder._records_by_type["TestAutoRecord"][-1].params.a == 1
+    assert not hasattr(recorder._records_by_type["TestAutoRecord"][-1].params, "b")
+    assert recorder._records_by_type["TestAutoRecord"][-1].result.return_val == 5
+
+    rs.test_func(1, 2)
     assert recorder._records_by_type["TestAutoRecord"][-1].params.a == 1
     assert not hasattr(recorder._records_by_type["TestAutoRecord"][-1].params, "b")
     assert recorder._records_by_type["TestAutoRecord"][-1].result.return_val == 6

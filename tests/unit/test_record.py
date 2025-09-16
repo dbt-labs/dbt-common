@@ -306,7 +306,7 @@ def test_recorded_function_with_override_and_additional_properties() -> None:
             return 3 * a
 
     class RecordableSubSubclass(RecordableSubclass):
-        def test_func(self, a: int, b: int) -> int:
+        def test_func(self, a: int, b: int) -> int:  # type: ignore
             return (4 * a) + b
 
     rs = RecordableSubSubclass()

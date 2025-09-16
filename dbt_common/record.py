@@ -448,8 +448,9 @@ class AutoValues(DataClassJSONMixin):
     def _to_dict(self):
         return self.to_dict()
 
-    def _from_dict(self, data):
-        return self.from_dict(data)
+    @classmethod
+    def _from_dict(cls, data):
+        return cls.from_dict(data)
 
 
 def _record_function_inner(
@@ -534,7 +535,17 @@ def _record_function_inner(
             else:
                 param_args = (getattr(args[0], id_field_name),) + param_args
 
-        params = record_type.params_cls(*param_args, **kwargs)
+        # Omits any additional properties that are not fields of the params class
+        params_dict = {
+            field.name: value
+            for field, value in zip(dataclasses.fields(record_type.params_cls), param_args)
+        }
+        params_dict.update(kwargs)
+        params = (
+            record_type.params_cls._from_dict(params_dict)
+            if hasattr(record_type.params_cls, "_from_dict")
+            else record_type.params_cls(*param_args, **kwargs)
+        )
 
         include = True
         if hasattr(params, "_include"):

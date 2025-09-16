@@ -374,8 +374,10 @@ def test_recorded_function_with_override_and_removed_fields() -> None:
 
     rs = RecordableSubSubclass()
 
+    # This should not raise an exception, even though a recording could not be added
     rs.test_func()
 
+    assert "TestAutoRecord" not in recorder._records_by_type.keys()
 
 class CustomType:
     def __init__(self, n: int):

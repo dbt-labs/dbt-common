@@ -1,0 +1,6 @@
+kind: Fixes
+body: Replace deprecated datetime.datetime.utcnow() for datetime.now(timezone.utc).replace(tzinfo=None) to reduce stdout spam.
+time: 2025-08-28T20:01:12.372453879Z
+custom:
+    Author: edgarrmondragon axellpadilla
+    Issue: "301"

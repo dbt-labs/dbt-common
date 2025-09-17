@@ -545,11 +545,14 @@ def _record_function_inner(
                 for field, value in zip(dataclasses.fields(record_type.params_cls), param_args)
             }
             params_dict.update(kwargs)
-            params = (
-                record_type.params_cls._from_dict(params_dict)
-                if hasattr(record_type.params_cls, "_from_dict")
-                else record_type.params_cls(*param_args, **kwargs)
-            )
+            try:
+                params = record_type.params_cls._from_dict(params_dict)
+            except (TypeError, AttributeError):
+                params = record_type.params_cls(*param_args, **kwargs)
+            except Exception:
+                # Unfortunately it is not possible to fire an event here because it would cause a circular import
+                # This means we lose visibility into the issue, but it is better than crashing the entire node or command
+                pass
         except Exception:
             # Unfortunately it is not possible to fire an event here because it would cause a circular import
             # This means we lose visibility into the issue, but it is better than crashing the entire node or command

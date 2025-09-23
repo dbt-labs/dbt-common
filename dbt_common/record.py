@@ -539,23 +539,19 @@ def _record_function_inner(
         # changes the signature of the base recorded method, and so is wrapped in a try/except.
         params = None
         try:
-            # Omits any additional properties that are not fields of the params class
-            params_dict = {
-                field.name: value
-                for field, value in zip(dataclasses.fields(record_type.params_cls), param_args)
-            }
-            params_dict.update(kwargs)
             try:
+                # Omits any additional properties that are not fields of the params class
+                params_dict = {
+                    field.name: value
+                    for field, value in zip(dataclasses.fields(record_type.params_cls), param_args)
+                }
+                params_dict.update(kwargs)
                 params = record_type.params_cls._from_dict(params_dict)
-            except (TypeError, AttributeError):
-                params = record_type.params_cls(*param_args, **kwargs)
             except Exception:
-                # Unfortunately it is not possible to fire an event here because it would cause a circular import
-                # This means we lose visibility into the issue, but it is better than crashing the entire node or command
-                pass
+                params = record_type.params_cls(*param_args, **kwargs)
         except Exception:
             # Unfortunately it is not possible to fire an event here because it would cause a circular import
-            # This means we lose visibility into the issue, but it is better than crashing the entire node or command
+            # This means we lose visibility into issues using record_type.params_cls(...), but it is better than crashing the entire node or command
             pass
 
         include = True

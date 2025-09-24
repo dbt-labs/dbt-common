@@ -1,0 +1,6 @@
+kind: Under the Hood
+body: 'Record-mode: Fallback more reliably to constructor-based paramater instantiation'
+time: 2025-09-24T10:43:07.666102-04:00
+custom:
+    Author: michelleark
+    Issue: "314"

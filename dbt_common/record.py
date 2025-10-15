@@ -581,6 +581,7 @@ def _record_function_inner(
             )
         except Exception:
             pass
+
         RECORDED_BY_HIGHER_FUNCTION.set(False)
         if params is not None:
             recorder.add_record(record_type(params=params, result=result))

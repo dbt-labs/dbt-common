@@ -179,6 +179,7 @@ class Recorder:
 
         self._record_added = False
         self._recording_file: Optional[TextIO] = None
+        self._recording_file_lock = Lock()
         if mode == RecorderMode.RECORD and not in_memory:
             self._recording_file = open(current_recording_path, "w")
             self._recording_file.write("[")
@@ -200,16 +201,19 @@ class Recorder:
             self._counter += 1
 
         if self._recording_file is not None:
-            if self._record_added:
-                self._recording_file.write(",")
-            try:
-                dct = Recorder._get_tagged_dict(record, rec_cls_name)
-                json.dump(dct, self._recording_file)
-                self._record_added = True
-            except Exception:
-                json.dump(
-                    {"type": "RecordingError", "record_type": rec_cls_name}, self._recording_file
-                )
+            # Lock recording file during streamed recording to avoid race conditions across recording threads
+            with self._recording_file_lock:
+                if self._record_added:
+                    self._recording_file.write(",")
+                try:
+                    dct = Recorder._get_tagged_dict(record, rec_cls_name)
+                    json.dump(dct, self._recording_file)
+                    self._record_added = True
+                except Exception as e:
+                    json.dump(
+                        {"type": "RecordingError", "record_type": rec_cls_name, "error": str(e)},
+                        self._recording_file,
+                    )
         else:
             if rec_cls_name not in self._records_by_type:
                 self._records_by_type[rec_cls_name] = []
@@ -444,8 +448,9 @@ class AutoValues(DataClassJSONMixin):
     def _to_dict(self):
         return self.to_dict()
 
-    def _from_dict(self, data):
-        return self.from_dict(data)
+    @classmethod
+    def _from_dict(cls, data):
+        return cls.from_dict(data)
 
 
 def _record_function_inner(
@@ -530,16 +535,33 @@ def _record_function_inner(
             else:
                 param_args = (getattr(args[0], id_field_name),) + param_args
 
-        params = record_type.params_cls(*param_args, **kwargs)
+        # Build params - this can be dangerous if a subclass overrides the method in such a way that
+        # changes the signature of the base recorded method, and so is wrapped in a try/except.
+        params = None
+        try:
+            try:
+                # Omits any additional properties that are not fields of the params class
+                params_dict = {
+                    field.name: value
+                    for field, value in zip(dataclasses.fields(record_type.params_cls), param_args)
+                }
+                params_dict.update(kwargs)
+                params = record_type.params_cls._from_dict(params_dict)
+            except Exception:
+                params = record_type.params_cls(*param_args, **kwargs)
+        except Exception:
+            # Unfortunately it is not possible to fire an event here because it would cause a circular import
+            # This means we lose visibility into issues using record_type.params_cls(...), but it is better than crashing the entire node or command
+            pass
 
         include = True
-        if hasattr(params, "_include"):
+        if params is not None and hasattr(params, "_include"):
             include = params._include()
 
         if not include:
             return func_to_record(*call_args, **kwargs)
 
-        if recorder.mode == RecorderMode.REPLAY:
+        if recorder.mode == RecorderMode.REPLAY and params is not None:
             return recorder.expect_record(params)
         if RECORDED_BY_HIGHER_FUNCTION.get():
             return func_to_record(*call_args, **kwargs)
@@ -554,7 +576,8 @@ def _record_function_inner(
             else record_type.result_cls(r)
         )
         RECORDED_BY_HIGHER_FUNCTION.set(False)
-        recorder.add_record(record_type(params=params, result=result))
+        if params is not None:
+            recorder.add_record(record_type(params=params, result=result))
         return r
 
     setattr(

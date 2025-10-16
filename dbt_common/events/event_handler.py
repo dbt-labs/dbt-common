@@ -39,3 +39,4 @@ def set_package_logging(package_name: str, log_level: Union[str, int], event_mgr
     log.setLevel(log_level)
     event_handler = DbtEventLoggingHandler(event_manager=event_mgr, level=log_level)
     log.addHandler(event_handler)
+    log.propagate = False

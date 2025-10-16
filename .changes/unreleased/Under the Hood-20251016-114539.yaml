@@ -1,0 +1,6 @@
+kind: Under the Hood
+body: restrict package logging to dbt event handler
+time: 2025-10-16T11:45:39.962629-07:00
+custom:
+  Author: colin-rogers-dbt
+  Issue: "317"

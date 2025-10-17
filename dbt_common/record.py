@@ -568,13 +568,20 @@ def _record_function_inner(
 
         RECORDED_BY_HIGHER_FUNCTION.set(True)
         r = func_to_record(*call_args, **kwargs)
-        result = (
-            None
-            if record_type.result_cls is None
-            else record_type.result_cls(*r)
-            if tuple_result
-            else record_type.result_cls(r)
-        )
+        result = None
+
+        # Gracefully handle the case where the result is not serializable
+        try:
+            result = (
+                None
+                if record_type.result_cls is None
+                else record_type.result_cls(*r)
+                if tuple_result
+                else record_type.result_cls(r)
+            )
+        except Exception:
+            pass
+
         RECORDED_BY_HIGHER_FUNCTION.set(False)
         if params is not None:
             recorder.add_record(record_type(params=params, result=result))

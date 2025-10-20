@@ -1,6 +1,0 @@
-kind: Under the Hood
-body: Wrap record result serialization in try/except
-time: 2025-10-15T16:02:06.924936-04:00
-custom:
-    Author: michelleark
-    Issue: "316"

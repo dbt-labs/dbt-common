@@ -4,6 +4,7 @@ from typing import Callable
 from dbt_common.events.types import RecordRetryException, RetryExternalCall
 from dbt_common.exceptions import ConnectionError
 from tarfile import ReadError
+from gzip import BadGzipFile
 
 import requests
 
@@ -23,6 +24,7 @@ def connection_exception_retry(fn: Callable, max_attempts: int, attempt: int = 0
         requests.exceptions.RequestException,
         ReadError,
         EOFError,
+        BadGzipFile,
     ) as exc:
         if attempt <= max_attempts - 1:
             # This import needs to be inline to avoid circular dependency

@@ -602,6 +602,9 @@ def rename(from_path: str, to_path: str, force: bool = False) -> None:
     to_path = convert_path(to_path)
     is_symlink = path_is_symlink(to_path)
 
+    if from_path == to_path:
+        return
+
     if os.path.exists(to_path) and force:
         if is_symlink:
             remove_file(to_path)

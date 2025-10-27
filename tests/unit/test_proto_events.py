@@ -1,8 +1,9 @@
-from dbt_common.events.functions import msg_to_dict, msg_to_json, reset_metadata_vars
-from dbt_common.events import types_pb2
-from dbt_common.events.base_types import msg_from_base_event
-from dbt_common.events.types import RetryExternalCall
+from dbtlabs.proto.public.v1.fields import common_types_pb2 as types_pb2
 from google.protobuf.json_format import MessageToDict
+
+from dbt_common.events.base_types import msg_from_base_event
+from dbt_common.events.functions import msg_to_dict, msg_to_json, reset_metadata_vars
+from dbt_common.events.types import RetryExternalCall
 
 info_keys = {
     "name",

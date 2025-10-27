@@ -12,12 +12,15 @@ import json
 import os
 
 from enum import Enum
+from threading import Lock
 from typing import Any, Callable, Dict, List, Mapping, Optional, TextIO, Tuple, Type
-import contextvars
 
 from mashumaro import field_options
 from mashumaro.mixins.json import DataClassJSONMixin
 from mashumaro.types import SerializationStrategy
+
+import contextvars
+
 
 RECORDED_BY_HIGHER_FUNCTION = contextvars.ContextVar("RECORDED_BY_HIGHER_FUNCTION", default=False)
 
@@ -31,9 +34,10 @@ class Record:
     result_cls: Optional[type] = None
     group: Optional[str] = None
 
-    def __init__(self, params, result) -> None:
+    def __init__(self, params, result, seq=None) -> None:
         self.params = params
         self.result = result
+        self.seq = seq
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -45,6 +49,7 @@ class Record:
             else dataclasses.asdict(self.result)
             if self.result is not None
             else None,
+            "seq": self.seq,
         }
 
     @classmethod
@@ -61,7 +66,8 @@ class Record:
             if cls.result_cls is not None
             else None
         )
-        return cls(params=p, result=r)
+        s = dct.get("seq", None)
+        return cls(params=p, result=r, seq=s)
 
 
 class Diff:
@@ -145,6 +151,7 @@ class Recorder:
         types: Optional[List],
         current_recording_path: str = "recording.json",
         previous_recording_path: Optional[str] = None,
+        in_memory: bool = False,
     ) -> None:
         self.mode = mode
         self.recorded_types = types
@@ -167,6 +174,19 @@ class Recorder:
             if self.mode == RecorderMode.REPLAY:
                 self._unprocessed_records_by_type = self.load(self.previous_recording_path)
 
+        self._counter = 0
+        self._counter_lock = Lock()
+
+        self._record_added = False
+        self._recording_file: Optional[TextIO] = None
+        self._recording_file_lock = Lock()
+        if mode == RecorderMode.RECORD and not in_memory:
+            self._recording_file = open(current_recording_path, "w")
+            self._recording_file.write("[")
+
+    def __del__(self):
+        self.clean_up_stream()
+
     @classmethod
     def register_record_type(cls, rec_type) -> Any:
         cls._record_cls_by_name[rec_type.__name__] = rec_type
@@ -175,9 +195,29 @@ class Recorder:
 
     def add_record(self, record: Record) -> None:
         rec_cls_name = record.__class__.__name__  # type: ignore
-        if rec_cls_name not in self._records_by_type:
-            self._records_by_type[rec_cls_name] = []
-        self._records_by_type[rec_cls_name].append(record)
+
+        with self._counter_lock:
+            record.seq = self._counter
+            self._counter += 1
+
+        if self._recording_file is not None:
+            # Lock recording file during streamed recording to avoid race conditions across recording threads
+            with self._recording_file_lock:
+                if self._record_added:
+                    self._recording_file.write(",")
+                try:
+                    dct = Recorder._get_tagged_dict(record, rec_cls_name)
+                    json.dump(dct, self._recording_file)
+                    self._record_added = True
+                except Exception as e:
+                    json.dump(
+                        {"type": "RecordingError", "record_type": rec_cls_name, "error": str(e)},
+                        self._recording_file,
+                    )
+        else:
+            if rec_cls_name not in self._records_by_type:
+                self._records_by_type[rec_cls_name] = []
+            self._records_by_type[rec_cls_name].append(record)
 
     def pop_matching_record(self, params: Any) -> Optional[Record]:
         rec_type_name = self._record_name_by_params_name.get(type(params).__name__)
@@ -199,21 +239,39 @@ class Recorder:
         return match
 
     def write_json(self, out_stream: TextIO):
-        d = self._to_dict()
+        d = self._to_list()
         json.dump(d, out_stream)
 
     def write(self) -> None:
-        with open(self.current_recording_path, "w") as file:
-            self.write_json(file)
+        if self._recording_file is not None:
+            self.clean_up_stream()
+        else:
+            with open(self.current_recording_path, "w") as file:
+                self.write_json(file)
 
-    def _to_dict(self) -> Dict:
-        dct: Dict[str, Any] = {}
+    def clean_up_stream(self) -> None:
+        if self._recording_file is not None:
+            self._recording_file.write("]")
+            self._recording_file.close()
+            self._recording_file = None
 
+    @staticmethod
+    def _get_tagged_dict(record: Record, record_type: str) -> Dict:
+        d = record.to_dict()
+        d["type"] = record_type
+        return d
+
+    def _to_list(self) -> List[Dict]:
+        record_list: List[Dict] = []
         for record_type in self._records_by_type:
-            record_list = [r.to_dict() for r in self._records_by_type[record_type]]
-            dct[record_type] = record_list
+            record_list.extend(
+                Recorder._get_tagged_dict(r, record_type)
+                for r in self._records_by_type[record_type]
+            )
 
-        return dct
+        record_list.sort(key=lambda r: r["seq"])
+
+        return record_list
 
     @classmethod
     def load(cls, file_name: str) -> Dict[str, List[Dict[str, Any]]]:
@@ -331,7 +389,6 @@ def auto_record_function(
         None,
         group,
         index_on_thread_name,
-        False,
     )
 
 
@@ -340,6 +397,7 @@ def record_function(
     method: bool = False,
     tuple_result: bool = False,
     id_field_name: Optional[str] = None,
+    index_on_thread_id: bool = False,
 ) -> Callable:
     """This is the @record_function decorator, which marks functions which will
     have their function calls recorded during record mode, and mocked out with
@@ -351,8 +409,7 @@ def record_function(
         tuple_result,
         id_field_name,
         None,
-        False,
-        False,
+        index_on_thread_id,
     )
 
 
@@ -391,8 +448,9 @@ class AutoValues(DataClassJSONMixin):
     def _to_dict(self):
         return self.to_dict()
 
-    def _from_dict(self, data):
-        return self.from_dict(data)
+    @classmethod
+    def _from_dict(cls, data):
+        return cls.from_dict(data)
 
 
 def _record_function_inner(
@@ -402,9 +460,15 @@ def _record_function_inner(
     id_field_name,
     group,
     index_on_thread_id,
-    is_classmethod,
     func_to_record,
 ):
+    recorded_types = get_record_types_from_env()
+    if recorded_types is not None and not (
+        getattr(record_type, "__name__", record_type) in recorded_types
+        or getattr(record_type, "group", group) in recorded_types
+    ):
+        return func_to_record
+
     if isinstance(record_type, str):
         return_type = inspect.signature(func_to_record).return_annotation
         fields = _get_arg_fields(inspect.getfullargspec(func_to_record), method)
@@ -442,7 +506,7 @@ def _record_function_inner(
         except LookupError:
             pass
 
-        call_args = args[1:] if is_classmethod else args
+        call_args = args
 
         if recorder is None:
             return func_to_record(*call_args, **kwargs)
@@ -458,37 +522,69 @@ def _record_function_inner(
         param_args = args[1:] if method else args
         if method and id_field_name is not None:
             if index_on_thread_id:
-                from dbt_common.context import get_invocation_context
+                from dbt_common.events.contextvars import get_node_info
 
-                param_args = (get_invocation_context().name,) + param_args
+                node_info = get_node_info()
+                if node_info and "unique_id" in node_info:
+                    thread_name = node_info["unique_id"]
+                else:
+                    from dbt_common.context import get_invocation_context
+
+                    thread_name = get_invocation_context().name
+                param_args = (thread_name,) + param_args
             else:
                 param_args = (getattr(args[0], id_field_name),) + param_args
 
-        params = record_type.params_cls(*param_args, **kwargs)
+        # Build params - this can be dangerous if a subclass overrides the method in such a way that
+        # changes the signature of the base recorded method, and so is wrapped in a try/except.
+        params = None
+        try:
+            try:
+                # Omits any additional properties that are not fields of the params class
+                params_dict = {
+                    field.name: value
+                    for field, value in zip(dataclasses.fields(record_type.params_cls), param_args)
+                }
+                params_dict.update(kwargs)
+                params = record_type.params_cls._from_dict(params_dict)
+            except Exception:
+                params = record_type.params_cls(*param_args, **kwargs)
+        except Exception:
+            # Unfortunately it is not possible to fire an event here because it would cause a circular import
+            # This means we lose visibility into issues using record_type.params_cls(...), but it is better than crashing the entire node or command
+            pass
 
         include = True
-        if hasattr(params, "_include"):
+        if params is not None and hasattr(params, "_include"):
             include = params._include()
 
         if not include:
             return func_to_record(*call_args, **kwargs)
 
-        if recorder.mode == RecorderMode.REPLAY:
+        if recorder.mode == RecorderMode.REPLAY and params is not None:
             return recorder.expect_record(params)
         if RECORDED_BY_HIGHER_FUNCTION.get():
             return func_to_record(*call_args, **kwargs)
 
         RECORDED_BY_HIGHER_FUNCTION.set(True)
         r = func_to_record(*call_args, **kwargs)
-        result = (
-            None
-            if record_type.result_cls is None
-            else record_type.result_cls(*r)
-            if tuple_result
-            else record_type.result_cls(r)
-        )
+        result = None
+
+        # Gracefully handle the case where the result is not serializable
+        try:
+            result = (
+                None
+                if record_type.result_cls is None
+                else record_type.result_cls(*r)
+                if tuple_result
+                else record_type.result_cls(r)
+            )
+        except Exception:
+            pass
+
         RECORDED_BY_HIGHER_FUNCTION.set(False)
-        recorder.add_record(record_type(params=params, result=result))
+        if params is not None:
+            recorder.add_record(record_type(params=params, result=result))
         return r
 
     setattr(
@@ -532,21 +628,32 @@ def supports_replay(cls):
             metadata = getattr(method, "_record_metadata", None)
             if method and getattr(method, "_record_metadata", None):
                 sub_method = getattr(sub_cls, method_name, None)
-                recorded_sub_method = _record_function_inner(
-                    metadata["record_type"],
-                    metadata["method"],
-                    metadata["tuple_result"],
-                    metadata["id_field_name"],
-                    metadata["group"],
-                    metadata["index_on_thread_id"],
-                    _is_classmethod(method),
-                    sub_method,
+                sub_method_metadata = getattr(sub_method, "_record_metadata", None)
+
+                # Handle classmethod overrides. This logic goes above and beyond
+                # to handle the situation where the method is a classmethod, but
+                # the submethod is not (and therefore lacks a __func__ attribute).
+                override_as_classmethod = _is_classmethod(method) and hasattr(
+                    sub_method, "__func__"
                 )
 
-                if _is_classmethod(method):
-                    recorded_sub_method = classmethod(recorded_sub_method)
+                if not sub_method_metadata:
+                    recorded_sub_method = _record_function_inner(
+                        metadata["record_type"],
+                        metadata["method"],
+                        metadata["tuple_result"],
+                        metadata["id_field_name"],
+                        metadata["group"],
+                        metadata["index_on_thread_id"],
+                        sub_method.__func__
+                        if override_as_classmethod
+                        else sub_method,  # Unwrap if method and submethod are both classmethods
+                    )
 
-                if sub_method is not None:
+                    if _is_classmethod(method) and hasattr(sub_method, "__func__"):
+                        # Rewrap if method and submethod are both classmethods
+                        recorded_sub_method = classmethod(recorded_sub_method)
+
                     setattr(
                         sub_cls,
                         method_name,

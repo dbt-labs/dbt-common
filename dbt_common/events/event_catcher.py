@@ -1,12 +1,12 @@
 from dataclasses import dataclass, field
 from typing import Callable, List, Optional
 
-from dbt_common.events.base_types import BaseEvent, EventMsg
+from dbt_common.events.base_types import EventMsg, EventType
 
 
 @dataclass
 class EventCatcher:
-    event_to_catch: Optional[BaseEvent] = None
+    event_to_catch: Optional[EventType] = None
     caught_events: List[EventMsg] = field(default_factory=list)
     predicate: Callable[[EventMsg], bool] = lambda event: True
 

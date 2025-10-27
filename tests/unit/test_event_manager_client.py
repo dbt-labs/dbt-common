@@ -1,8 +1,8 @@
 from pytest_mock import MockerFixture
 
+from dbt_common.events.event_catcher import EventCatcher
 from dbt_common.events.event_manager import EventManager
 from dbt_common.events.event_manager_client import add_callback_to_manager, get_event_manager
-from tests.unit.utils import EventCatcher
 
 
 def test_add_callback_to_manager(mocker: MockerFixture) -> None:

@@ -2,11 +2,11 @@ import pytest
 
 from dbt_common.events import functions
 from dbt_common.events.base_types import EventLevel, WarnLevel
+from dbt_common.events.event_catcher import EventCatcher
 from dbt_common.events.event_manager import EventManager
 from dbt_common.events.event_manager_client import ctx_set_event_manager, get_event_manager
 from dbt_common.exceptions import EventCompilationError
 from dbt_common.helper_types import WarnErrorOptions
-from tests.unit.utils import EventCatcher
 from typing import Set
 
 

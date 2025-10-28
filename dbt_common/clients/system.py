@@ -127,6 +127,9 @@ def find_matching(
             # if ignore_spec.match(relative_dir):
             #     continue
             for local_file in local_files:
+                # Sometimes temporary files with `.<random_characters>` are created, this filters
+                # them out so we don't hard fail during a race condition when the file disappears
+                # before we get to calculating its modification time
                 if not reobj.match(local_file):
                     continue
 

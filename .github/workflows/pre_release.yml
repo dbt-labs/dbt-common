@@ -44,7 +44,7 @@ defaults:
     shell: bash
 
 env:
-  PYTHON_TARGET_VERSION: 3.10
+  PYTHON_TARGET_VERSION: "3.10"
   NOTIFICATION_PREFIX: "[Release Preparation]"
 
 jobs:

@@ -1,7 +1,7 @@
+from dbt_common.events.event_catcher import EventCatcher
 from dbt_common.events.event_manager import EventManager
 from dbt_common.events.types import BehaviorChangeEvent
 from dbt_common.helper_types import WarnErrorOptionsV2
-from tests.unit.utils import EventCatcher
 
 
 class TestEventManager:

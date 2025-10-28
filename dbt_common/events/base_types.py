@@ -1,7 +1,7 @@
 import os
 import threading
 from enum import Enum
-from typing import Callable, Optional, Protocol
+from typing import Callable, Optional, Protocol, TypeVar
 
 from dbt_common.events import types_pb2
 from google.protobuf.json_format import MessageToDict, MessageToJson, ParseDict
@@ -111,6 +111,9 @@ class BaseEvent:
 
     def code(self) -> str:
         raise Exception("code() not implemented for event")
+
+
+EventType = TypeVar("EventType", bound=BaseEvent)
 
 
 class EventInfo(Protocol):

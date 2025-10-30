@@ -117,13 +117,13 @@ jobs:
 
     steps:
       - name: "Check out dbt-core@${{ needs.job-prep.outputs.dbt-core-ref }}"
-        uses: actions/checkout@v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # actions/checkout@v4
         with:
           repository: dbt-labs/dbt-core
           ref: ${{ needs.job-prep.outputs.dbt-core-ref }}
 
       - name: "Set up Python 3.11"
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -223,13 +223,13 @@ jobs:
 
     steps:
       - name: "Check out the repository@${{ needs.job-prep.outputs.dbt-core-ref }}"
-        uses: actions/checkout@v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # actions/checkout@v4
         with:
           repository: dbt-labs/dbt-core
           ref: ${{ needs.job-prep.outputs.dbt-core-ref }}
 
       - name: "Set up Python ${{ matrix.python-version }}"
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -289,19 +289,19 @@ jobs:
 
     steps:
       - name: "Check out the repository@${{ needs.job-prep.outputs.dbt-core-ref }}"
-        uses: actions/checkout@v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # actions/checkout@v4
         with:
           repository: dbt-labs/dbt-core
           ref: ${{ needs.job-prep.outputs.dbt-core-ref }}
 
       - name: "Set up Python ${{ matrix.python-version }}"
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: "Set up postgres (macos)"
         if: runner.os == 'macOS'
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08 # nick-fields/retry@v3
         with:
           timeout_minutes: 10
           max_attempts: 3

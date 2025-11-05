@@ -48,6 +48,8 @@ replay need the file to replay
 DBT_RECORDER_MODE=replay DBT_RECORDER_FILE_PATH=recording.json dbt run
 ```
 
+`DBT_RECORDER_ROW_LIMIT` is optional. When specified as an integer, it indicates the limit on how many rows of unbounded record structures (e.g. `agate.Table` results) when `DBT_RECORDER_MODE=record`. By default, no limit is set. This configuration should be leveraged when looking to optimize memory pressure that `DBT_RECORDER_MODE=record` may introduce when serializing large objects during execution.
+
 ## Final Thoughts
   
 We are aware of the potential limitations of this mechanism, since it makes several strong assumptions, not least of which are:

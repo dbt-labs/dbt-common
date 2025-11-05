@@ -194,7 +194,7 @@ class Recorder:
         cls._record_cls_by_name[rec_type.__name__] = rec_type
         cls._record_name_by_params_name[rec_type.params_cls.__name__] = rec_type.__name__
         return rec_type
-    
+
     @property
     def record_row_limit(self) -> Optional[int]:
         return self._record_row_limit

@@ -341,7 +341,9 @@ def get_record_mode_from_env() -> Optional[RecorderMode]:
     if record_mode is None:
         return None
 
-    record_file_path = os.environ.get("DBT_ENGINE_RECORDER_FILE_PATH") or os.environ.get("DBT_RECORDER_FILE_PATH")
+    record_file_path = os.environ.get("DBT_ENGINE_RECORDER_FILE_PATH") or os.environ.get(
+        "DBT_RECORDER_FILE_PATH"
+    )
     if record_mode.lower() == "record":
         return RecorderMode.RECORD
     # diffing requires a file path, otherwise treat as noop
@@ -363,7 +365,9 @@ def get_record_types_from_env() -> Optional[List]:
     Invalid types will be ignored.
     Expected format: 'DBT_RECORDER_TYPES=Database,FileLoadRecord' or 'DBT_ENGINE_RECORDER_TYPES=Database,FileLoadRecord'
     """
-    record_types_str = os.environ.get("DBT_ENGINE_RECORDER_TYPES") or os.environ.get("DBT_RECORDER_TYPES")
+    record_types_str = os.environ.get("DBT_ENGINE_RECORDER_TYPES") or os.environ.get(
+        "DBT_RECORDER_TYPES"
+    )
 
     # if all is specified we don't want any type filtering
     if record_types_str is None or record_types_str.lower == "all":
@@ -376,7 +380,9 @@ def get_record_row_limit_from_env() -> Optional[int]:
     """
     Get the record row limit from the environment variables.
     """
-    record_row_limit_str = os.environ.get("DBT_ENGINE_RECORDER_ROW_LIMIT") or os.environ.get("DBT_RECORDER_ROW_LIMIT")
+    record_row_limit_str = os.environ.get("DBT_ENGINE_RECORDER_ROW_LIMIT") or os.environ.get(
+        "DBT_RECORDER_ROW_LIMIT"
+    )
     if record_row_limit_str is None:
         return None
 

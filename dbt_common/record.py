@@ -149,12 +149,14 @@ class Recorder:
         self,
         mode: RecorderMode,
         types: Optional[List],
+        row_limit: Optional[int] = None,
         current_recording_path: str = "recording.json",
         previous_recording_path: Optional[str] = None,
         in_memory: bool = False,
     ) -> None:
         self.mode = mode
         self.recorded_types = types
+        self._record_row_limit: Optional[int] = get_record_row_limit_from_env()
         self._records_by_type: Dict[str, List[Record]] = {}
         self._unprocessed_records_by_type: Dict[str, List[Dict[str, Any]]] = {}
         self._replay_diffs: List["Diff"] = []
@@ -192,6 +194,10 @@ class Recorder:
         cls._record_cls_by_name[rec_type.__name__] = rec_type
         cls._record_name_by_params_name[rec_type.params_cls.__name__] = rec_type.__name__
         return rec_type
+    
+    @property
+    def record_row_limit(self) -> Optional[int]:
+        return self._record_row_limit
 
     def add_record(self, record: Record) -> None:
         rec_cls_name = record.__class__.__name__  # type: ignore
@@ -361,6 +367,17 @@ def get_record_types_from_env() -> Optional[List]:
         return None
 
     return record_types_str.split(",")
+
+
+def get_record_row_limit_from_env() -> Optional[int]:
+    """
+    Get the record row limit from the environment variables.
+    """
+    record_row_limit_str = os.environ.get("DBT_RECORDER_ROW_LIMIT")
+    if record_row_limit_str is None:
+        return None
+
+    return int(record_row_limit_str)
 
 
 def get_record_types_from_dict(fp: str) -> List:

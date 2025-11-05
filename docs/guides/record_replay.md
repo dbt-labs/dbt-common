@@ -32,23 +32,23 @@ With these decorators applied and classes defined, dbt is able to record all fil
 
 ## How to record/replay
 
-Record/replay behavior is activated and configured via environment variables. When DBT_RECORDER_MODE is unset, the entire subsystem is disabled, and the decorators described above have no effect at all. This helps isolate the subsystem from core's application code, reducing the risk of performance impact or regressions.
+Record/replay behavior is activated and configured via environment variables. When DBT_ENGINE_RECORDER_MODE is unset, the entire subsystem is disabled, and the decorators described above have no effect at all. This helps isolate the subsystem from core's application code, reducing the risk of performance impact or regressions.
 
-The record/replay subsystem is activated by setting the `DBT_RECORDER_MODE` variable to `replay`, `record`, or `diff`, case insensitive.  Invalid values are ignored and do not throw exceptions.
+The record/replay subsystem is activated by setting the `DBT_ENGINE_RECORDER_MODE` variable to `replay`, `record`, or `diff`, case insensitive.  Invalid values are ignored and do not throw exceptions.
 
-`DBT_RECORDER_TYPES` is optional.  It indicates which types to filter the results by and expects a list of strings values for the `Record` subclasses or groups of such classes. For example, all records of database/DWH interaction performed by adapters belong to the `Database` group. Any invalid type or group name will be ignored.  `all` is a valid value for this variable and has the same effect as not populating the variable.
+`DBT_ENGINE_RECORDER_TYPES` is optional.  It indicates which types to filter the results by and expects a list of strings values for the `Record` subclasses or groups of such classes. For example, all records of database/DWH interaction performed by adapters belong to the `Database` group. Any invalid type or group name will be ignored.  `all` is a valid value for this variable and has the same effect as not populating the variable.
 
 
 ```bash
-DBT_RECORDER_MODE=record DBT_RECORDER_TYPES=Database dbt run
+DBT_ENGINE_RECORDER_MODE=record DBT_ENGINE_RECORDER_TYPES=Database dbt run
 ```
 
 replay need the file to replay
 ```bash
-DBT_RECORDER_MODE=replay DBT_RECORDER_FILE_PATH=recording.json dbt run
+DBT_ENGINE_RECORDER_MODE=replay DBT_ENGINE_RECORDER_FILE_PATH=recording.json dbt run
 ```
 
-`DBT_RECORDER_ROW_LIMIT` is optional. When specified as an integer, it indicates the limit on how many rows of unbounded record structures (e.g. `agate.Table` results) when `DBT_RECORDER_MODE=record`. By default, no limit is set. This configuration should be leveraged when looking to optimize memory pressure that `DBT_RECORDER_MODE=record` may introduce when serializing large objects during execution.
+`DBT_ENGINE_RECORDER_ROW_LIMIT` is optional. When specified as an integer, it indicates the limit on how many rows of unbounded record structures (e.g. `agate.Table` results) when `DBT_ENGINE_RECORDER_MODE=record`. By default, no limit is set. This configuration should be leveraged when looking to optimize memory pressure that `DBT_ENGINE_RECORDER_MODE=record` may introduce when serializing large objects during execution.
 
 ## Final Thoughts
   

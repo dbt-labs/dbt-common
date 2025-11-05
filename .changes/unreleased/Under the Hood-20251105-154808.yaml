@@ -1,5 +1,5 @@
 kind: Under the Hood
-body: Add record_row_limit to Recorder
+body: Add record_row_limit to Recorder, and support DBT_ENGINE prefix for record/replay environment variables
 time: 2025-11-05T15:48:08.26621-05:00
 custom:
     Author: michelleark

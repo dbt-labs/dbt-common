@@ -40,7 +40,7 @@ jobs:
 
     steps:
       - name: Check out the repository
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # actions/checkout@v4
 
       - name: "Set up Python & Hatch - 3.11"
         uses: ./.github/actions/setup-python-hatch

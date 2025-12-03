@@ -26,6 +26,8 @@ class BaseConfig(AdditionalPropertiesAllowed, Replaceable):
             return getattr(self, key)
         elif key in self._extra:
             return self._extra[key]
+        elif hasattr(self, "meta") and key in self.meta:
+            return self.meta[key]
         else:
             return default
 

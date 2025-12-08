@@ -86,8 +86,7 @@ jobs:
           else
             REF=${{ inputs.dbt-core-ref }}
           fi
-          # echo "ref=$REF" >> $GITHUB_OUTPUT
-          echo "REF=er/common-script" >> $GITHUB_OUTPUT
+          echo "ref=$REF" >> $GITHUB_OUTPUT
 
       - name: "Determine dbt-common ref"
         id: common-ref

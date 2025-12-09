@@ -346,9 +346,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [create-temp-branch, generate-changelog-bump-version]
 
-    env:
-      TOXENV: unit
-
     steps:
       - name: "Checkout ${{ github.repository }} Branch ${{ needs.create-temp-branch.outputs.branch_name }}"
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # actions/checkout@v4

@@ -184,3 +184,4 @@ def test_get_from_meta() -> None:
         {"some_field": "testing", "meta": {"my_meta_key": "my_meta_value"}}
     )
     assert test_class.get("my_meta_key") == "my_meta_value"
+    assert test_class.meta_get("my_meta_key") == "my_meta_value"

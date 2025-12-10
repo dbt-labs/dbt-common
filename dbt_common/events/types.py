@@ -48,6 +48,19 @@ class BehaviorChangeEvent(WarnLevel):
         )
 
 
+class GetMetaKeyDeprecation(WarnLevel):
+    def code(self) -> str:
+        return "D041"
+
+    def message(self) -> str:
+        return warning_tag(
+            f"DeprecationWarning: Custom config found under 'meta' using config.get('{self.meta_key}') "
+            f"or config.require('{self.meta_key}')."
+            f"Please replace this with config.meta_get('{self.meta_key}') or config.meta_require('{self.meta_key}') "
+            f"to avoid collisions with configs introduced by dbt."
+        )
+
+
 # =======================================================
 # M - Deps generation
 # =======================================================

@@ -35,6 +35,12 @@ class BaseConfig(AdditionalPropertiesAllowed, Replaceable):
         else:
             return default
 
+    def meta_get(self, key: str, default: Any = None) -> Any:
+        if hasattr(self, "meta") and key in self.meta:  # Issue warning
+            return self.meta[key]
+        else:
+            return default
+
     # enable syntax like: config['key'] = value
     def __setitem__(self, key: str, value) -> None:
         if hasattr(self, key):

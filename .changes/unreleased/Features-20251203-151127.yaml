@@ -1,0 +1,6 @@
+kind: Features
+body: Enable config.get to access keys in "meta"
+time: 2025-12-03T15:11:27.330805-05:00
+custom:
+    Author: gshank
+    Issue: "329"

@@ -171,3 +171,17 @@ def test_compare_behavior_from_field() -> None:
     assert CompareBehavior.from_field(fields2["default_behavior"]) == CompareBehavior.Include
     assert CompareBehavior.from_field(fields2["included"]) == CompareBehavior.Include
     assert CompareBehavior.from_field(fields2["excluded"]) == CompareBehavior.Exclude
+
+
+@dataclass
+class ClassDerivedFromBaseConfig(BaseConfig):
+    meta: Dict[str, str] = field(default_factory=dict)
+    some_field: Optional[str] = field(default=None)
+
+
+def test_get_from_meta() -> None:
+    test_class = ClassDerivedFromBaseConfig.from_dict(
+        {"some_field": "testing", "meta": {"my_meta_key": "my_meta_value"}}
+    )
+    assert test_class.get("my_meta_key") == "my_meta_value"
+    assert test_class.meta_get("my_meta_key") == "my_meta_value"

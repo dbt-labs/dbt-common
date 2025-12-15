@@ -54,7 +54,7 @@ class GetMetaKeyWarning(WarnLevel):
 
     def message(self) -> str:
         msg = (
-            f"The key '{self.meta_key}' was not found using config.get('{self.meta_key}'), but was detected as a custom config under 'meta'.\n"
+            f"The key '{self.meta_key}' was not found using config.get('{self.meta_key}'), but was detected as a custom config under 'meta'. "
             f"Please use config.meta_get('{self.meta_key}') or config.meta_require('{self.meta_key}') instead of config.get('{self.meta_key}') "
             f"to access the custom config value if intended."
         )

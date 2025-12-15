@@ -31,7 +31,7 @@ class BaseConfig(AdditionalPropertiesAllowed, Replaceable):
         elif hasattr(self, "meta") and key in self.meta:
             # Issue warning
             fire_event(GetMetaKeyDeprecation(meta_key=key))
-            return self.meta[key]
+            return default
         else:
             return default
 

@@ -3,7 +3,7 @@ from dbt_common.events.base_types import (
     InfoLevel,
     WarnLevel,
 )
-from dbt_common.ui import warning_tag, line_wrap_message, deprecation_tag
+from dbt_common.ui import warning_tag
 
 
 # The classes in this file represent the data necessary to describe a
@@ -48,7 +48,7 @@ class BehaviorChangeEvent(WarnLevel):
         )
 
 
-class GetMetaKeyWawrning(WarnLevel):
+class GetMetaKeyWarning(WarnLevel):
     def code(self) -> str:
         return "D041"
 

@@ -64,7 +64,7 @@ class TestEventJSONSerialization:
         # avoid having the entire list twice in the code.
         # D - Deprecations ======================
         types.BehaviorChangeEvent(flag_name="Do you have a flag?", flag_source="dbt_common"),
-        types.GetMetaKeyDeprecation(meta_key="my_meta_key"),
+        types.GetMetaKeyWarning(meta_key="my_meta_key"),
         # M - Deps generation ======================
         types.RetryExternalCall(attempt=0, max=0),
         types.RecordRetryException(exc=""),

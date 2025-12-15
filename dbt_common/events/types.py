@@ -54,10 +54,9 @@ class GetMetaKeyWarning(WarnLevel):
 
     def message(self) -> str:
         msg = (
-            f"Custom config found under 'meta' using config.get('{self.meta_key}') "
-            f"or config.require('{self.meta_key}').\n"
-            f"Please replace this with config.meta_get('{self.meta_key}') or config.meta_require('{self.meta_key}') "
-            f"to disambiguiate between configs introduced by dbt and custom configs in 'meta'."
+            f"The key '{self.meta_key}' was not found using config.get('{self.meta_key}'), but was detected as a custom config under 'meta'.\n"
+            f"Please use config.meta_get('{self.meta_key}') or config.meta_require('{self.meta_key}') instead of config.get('{self.meta_key}') "
+            f"to access the custom config value if intended."
         )
         return warning_tag(msg)
 

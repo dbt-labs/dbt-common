@@ -3,7 +3,7 @@ from dbt_common.events.base_types import (
     InfoLevel,
     WarnLevel,
 )
-from dbt_common.ui import warning_tag, line_wrap_message, deprecation_tag
+from dbt_common.ui import warning_tag
 
 
 # The classes in this file represent the data necessary to describe a
@@ -48,18 +48,17 @@ class BehaviorChangeEvent(WarnLevel):
         )
 
 
-class GetMetaKeyDeprecation(WarnLevel):
+class GetMetaKeyWarning(WarnLevel):
     def code(self) -> str:
         return "D041"
 
     def message(self) -> str:
         msg = (
-            f"DeprecationWarning: Custom config found under 'meta' using config.get('{self.meta_key}') "
-            f"or config.require('{self.meta_key}')."
-            f"Please replace this with config.meta_get('{self.meta_key}') or config.meta_require('{self.meta_key}') "
-            f"to avoid collisions with configs introduced by dbt."
+            f"The key '{self.meta_key}' was not found using config.get('{self.meta_key}'), but was detected as a custom config under 'meta'. "
+            f"Please use config.meta_get('{self.meta_key}') or config.meta_require('{self.meta_key}') instead of config.get('{self.meta_key}') "
+            f"to access the custom config value if intended."
         )
-        return line_wrap_message(deprecation_tag(msg, self.__class__.__name__))
+        return warning_tag(msg)
 
 
 # =======================================================

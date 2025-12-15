@@ -6,7 +6,7 @@ from dataclasses import dataclass, Field
 from itertools import chain
 from typing import Any, Callable, Dict, Iterator, List, Type, TypeVar
 
-from dbt_common.events.types import GetMetaKeyDeprecation
+from dbt_common.events.types import GetMetaKeyWarning
 from dbt_common.events.functions import fire_event
 from dbt_common.contracts.config.metadata import Metadata
 from dbt_common.exceptions import CompilationError, DbtInternalError
@@ -30,8 +30,8 @@ class BaseConfig(AdditionalPropertiesAllowed, Replaceable):
             return self._extra[key]
         elif hasattr(self, "meta") and key in self.meta:
             # Issue warning
-            fire_event(GetMetaKeyDeprecation(meta_key=key))
-            return self.meta[key]
+            fire_event(GetMetaKeyWarning(meta_key=key))
+            return default
         else:
             return default
 

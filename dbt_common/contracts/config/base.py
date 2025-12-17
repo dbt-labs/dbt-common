@@ -128,6 +128,30 @@ class BaseConfig(AdditionalPropertiesAllowed, Replaceable):
     }
 
     @classmethod
+    def update_from(
+        cls,
+        orig_dict: Dict[str, Any],
+        new_dict: Dict[str, Any],
+        adapter_config_cls: Type[BaseConfig],
+    ) -> Dict[str, Any]:
+        """Update and validate config given a dict.
+
+        Given a dict of keys, update the current config from them, validate
+        it, and return a new config with the updated values
+        """
+
+        self_merged = cls._merge_dicts(orig_dict, new_dict)
+        new_dict.update(self_merged)
+
+        adapter_merged = adapter_config_cls._merge_dicts(orig_dict, new_dict)
+        new_dict.update(adapter_merged)
+
+        # any remaining fields must be "clobber"
+        orig_dict.update(new_dict)
+
+        return orig_dict
+
+    @classmethod
     def _merge_dicts(cls, src: Dict[str, Any], data: Dict[str, Any]) -> Dict[str, Any]:
         """Mutate input to return merge results.
 
@@ -161,30 +185,6 @@ class BaseConfig(AdditionalPropertiesAllowed, Replaceable):
                 other_value=data_attr,
             )
         return result
-
-    def update_from(
-        self: T, data: Dict[str, Any], config_cls: Type[BaseConfig], validate: bool = True
-    ) -> T:
-        """Update and validate config given a dict.
-
-        Given a dict of keys, update the current config from them, validate
-        it, and return a new config with the updated values
-        """
-        dct = self.to_dict(omit_none=False)
-
-        self_merged = self._merge_dicts(dct, data)
-        dct.update(self_merged)
-
-        adapter_merged = config_cls._merge_dicts(dct, data)
-        dct.update(adapter_merged)
-
-        # any remaining fields must be "clobber"
-        dct.update(data)
-
-        # any validation failures must have come from the update
-        if validate:
-            self.validate(dct)
-        return self.from_dict(dct)
 
     def finalize_and_validate(self: T) -> T:
         dct = self.to_dict(omit_none=False)

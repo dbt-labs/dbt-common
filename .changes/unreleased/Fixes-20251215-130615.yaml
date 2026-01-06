@@ -1,6 +1,0 @@
-kind: Fixes
-body: restore config.get behavior to avoid searching in meta
-time: 2025-12-15T13:06:15.279328-05:00
-custom:
-    Author: michelleark
-    Issue: "337"

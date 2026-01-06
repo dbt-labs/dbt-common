@@ -113,13 +113,20 @@ class Diff:
 
     def calculate_diff(self) -> Dict[str, Any]:
         with open(self.current_recording_path) as current_recording:
-            current_dct = json.load(current_recording)
+            current_data = json.load(current_recording)
 
         with open(self.previous_recording_path) as previous_recording:
-            previous_dct = json.load(previous_recording)
+            previous_data = json.load(previous_recording)
+
+        # Convert list format to dict format if needed
+        current_dct = self._ensure_dict_format(current_data)
+        previous_dct = self._ensure_dict_format(previous_data)
 
         diff = {}
         for record_type in current_dct:
+            if record_type not in previous_dct:
+                diff[record_type] = {"added": current_dct[record_type]}
+                continue
             if record_type == "QueryRecord":
                 diff[record_type] = self.diff_query_records(
                     current_dct[record_type], previous_dct[record_type]
@@ -134,6 +141,55 @@ class Diff:
                 )
 
         return diff
+
+    @staticmethod
+    def _ensure_dict_format(data: Any) -> Dict[str, List[Dict[str, Any]]]:
+        """Convert recording data to dict format grouped by record type.
+
+        The dbt recording mechanism outputs data in list format, where each record
+        is an independent object with a 'type' field. However, replay and diff
+        operations expect data in dict format, grouped by record type.
+
+        List format (recording output):
+            [
+                {"type": "AdapterExecuteRecord", "params": {...}, "result": {...}, "seq": 0},
+                {"type": "AdapterExecuteRecord", "params": {...}, "result": {...}, "seq": 1},
+                {"type": "GetEnvRecord", "params": {...}, "result": {...}, "seq": 2}
+            ]
+
+        Dict format (replay/diff expected):
+            {
+                "AdapterExecuteRecord": [
+                    {"params": {...}, "result": {...}, "seq": 0},
+                    {"params": {...}, "result": {...}, "seq": 1}
+                ],
+                "GetEnvRecord": [
+                    {"params": {...}, "result": {...}, "seq": 2}
+                ]
+            }
+
+        This method automatically detects the input format and converts list format
+        to dict format if needed. If the input is already in dict format, it is
+        returned unchanged.
+
+        Args:
+            data: Recording data in either list or dict format.
+
+        Returns:
+            Recording data in dict format, grouped by record type.
+        """
+        if isinstance(data, dict):
+            return data
+        # Convert list format to dict format
+        result: Dict[str, List[Dict[str, Any]]] = {}
+        for record in data:
+            record_copy = dict(record)
+            record_type = record_copy.pop("type", None)
+            if record_type is not None:
+                if record_type not in result:
+                    result[record_type] = []
+                result[record_type].append(record_copy)
+        return result
 
 
 class RecorderMode(Enum):
@@ -239,7 +295,7 @@ class Recorder:
         records = self._records_by_type[rec_type_name]
         match: Optional[Record] = None
         for rec in records:
-            if rec.params == params:
+            if self._params_match(rec.params, params):
                 match = rec
                 records.remove(match)
                 break
@@ -283,12 +339,34 @@ class Recorder:
 
     @classmethod
     def load(cls, file_name: str) -> Dict[str, List[Dict[str, Any]]]:
+        """Load a recording file and return data in dict format.
+
+        Args:
+            file_name: Path to the recording JSON file.
+
+        Returns:
+            Recording data in dict format, grouped by record type.
+            Automatically converts list format to dict format if needed.
+        """
         with open(file_name) as file:
             return cls.load_json(file)
 
     @classmethod
     def load_json(cls, in_stream: TextIO) -> Dict[str, List[Dict[str, Any]]]:
-        return json.load(in_stream)
+        """Load recording data from a JSON stream and return in dict format.
+
+        This method accepts recording data in either list format (as produced by
+        the recording mechanism) or dict format (pre-converted). It automatically
+        converts list format to dict format for use by replay and diff operations.
+
+        Args:
+            in_stream: A text stream containing JSON recording data.
+
+        Returns:
+            Recording data in dict format, grouped by record type.
+        """
+        data = json.load(in_stream)
+        return Diff._ensure_dict_format(data)
 
     def _ensure_records_processed(self, record_type_name: str) -> None:
         if record_type_name in self._records_by_type:
@@ -310,8 +388,47 @@ class Recorder:
         if record.result is None:
             return None
 
+        # Prefer using return_val attribute to preserve complex object types
+        if hasattr(record.result, 'return_val'):
+            return record.result.return_val
+
+        # Fallback to original behavior
         result_tuple = dataclasses.astuple(record.result)
         return result_tuple[0] if len(result_tuple) == 1 else result_tuple
+
+    def _params_match(self, recorded_params: Any, requested_params: Any) -> bool:
+        """Compare params with flexible matching for enum/string differences."""
+        if recorded_params == requested_params:
+            return True
+        if hasattr(recorded_params, '_to_dict') and hasattr(requested_params, '_to_dict'):
+            return self._dicts_match(recorded_params._to_dict(), requested_params._to_dict())
+        return False
+
+    def _dicts_match(self, d1: Dict, d2: Dict) -> bool:
+        """Compare two dicts with flexible matching for enum/string differences."""
+        if set(d1.keys()) != set(d2.keys()):
+            return False
+
+        for key in d1:
+            v1, v2 = d1[key], d2[key]
+
+            if isinstance(v1, dict) and isinstance(v2, dict):
+                if not self._dicts_match(v1, v2):
+                    return False
+            elif isinstance(v1, (list, tuple, set, frozenset)) and isinstance(v2, (list, tuple, set, frozenset)):
+                set1 = set(str(x.value if hasattr(x, 'value') else x) for x in v1)
+                set2 = set(str(x.value if hasattr(x, 'value') else x) for x in v2)
+                if set1 != set2:
+                    return False
+            elif hasattr(v1, 'value') or hasattr(v2, 'value'):
+                str1 = str(v1.value if hasattr(v1, 'value') else v1)
+                str2 = str(v2.value if hasattr(v2, 'value') else v2)
+                if str1 != str2:
+                    return False
+            elif v1 != v2:
+                return False
+
+        return True
 
     def write_diffs(self, diff_file_name) -> None:
         assert self.diff is not None

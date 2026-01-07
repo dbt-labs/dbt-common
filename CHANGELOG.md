@@ -11,8 +11,6 @@
 
 - restore config.get behavior to avoid searching in meta ([#337](https://github.com/dbt-labs/dbt-common/issues/337))
 
-
-
 ## dbt-common 1.37.1 - December 11, 2025
 
 ### Dependencies
@@ -43,6 +41,16 @@
 
 ### Contributors
 - [@otosky](https://github.com/otosky) ([#astronomer/astronomer-cosmos#1075](https://github.com/dbt-labs/dbt-common/issues/astronomer/astronomer-cosmos#1075))
+
+## dbt-common 1.34.1 - January 06, 2026
+
+### Features
+
+- Enable config.get to access keys in "meta" ([#329](https://github.com/dbt-labs/dbt-common/issues/329))
+
+### Fixes
+
+- restore config.get behavior to avoid searching in meta ([#337](https://github.com/dbt-labs/dbt-common/issues/337))
 
 ## dbt-common 1.34.0 - October 28, 2025
 
@@ -393,3 +401,4 @@
 
 ### Contributors
 - [@truls-p](https://github.com/truls-p) ([#6073](https://github.com/dbt-labs/dbt-common/issues/6073))
+

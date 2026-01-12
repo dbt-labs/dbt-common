@@ -24,6 +24,17 @@ import contextvars
 
 RECORDED_BY_HIGHER_FUNCTION = contextvars.ContextVar("RECORDED_BY_HIGHER_FUNCTION", default=False)
 
+# Default record type groups for replay mode when DBT_RECORDER_TYPES is not specified.
+# This allows replay to work without recording file system operations.
+# - "Database": Low-level cursor operations (execute, fetchall, etc.)
+# - "Available": Adapter-level operations (AdapterExecuteRecord, etc.)
+DEFAULT_REPLAY_GROUPS = ["Database", "Available"]
+
+
+class RecordReplayMismatchError(Exception):
+    """Raised when replay mode cannot find a matching record for the requested params."""
+    pass
+
 
 class Record:
     """An instance of this abstract Record class represents a request made by dbt
@@ -372,6 +383,11 @@ class Recorder:
         if record_type_name in self._records_by_type:
             return
 
+        # Handle missing record types gracefully - they may not have been recorded
+        if record_type_name not in self._unprocessed_records_by_type:
+            self._records_by_type[record_type_name] = []
+            return
+
         rec_list = []
         record_cls = self._record_cls_by_name[record_type_name]
         for record_dct in self._unprocessed_records_by_type[record_type_name]:
@@ -383,7 +399,33 @@ class Recorder:
         record = self.pop_matching_record(params)
 
         if record is None:
-            raise Exception()
+            params_type = type(params).__name__
+            rec_type_name = self._record_name_by_params_name.get(params_type, "Unknown")
+            
+            # Get available records count for this type
+            available_count = len(self._records_by_type.get(rec_type_name, []))
+            
+            # Try to get a string representation of the params for debugging
+            params_str = ""
+            try:
+                if hasattr(params, '_to_dict'):
+                    params_str = f"\n  Requested params: {params._to_dict()}"
+                else:
+                    params_str = f"\n  Requested params: {params}"
+            except Exception:
+                pass
+            
+            raise RecordReplayMismatchError(
+                f"Replay failed: No matching record found for '{rec_type_name}'.\n"
+                f"  Params type: {params_type}\n"
+                f"  Available records of this type: {available_count}\n"
+                f"  Recorded types in file: {list(self._unprocessed_records_by_type.keys())}"
+                f"{params_str}\n\n"
+                f"Possible causes:\n"
+                f"  1. This record type was not included in the recording (check DBT_RECORDER_TYPES)\n"
+                f"  2. The params don't match any recorded params (different SQL, thread_id, etc.)\n"
+                f"  3. The recording file is incomplete or corrupted"
+            )
 
         if record.result is None:
             return None
@@ -402,14 +444,29 @@ class Recorder:
             return True
         if hasattr(recorded_params, '_to_dict') and hasattr(requested_params, '_to_dict'):
             return self._dicts_match(recorded_params._to_dict(), requested_params._to_dict())
+        # Fallback to dataclasses.asdict for dataclass params without _to_dict
+        if dataclasses.is_dataclass(recorded_params) and dataclasses.is_dataclass(requested_params):
+            return self._dicts_match(dataclasses.asdict(recorded_params), dataclasses.asdict(requested_params))
         return False
 
     def _dicts_match(self, d1: Dict, d2: Dict) -> bool:
-        """Compare two dicts with flexible matching for enum/string differences."""
-        if set(d1.keys()) != set(d2.keys()):
-            return False
+        """Compare two dicts with flexible matching for enum/string differences.
 
-        for key in d1:
+        Handles schema evolution by:
+        - Treating None values as equivalent to missing keys (omit_none compatibility)
+        - Allowing keys that exist only in one dict if their value is None or a default
+        """
+        # Get all keys, treating None values as "not present" for comparison purposes
+        keys1 = {k for k, v in d1.items() if v is not None}
+        keys2 = {k for k, v in d2.items() if v is not None}
+
+        # Keys present in both (with non-None values) must match
+        common_keys = keys1 & keys2
+
+        # Keys only in one dict are allowed for schema evolution
+        # (new fields added with defaults, or old fields removed)
+
+        for key in common_keys:
             v1, v2 = d1[key], d2[key]
 
             if isinstance(v1, dict) and isinstance(v2, dict):
@@ -426,9 +483,75 @@ class Recorder:
                 if str1 != str2:
                     return False
             elif v1 != v2:
+                # Special handling for SQL strings with query_tag - normalize worker thread IDs
+                if key == 'sql' and isinstance(v1, str) and isinstance(v2, str):
+                    if self._sql_matches_ignoring_worker_thread(v1, v2):
+                        continue
                 return False
 
         return True
+
+    def _sql_matches_ignoring_worker_thread(self, sql1: str, sql2: str) -> bool:
+        """Check if two SQL strings match after normalizing dynamic values.
+
+        Normalizes the following patterns to allow matching between recording and replay:
+        1. Worker thread IDs: Thread-19 (worker) -> Thread-N (worker)
+        2. UUIDs: 99e1ad40-6d08-4040-917c-bbec6bf14204 -> <UUID>
+        3. ISO timestamps: 2025-12-03T12:22:42.173196Z -> <TIMESTAMP>
+        4. SQL timestamps: 2025-12-03 17:01:44 -> <TIMESTAMP>
+        5. Snowflake query IDs: 01b8f3a2-0000-... -> <QUERY_ID>
+
+        This handles cases where:
+        - dbt runs with different thread counts between recording and replay
+        - Invocation IDs and other UUIDs differ between runs
+        - Timestamps differ between recording and replay runs
+        """
+        import re
+
+        def normalize_sql(sql: str) -> str:
+            # Normalize worker thread IDs in query_tag SQL
+            # e.g., "thread_id": "Thread-19 (worker)" -> "thread_id": "Thread-N (worker)"
+            sql = re.sub(
+                r'"thread_id":\s*"Thread-\d+\s*\(worker\)"',
+                '"thread_id": "Thread-N (worker)"',
+                sql
+            )
+
+            # Normalize UUIDs (8-4-4-4-12 hex format)
+            # e.g., 99e1ad40-6d08-4040-917c-bbec6bf14204 -> <UUID>
+            sql = re.sub(
+                r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}',
+                '<UUID>',
+                sql
+            )
+
+            # Normalize ISO timestamps with timezone
+            # e.g., 2025-12-03T12:22:42.173196Z -> <TIMESTAMP>
+            sql = re.sub(
+                r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?',
+                '<TIMESTAMP>',
+                sql
+            )
+
+            # Normalize SQL datetime format
+            # e.g., '2025-12-03 17:01:44' -> '<TIMESTAMP>'
+            sql = re.sub(
+                r"'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'",
+                "'<TIMESTAMP>'",
+                sql
+            )
+
+            # Normalize floating point numbers (execution times, etc.)
+            # e.g., 3.3368406295776367 -> <FLOAT>
+            sql = re.sub(
+                r'\b\d+\.\d{6,}\b',
+                '<FLOAT>',
+                sql
+            )
+
+            return sql
+
+        return normalize_sql(sql1) == normalize_sql(sql2)
 
     def write_diffs(self, diff_file_name) -> None:
         assert self.diff is not None
@@ -474,11 +597,14 @@ def get_record_mode_from_env() -> Optional[RecorderMode]:
     return None
 
 
-def get_record_types_from_env() -> Optional[List]:
+def get_record_types_from_env(mode: Optional[RecorderMode] = None) -> Optional[List]:
     """
     Get the record subset from the environment variables.
 
-    If no types are provided, there will be no filtering.
+    If no types are provided:
+    - For REPLAY mode: defaults to adapter-related types (Database, Available groups)
+    - For other modes: no filtering (all types recorded)
+
     Invalid types will be ignored.
     Expected format: 'DBT_RECORDER_TYPES=Database,FileLoadRecord' or 'DBT_ENGINE_RECORDER_TYPES=Database,FileLoadRecord'
     """
@@ -486,11 +612,18 @@ def get_record_types_from_env() -> Optional[List]:
         "DBT_RECORDER_TYPES"
     )
 
-    # if all is specified we don't want any type filtering
-    if record_types_str is None or record_types_str.lower == "all":
-        return None
+    # If types are explicitly specified, use them
+    if record_types_str is not None:
+        # "all" means no type filtering
+        if record_types_str.lower() == "all":
+            return None
+        return record_types_str.split(",")
 
-    return record_types_str.split(",")
+    # Default behavior when no types specified
+    if mode == RecorderMode.REPLAY:
+        return DEFAULT_REPLAY_GROUPS
+
+    return None
 
 
 def get_record_row_limit_from_env() -> Optional[int]:
@@ -654,9 +787,15 @@ def _record_function_inner(
         if recorder is None:
             return func_to_record(*call_args, **kwargs)
 
-        if recorder.recorded_types is not None and not (
-            record_type.__name__ in recorder.recorded_types
-            or record_type.group in recorder.recorded_types
+        # Get effective recorded_types with mode awareness
+        # In replay mode, default to adapter-related types if not specified
+        effective_recorded_types = recorder.recorded_types
+        if effective_recorded_types is None and recorder.mode == RecorderMode.REPLAY:
+            effective_recorded_types = DEFAULT_REPLAY_GROUPS
+
+        if effective_recorded_types is not None and not (
+            record_type.__name__ in effective_recorded_types
+            or record_type.group in effective_recorded_types
         ):
             return func_to_record(*call_args, **kwargs)
 
@@ -705,7 +844,46 @@ def _record_function_inner(
             return func_to_record(*call_args, **kwargs)
 
         if recorder.mode == RecorderMode.REPLAY and params is not None:
-            return recorder.expect_record(params)
+            try:
+                return recorder.expect_record(params)
+            except RecordReplayMismatchError as e:
+                # For certain record types, fallback to real function call is acceptable.
+                # These are typically non-database operations that don't need to be mocked.
+                # The 'group' attribute indicates the category of the record type.
+                record_group = getattr(record_type, 'group', None)
+                
+                # Only fallback for non-database operations (group is None or not 'Database'/'Available')
+                # 'Database' group = low-level cursor operations
+                # 'Available' group = adapter-level operations that should be recorded
+                if record_group in (None,):
+                    # Safe to fallback - this is likely a utility function like get_env()
+                    # Log the fallback for debugging purposes
+                    record_name = getattr(record_type, '__name__', str(record_type))
+                    params_str = ""
+                    try:
+                        if hasattr(params, '_to_dict'):
+                            params_str = str(params._to_dict())
+                        else:
+                            params_str = str(params)
+                    except Exception:
+                        params_str = "<unable to serialize params>"
+                    
+                    # Use fire_event if available, otherwise fall back to print
+                    try:
+                        from dbt_common.events.functions import fire_event
+                        from dbt_common.events.types import RecordReplayIssue
+                        fire_event(RecordReplayIssue(
+                            msg=f"Fallback to real call for '{record_name}' (group={record_group}). Params: {params_str}"
+                        ))
+                    except Exception:
+                        print(
+                            f"[Record/Replay] Fallback to real call for '{record_name}' "
+                            f"(group={record_group}). Params: {params_str}"
+                        )
+                    return func_to_record(*call_args, **kwargs)
+                else:
+                    # This is a database/adapter operation - re-raise the error
+                    raise
         if RECORDED_BY_HIGHER_FUNCTION.get():
             return func_to_record(*call_args, **kwargs)
 

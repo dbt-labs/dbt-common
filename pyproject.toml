@@ -44,7 +44,7 @@ dependencies = [
 
 [project.optional-dependencies]
 lint = [
-    "black>=23.3,<24.0",
+    "black>=23.3,<26.0",
     "flake8",
     "flake8-pyproject",
     "flake8-docstrings",

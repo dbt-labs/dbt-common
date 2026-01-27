@@ -10,12 +10,16 @@ from shutil import rmtree
 from tempfile import mkdtemp
 from dbt_common.clients import agate_helper
 
-SAMPLE_CSV_DATA = """a,b,c,d,e,f,g
+SAMPLE_CSV_DATA = """col1,col2,col3,col4,col5,col6,col7
 1,n,test,3.2,20180806T11:33:29.320Z,True,NULL
 2,y,asdf,900,20180806T11:35:29.320Z,False,a string"""
 
 SAMPLE_CSV_BOM_DATA = "\ufeff" + SAMPLE_CSV_DATA
 
+SAMPLE_CSV_NO_HEADER_DATA = """1,n,test,3.2,20180806T11:33:29.320Z,True,NULL
+2,y,asdf,900,20180806T11:35:29.320Z,False,a string"""
+
+EXPECTED_COLUMN_NAMES = ("col1", "col2", "col3", "col4", "col5", "col6", "col7")
 
 EXPECTED = [
     [
@@ -74,8 +78,33 @@ class TestAgateHelper(unittest.TestCase):
         path = os.path.join(self.tempdir, "input.csv")
         with open(path, "wb") as fp:
             fp.write(SAMPLE_CSV_DATA.encode("utf-8"))
-        tbl = agate_helper.from_csv(path, tuple("abcdefg"))
+        tbl = agate_helper.from_csv(path, EXPECTED_COLUMN_NAMES)
+        self.assertEqual(tbl.column_names, EXPECTED_COLUMN_NAMES)
         self.assertEqual(len(tbl), len(EXPECTED_STRINGS))
+        for expected, row in zip(EXPECTED_STRINGS, tbl):
+            self.assertEqual(list(row), expected)
+
+    def test_from_csv_no_header(self) -> None:
+        path = os.path.join(self.tempdir, "input.csv")
+        with open(path, "wb") as fp:
+            fp.write(SAMPLE_CSV_NO_HEADER_DATA.encode("utf-8"))
+        tbl = agate_helper.from_csv(path, (), header=False)
+        self.assertEqual(len(tbl), len(EXPECTED))
+        # Check column names are auto-generated (a, b, c, d, e, f, g)
+        expected_column_names = ("a", "b", "c", "d", "e", "f", "g")
+        self.assertEqual(tbl.column_names, expected_column_names)
+        for idx, row in enumerate(tbl):
+            self.assertEqual(list(row), EXPECTED[idx])
+
+    def test_from_csv_no_header_all_reserved(self) -> None:
+        path = os.path.join(self.tempdir, "input.csv")
+        with open(path, "wb") as fp:
+            fp.write(SAMPLE_CSV_NO_HEADER_DATA.encode("utf-8"))
+        tbl = agate_helper.from_csv(path, tuple("abcdefg"), header=False)
+        self.assertEqual(len(tbl), len(EXPECTED_STRINGS))
+        # Check column names are auto-generated (a, b, c, d, e, f, g)
+        expected_column_names = ("a", "b", "c", "d", "e", "f", "g")
+        self.assertEqual(tbl.column_names, expected_column_names)
         for expected, row in zip(EXPECTED_STRINGS, tbl):
             self.assertEqual(list(row), expected)
 

@@ -59,7 +59,7 @@ defaults:
 # top-level adjustments can be made here
 env:
   # number of parallel processes to spawn for python integration testing
-  PYTHON_INTEGRATION_TEST_WORKERS: 5
+  PYTHON_INTEGRATION_TEST_WORKERS: 10
 
 jobs:
   job-prep:
@@ -188,7 +188,7 @@ jobs:
     if: ${{ github.event_name != 'pull_request' && !contains(github.event.label.name, 'Skip Core Testing')}}
 
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: 45
     needs: [job-prep, dbt-core-integration-metadata]
     strategy:
       fail-fast: false
@@ -266,7 +266,7 @@ jobs:
     if: ${{ github.event_name != 'pull_request' && !contains(github.event.label.name, 'Skip Core Testing')}}
 
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: 45
     needs: [job-prep, dbt-core-integration-metadata]
     strategy:
       fail-fast: false

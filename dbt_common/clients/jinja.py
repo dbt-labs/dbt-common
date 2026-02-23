@@ -1,4 +1,5 @@
 import codecs
+import dataclasses
 import linecache
 import os
 import tempfile
@@ -37,7 +38,13 @@ from dbt_common.utils.jinja import (
     get_materialization_macro_name,
     get_test_macro_name,
 )
-from dbt_common.clients._jinja_blocks import BlockIterator, BlockData, BlockTag, TagIterator
+from dbt_common.clients._jinja_blocks import (
+    BlockIterator,
+    BlockData,
+    BlockTag,
+    TagIterator,
+    ExtractWarning,
+)
 
 from dbt_common.exceptions import (
     CompilationError,
@@ -47,6 +54,7 @@ from dbt_common.exceptions import (
     JinjaRenderingError,
     UndefinedCompilationError,
     DbtRuntimeTypeError,
+    DbtRuntimeError
 )
 from dbt_common.exceptions.macros import MacroReturn, UndefinedMacroError, CaughtMacroError
 
@@ -90,6 +98,12 @@ def _linecache_inject(source: str, write: bool) -> str:
     return filename
 
 
+@dataclasses.dataclass
+class MacroType:
+    name: str
+    type_params: List["MacroType"] = dataclasses.field(default_factory=list)
+
+
 class MacroFuzzParser(jinja2.parser.Parser):
     def parse_macro(self) -> jinja2.nodes.Macro:
         node = jinja2.nodes.Macro(lineno=next(self.stream).lineno)
@@ -102,6 +116,65 @@ class MacroFuzzParser(jinja2.parser.Parser):
         self.parse_signature(node)
         node.body = self.parse_statements(("name:endmacro",), drop_needle=True)
         return node
+
+    def parse_signature(self, node: Union[jinja2.nodes.Macro, jinja2.nodes.CallBlock]) -> None:
+        """Overrides the default jinja Parser.parse_signature method, modifying
+        the original implementation to allow macros to have typed parameters."""
+
+        # Jinja does not support extending its node types, such as Macro, so
+        # at least while typed macros are experimental, we will patch the
+        # information onto the existing types.
+        setattr(node, "arg_types", [])
+        setattr(node, "has_type_annotations", False)
+
+        args = node.args = []  # type: ignore
+        defaults = node.defaults = []  # type: ignore
+
+        self.stream.expect("lparen")
+        while self.stream.current.type != "rparen":
+            if args:
+                self.stream.expect("comma")
+
+            arg = self.parse_assign_target(name_only=True)
+            arg.set_ctx("param")
+
+            type_name: Optional[str]
+            if self.stream.skip_if("colon"):
+                node.has_type_annotations = True  # type: ignore
+                type_name = self.parse_type_name()
+            else:
+                type_name = ""
+
+            node.arg_types.append(type_name)  # type: ignore
+
+            if self.stream.skip_if("assign"):
+                defaults.append(self.parse_expression())
+            elif defaults:
+                self.fail("non-default argument follows default argument")
+
+            args.append(arg)
+        self.stream.expect("rparen")
+
+    def parse_type_name(self) -> MacroType:
+        # NOTE: Types syntax is validated here, but not whether type names
+        # are valid or have correct parameters.
+
+        # A type name should consist of a name (i.e. 'Dict')...
+        type_name = self.stream.expect("name").value
+        type = MacroType(type_name)
+
+        # ..and an optional comma-delimited list of type parameters
+        # as in the type declaration 'Dict[str, str]'
+        if self.stream.skip_if("lbracket"):
+            while self.stream.current.type != "rbracket":
+                if type.type_params:
+                    self.stream.expect("comma")
+                param_type = self.parse_type_name()
+                type.type_params.append(param_type)
+
+            self.stream.expect("rbracket")
+
+        return type
 
 
 class MacroFuzzEnvironment(jinja2.sandbox.SandboxedEnvironment):
@@ -547,6 +620,12 @@ def catch_jinja(node: Optional[_NodeProtocol] = None) -> Iterator[None]:
     except CompilationError as exc:
         exc.add_node(node)
         raise
+    except DbtRuntimeError:
+        # Propagate dbt exception raised during jinja compilation
+        raise
+    except Exception as e:
+        # Raise any non-dbt exceptions as CompilationError
+        raise CompilationError(str(e), node) from e
 
 
 _TESTING_PARSE_CACHE: Dict[str, jinja2.nodes.Template] = {}
@@ -599,6 +678,7 @@ def extract_toplevel_blocks(
     text: str,
     allowed_blocks: Optional[Set[str]] = None,
     collect_raw_data: bool = True,
+    warning_callback: Optional[Callable[[ExtractWarning], None]] = None,
 ) -> List[Union[BlockData, BlockTag]]:
     """Extract the top-level blocks with matching block types from a jinja file.
 
@@ -612,6 +692,8 @@ def extract_toplevel_blocks(
         be part of the results, as `BlockData` objects. They have a
         `block_type_name` field of `'__dbt_data'` and will never have a
         `block_name`.
+    :param warning_callback: An optional callback that will be called if there
+        are recoverable issues detected in the template.
     :return: A list of `BlockTag`s matching the allowed block types and (if
         `collect_raw_data` is `True`) `BlockData` objects.
     """
@@ -622,7 +704,7 @@ def extract_toplevel_blocks(
             return _TESTING_BLOCKS_CACHE[hash]
 
     tag_iterator = TagIterator(text)
-    blocks = BlockIterator(tag_iterator).lex_for_blocks(
+    blocks = BlockIterator(tag_iterator, warning_callback).lex_for_blocks(
         allowed_blocks=allowed_blocks, collect_raw_data=collect_raw_data
     )
 

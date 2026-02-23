@@ -1,6 +1,0 @@
-kind: Under the Hood
-body: Deserialize Record objects on a just-in-time basis.
-time: 2024-06-18T15:50:25.985387-04:00
-custom:
-  Author: peterallenwebb
-  Issue: "151"

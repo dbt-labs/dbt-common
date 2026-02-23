@@ -38,7 +38,7 @@ from dbt_common.ui import warning_tag
 
 class BehaviorChangeEvent(WarnLevel):
     def code(self) -> str:
-        return "D018"
+        return "D000"
 
     def message(self) -> str:
         return warning_tag(
@@ -46,6 +46,19 @@ class BehaviorChangeEvent(WarnLevel):
             f"You may opt into the new behavior sooner by setting `flags.{self.flag_name}` to `True` in `dbt_project.yml`.\n"
             f"Visit {self.docs_url} for more information."
         )
+
+
+class GetMetaKeyWarning(WarnLevel):
+    def code(self) -> str:
+        return "D041"
+
+    def message(self) -> str:
+        msg = (
+            f"The key '{self.meta_key}' was not found using config.get('{self.meta_key}'), but was detected as a custom config under 'meta'. "
+            f"Please use config.meta_get('{self.meta_key}') or config.meta_require('{self.meta_key}') instead of config.get('{self.meta_key}') "
+            f"to access the custom config value if intended."
+        )
+        return warning_tag(msg)
 
 
 # =======================================================
@@ -118,7 +131,7 @@ class SystemReportReturnCode(DebugLevel):
 
 
 # We use events to create console output, but also think of them as a sequence of important and
-# meaningful occurrences to be used for debugging and monitoring. The Formatting event helps eases
+# meaningful occurrences to be used for debugging and monitoring. The Formatting event eases
 # the tension between these two goals by allowing empty lines, heading separators, and other
 # formatting to be written to the console, while they can be ignored for other purposes. For
 # general information that isn't simple formatting, the Note event should be used instead.
@@ -153,6 +166,16 @@ class PrintEvent(InfoLevel):
     # This is to support commands that want --quiet option but also log something to stdout
     def code(self) -> str:
         return "Z052"
+
+    def message(self) -> str:
+        return self.msg
+
+
+class RecordReplayIssue(InfoLevel):
+    """General event for reporting record/replay issues at runtime."""
+
+    def code(self) -> str:
+        return "Z053"
 
     def message(self) -> str:
         return self.msg

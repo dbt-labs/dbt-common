@@ -2,7 +2,7 @@ import json
 import logging
 import threading
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from logging.handlers import RotatingFileHandler
 from typing import Optional, TextIO, Any, Callable
@@ -13,11 +13,11 @@ from dbt_common.events.base_types import EventLevel, EventMsg
 from dbt_common.events.format import timestamp_to_datetime_string
 from dbt_common.utils.encoding import ForgivingJSONEncoder
 
-PRINT_EVENT_NAME = "PrintEvent"
+PRINT_EVENT_NAMES = ("PrintEvent", "ShowNode", "CompiledNode")
 
 
 def _is_print_event(msg: EventMsg) -> bool:
-    return msg.info.name == PRINT_EVENT_NAME
+    return msg.info.name in PRINT_EVENT_NAMES
 
 
 # A Filter is a function which takes a BaseEvent and returns True if the event
@@ -156,7 +156,7 @@ class _TextLogger(_Logger):
         if _is_print_event(msg):
             # PrintEvent is a special case, we don't want to add a timestamp
             return scrubbed_msg
-        ts: str = datetime.utcnow().strftime("%H:%M:%S")
+        ts: str = datetime.now(timezone.utc).replace(tzinfo=None).strftime("%H:%M:%S")
         return f"{self._get_color_tag()}{ts}  {scrubbed_msg}"
 
     def create_debug_line(self, msg: EventMsg) -> str:

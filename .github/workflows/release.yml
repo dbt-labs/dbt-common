@@ -1,15 +1,19 @@
-name: Release
+name: "Release (with Version Bump & Changelog Update)"
 
 on:
   workflow_dispatch:
     inputs:
+      version_number:
+        description: "Version to bump to: ex. 1.14.5"
+        required: true
+        type: string
       deploy-to:
         type: choice
         description: Choose where to publish (test/prod)
         options:
           - PypiProd
           - PypiTest
-        default: PypiTest
+        default: PypiProd
 
 permissions: read-all
 
@@ -23,10 +27,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  release-prep:
+    permissions:
+      contents: write
+    name: "Version bump and Changelog update"
+    uses: ./.github/workflows/pre_release.yml
+    with:
+      version_number: ${{ inputs.version_number }}
+    secrets:
+      inherit
 
   release:
     name: PyPI - ${{ inputs.deploy-to }}
     runs-on: ubuntu-latest
+    needs: [release-prep]
     environment:
       name: ${{ inputs.deploy-to }}
     permissions:
@@ -34,14 +48,23 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # actions/checkout@v4
         with:
+          ref: ${{ github.ref }}
           persist-credentials: false
 
       - name: "Set up Python & Hatch - 3.11"
         uses: ./.github/actions/setup-python-hatch
         with:
           python-version: "3.11"
+
+      - name: "Validate version"
+        run: |
+          HATCH_VERSION=$(hatch version)
+          if [[ "${{ inputs.version_number }}" != "$HATCH_VERSION" ]]; then
+            echo "Version number (${{ inputs.version_number }}) does not match current version ($HATCH_VERSION)"
+            exit 1
+          fi
 
       - name: Build artifacts
         run: hatch build
@@ -53,10 +76,10 @@ jobs:
 
       - name: Publish artifacts to PyPI Test
         if: inputs.deploy-to == 'PypiTest'
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
 
       - name: Publish artifacts to PyPI Prod
         if: inputs.deploy-to == 'PypiProd'
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # pypa/gh-action-pypi-publish@release/v1

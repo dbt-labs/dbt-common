@@ -42,11 +42,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
       - name: "Check out the repository"
-        uses: actions/checkout@v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # actions/checkout@v4
 
       - name: "Set up Python & Hatch - ${{ matrix.python-version }}"
         uses: ./.github/actions/setup-python-hatch
@@ -65,7 +65,7 @@ jobs:
 
       - name: Upload Unit Test Coverage to Codecov
         if: ${{ matrix.python-version == '3.11' }}
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: unit

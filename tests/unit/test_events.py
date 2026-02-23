@@ -64,6 +64,7 @@ class TestEventJSONSerialization:
         # avoid having the entire list twice in the code.
         # D - Deprecations ======================
         types.BehaviorChangeEvent(flag_name="Do you have a flag?", flag_source="dbt_common"),
+        types.GetMetaKeyWarning(meta_key="my_meta_key"),
         # M - Deps generation ======================
         types.RetryExternalCall(attempt=0, max=0),
         types.RecordRetryException(exc=""),
@@ -76,6 +77,7 @@ class TestEventJSONSerialization:
         types.Formatting(),
         types.Note(msg="This is a note."),
         types.PrintEvent(msg="This is a print event."),
+        types.RecordReplayIssue(msg="This is a record replay issue."),
     ]
 
     def test_all_serializable(self):

@@ -1,7 +1,16 @@
+import jinja2
 import unittest
 
-from dbt_common.clients._jinja_blocks import BlockTag
-from dbt_common.clients.jinja import extract_toplevel_blocks, get_template, render_template
+from typing import Any, Dict, List
+
+from dbt_common.clients._jinja_blocks import BlockTag, ExtractWarning
+from dbt_common.clients.jinja import (
+    extract_toplevel_blocks,
+    get_template,
+    render_template,
+    MacroFuzzParser,
+    MacroType,
+)
 from dbt_common.exceptions import CompilationError, DbtRuntimeTypeError
 
 
@@ -543,7 +552,7 @@ hi
 """
 
 
-def test_if_list_filter():
+def test_if_list_filter() -> None:
     jinja_string = """
         {%- if my_var | is_list -%}
             Found a list
@@ -552,7 +561,7 @@ def test_if_list_filter():
         {%- endif -%}
     """
     # Check with list variable
-    ctx = {"my_var": ["one", "two"]}
+    ctx: Dict[str, Any] = {"my_var": ["one", "two"]}
     template = get_template(jinja_string, ctx)
     rendered = render_template(template, ctx)
     assert "Found a list" in rendered
@@ -562,3 +571,68 @@ def test_if_list_filter():
     template = get_template(jinja_string, ctx)
     rendered = render_template(template, ctx)
     assert "Did not find a list" in rendered
+
+
+def test_macro_parser_parses_simple_types() -> None:
+    macro_txt = """
+    {% macro test_macro(param1: str, param2: int, param3: bool, param4: float, param5: Any) %}
+    {% endmacro %}
+    """
+
+    env = jinja2.Environment()
+    parser = MacroFuzzParser(env, macro_txt)
+    result = parser.parse()
+    arg_types = result.body[1].arg_types
+    assert arg_types[0] == MacroType("str")
+    assert arg_types[1] == MacroType("int")
+    assert arg_types[2] == MacroType("bool")
+    assert arg_types[3] == MacroType("float")
+    assert arg_types[4] == MacroType("Any")
+
+
+def test_macro_parser_parses_complex_types() -> None:
+    macro_txt = """
+    {% macro test_macro(param1: List[str], param2: Dict[ int,str ], param3: Optional[List[str]], param4: Dict[str, Dict[bool, Any]]) %}
+    {% endmacro %}
+    """
+
+    env = jinja2.Environment()
+    parser = MacroFuzzParser(env, macro_txt)
+    result = parser.parse()
+    arg_types = result.body[1].arg_types
+    assert arg_types[0] == MacroType("List", [MacroType("str")])
+    assert arg_types[1] == MacroType("Dict", [MacroType("int"), MacroType("str")])
+    assert arg_types[2] == MacroType("Optional", [MacroType("List", [MacroType("str")])])
+    assert arg_types[3] == MacroType(
+        "Dict", [MacroType("str"), MacroType("Dict", [MacroType("bool"), MacroType("Any")])]
+    )
+
+
+def test_stray_block_warnings() -> None:
+    problem_template = """
+    {% unknown %}
+    {% macro foo() %}
+      {% set my_var = "something" %}
+      {%- do my_func() -%}
+      {{ "test text" }}
+    {% endmacro %}
+    {% set my_var = "something" %}
+    {% endmacro %}
+    """
+
+    warnings: List[ExtractWarning] = []
+
+    def warning_callback(warning: ExtractWarning):
+        warnings.append(warning)
+
+    blocks = extract_toplevel_blocks(
+        problem_template, collect_raw_data=False, warning_callback=warning_callback
+    )
+    assert len(blocks) == 1
+    assert len(warnings) == 3
+    assert warnings[0].warning_type == "unexpected_block"
+    assert "unknown" in warnings[0].msg
+    assert warnings[1].warning_type == "unexpected_block"
+    assert "set" in warnings[1].msg
+    assert warnings[2].warning_type == "unexpected_block"
+    assert "endmacro" in warnings[2].msg

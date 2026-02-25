@@ -1,9 +1,11 @@
 import os
 import shutil
 import stat
+import sys
 import unittest
 import tarfile
 import pathspec
+import pytest
 from pathlib import Path
 from tempfile import mkdtemp, NamedTemporaryFile
 
@@ -296,3 +298,53 @@ class TestUntarPackage(unittest.TestCase):
         assert tarfile.is_tarfile(tar.name)
         with self.assertRaises(tarfile.OutsideDestinationError):
             dbt_common.clients.system.untar_package(tar_file_full_path, self.tempdest)
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 12), reason="Tests Python 3.12+ tarfile filter='data' path"
+)
+def test_safe_extract_py312_path(tmp_path) -> None:
+    """Test that Python 3.12+ uses filter='data' for extraction."""
+    import warnings
+
+    tar_file_path = tmp_path / "test.tar.gz"
+    content_file = tmp_path / "content.txt"
+    content_file.write_bytes(b"test content")
+
+    with tarfile.open(tar_file_path, "w:gz") as tar:
+        tar.add(content_file, arcname="content.txt")
+
+    dest_dir = tmp_path / "dest"
+    dest_dir.mkdir()
+
+    # On Python 3.12+, safe_extract should use filter="data" and not emit
+    # a DeprecationWarning about the filter argument
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        with tarfile.open(tar_file_path, "r:gz") as tarball:
+            dbt_common.clients.system.safe_extract(tarball, str(dest_dir))
+
+    # Verify extraction worked
+    assert (dest_dir / "content.txt").exists()
+
+
+@pytest.mark.skipif(
+    sys.version_info >= (3, 12), reason="Tests Python <3.12 manual validation path"
+)
+def test_safe_extract_pre_py312_path(tmp_path) -> None:
+    """Test that Python <3.12 uses manual member validation."""
+    tar_file_path = tmp_path / "test.tar.gz"
+    content_file = tmp_path / "content.txt"
+    content_file.write_bytes(b"test content")
+
+    with tarfile.open(tar_file_path, "w:gz") as tar:
+        tar.add(content_file, arcname="content.txt")
+
+    dest_dir = tmp_path / "dest"
+    dest_dir.mkdir()
+
+    with tarfile.open(tar_file_path, "r:gz") as tarball:
+        dbt_common.clients.system.safe_extract(tarball, str(dest_dir))
+
+    # Verify extraction worked
+    assert (dest_dir / "content.txt").exists()

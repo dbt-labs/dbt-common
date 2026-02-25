@@ -630,7 +630,7 @@ def safe_extract(tarball: tarfile.TarFile, path: str = ".") -> None:
         return prefix == abs_directory
 
     # for py >= 3.12
-    if hasattr(tarball, "data_filter"):
+    if hasattr(tarfile, "data_filter"):
         tarball.extractall(path, filter="data")
     else:
         members = tarball.getmembers()

@@ -21,6 +21,7 @@ from dbt_common.record import (
 
 @dataclasses.dataclass
 class TestRecordParams:
+    __test__ = False
     a: int
     b: str
     c: Optional[str] = None
@@ -28,11 +29,13 @@ class TestRecordParams:
 
 @dataclasses.dataclass
 class TestRecordResult:
+    __test__ = False
     return_val: str
 
 
 @Recorder.register_record_type
 class TestRecord(Record):
+    __test__ = False
     params_cls = TestRecordParams
     result_cls = TestRecordResult
 

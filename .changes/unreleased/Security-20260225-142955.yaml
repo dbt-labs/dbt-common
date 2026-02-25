@@ -1,0 +1,7 @@
+kind: Security
+body: Replace os.path.commonprefix() with os.path.commonpath() to preventpath traversal
+  via sibling directories with matching prefixes.
+time: 2026-02-25T14:29:55.922683-05:00
+custom:
+  Author: emmyoop
+  PR: "1"

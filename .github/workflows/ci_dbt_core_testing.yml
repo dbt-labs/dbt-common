@@ -345,7 +345,11 @@ jobs:
     if: ${{ always() }}
     name: "dbt-core Integration Test Suite Report"
     runs-on: ubuntu-latest
-    needs: [dbt-core-integration-tests-ubuntu, dbt-core-integration-tests-mac-windows]
+    needs:
+      [
+        dbt-core-integration-tests-ubuntu,
+        dbt-core-integration-tests-mac-windows,
+      ]
     steps:
       - name: "Integration Tests Failed"
         if: ${{ contains(needs.dbt-core-integration-tests-ubuntu.result, 'failure') || contains(needs.dbt-core-integration-tests-ubuntu.result, 'cancelled') || contains(needs.dbt-core-integration-tests-mac-windows.result, 'failure') || contains(needs.dbt-core-integration-tests-mac-windows.result, 'cancelled') }}

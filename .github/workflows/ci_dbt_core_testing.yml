@@ -127,12 +127,8 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: "Upgrade pip, install hatch"
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip --version
-          python -m pip install "virtualenv<20.26" hatch
-          hatch --version
+      - name: "Install hatch"
+        uses: pypa/hatch@257e27e51a6a5616ed08a39a408a21c35c9931bc # pypa/hatch@install
 
       - name: "Update dbt-common dependency to ${{ needs.job-prep.outputs.dbt-common-ref }}"
         run: |
@@ -244,12 +240,8 @@ jobs:
           PGPORT: 5432
           PGPASSWORD: password
 
-      - name: "Upgrade pip, install hatch"
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip --version
-          python -m pip install "virtualenv<20.26" hatch
-          hatch --version
+      - name: "Install hatch"
+        uses: pypa/hatch@257e27e51a6a5616ed08a39a408a21c35c9931bc # pypa/hatch@install
 
       - name: "Update dbt-common dependency to ${{ needs.job-prep.outputs.dbt-common-ref }}"
         run: |
@@ -306,12 +298,8 @@ jobs:
         if: runner.os == 'Windows'
         uses: ./.github/actions/setup-postgres-windows
 
-      - name: "Upgrade pip, install hatch"
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip --version
-          python -m pip install "virtualenv<20.26" hatch
-          hatch --version
+      - name: "Install hatch"
+        uses: pypa/hatch@257e27e51a6a5616ed08a39a408a21c35c9931bc # pypa/hatch@install
 
       - name: "Update dbt-common dependency to ${{ needs.job-prep.outputs.dbt-common-ref }}"
         run: |

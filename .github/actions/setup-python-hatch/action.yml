@@ -13,9 +13,5 @@ runs:
     with:
       python-version: "${{ inputs.python-version }}"
 
-  - name: Install Hatch
-    shell: bash
-    run: |
-      python -m pip install --user --upgrade pip
-      # pinning virtualenv to <20.26 to avoid issue with current release and get CI pipeline working again
-      pip install "virtualenv<20.26" hatch
+  - name: "Install hatch"
+    uses: pypa/hatch@257e27e51a6a5616ed08a39a408a21c35c9931bc # pypa/hatch@install

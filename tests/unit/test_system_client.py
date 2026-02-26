@@ -348,6 +348,7 @@ def test_safe_extract_pre_py312_path(tmp_path) -> None:
 
     # Verify extraction worked
     assert (dest_dir / "content.txt").exists()
+
     def test_untar_package_sibling_path_traversal(self) -> None:
         # A malicious tarball with a path that is a string prefix of the destination
         # but not actually within it (e.g., "dest" vs "destevil")

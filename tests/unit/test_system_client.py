@@ -299,6 +299,25 @@ class TestUntarPackage(unittest.TestCase):
         with self.assertRaises(tarfile.OutsideDestinationError):
             dbt_common.clients.system.untar_package(tar_file_full_path, self.tempdest)
 
+    def test_untar_package_sibling_path_traversal(self) -> None:
+        # A malicious tarball with a path that is a string prefix of the destination
+        # but not actually within it (e.g., "dest" vs "destevil")
+        with NamedTemporaryFile(
+            prefix="my-package.2", suffix=".tar.gz", dir=self.tempdir, delete=False
+        ) as named_tar_file:
+            tar_file_full_path = named_tar_file.name
+            with NamedTemporaryFile(prefix="a", suffix=".txt", dir=self.tempdir) as file_a:
+                file_a.write(b"malicious content")
+                # Create path that escapes to a sibling directory with matching prefix
+                # e.g., extracting to "/tmp/dest" but writing to "/tmp/destevil/file.txt"
+                sibling_path = "../" + os.path.basename(self.tempdest) + "evil/malicious.txt"
+                with tarfile.open(fileobj=named_tar_file, mode="w:gz") as tar:
+                    tar.addfile(tarfile.TarInfo(sibling_path), open(file_a.name))
+
+        assert tarfile.is_tarfile(tar.name)
+        with self.assertRaises(tarfile.OutsideDestinationError):
+            dbt_common.clients.system.untar_package(tar_file_full_path, self.tempdest)
+
 
 @pytest.mark.skipif(
     sys.version_info < (3, 12), reason="Tests Python 3.12+ tarfile filter='data' path"

@@ -620,14 +620,20 @@ def rename(from_path: str, to_path: str, force: bool = False) -> None:
 def safe_extract(tarball: tarfile.TarFile, path: str = ".") -> None:
     """
     Fix for CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')
-    Solution copied from https://github.com/mindsdb/mindsdb/blob/main/mindsdb/utilities/fs.py
+
+    Uses os.path.commonpath() instead of commonprefix() to prevent path traversal
+    via sibling directories with matching prefixes (CVE-2026-1703).
     """
 
     def _is_within_directory(directory, target):
         abs_directory = os.path.abspath(directory)
         abs_target = os.path.abspath(target)
-        prefix = os.path.commonprefix([abs_directory, abs_target])
-        return prefix == abs_directory
+        try:
+            prefix = os.path.commonpath([abs_directory, abs_target])
+            return prefix == abs_directory
+        except ValueError:
+            # Captures the case of different drives on Windows so it fails safely
+            return False
 
     # for py >= 3.12
     if hasattr(tarfile, "data_filter"):

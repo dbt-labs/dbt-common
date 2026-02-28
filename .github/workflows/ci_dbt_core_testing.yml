@@ -117,7 +117,7 @@ jobs:
 
     steps:
       - name: "Check out dbt-core@${{ needs.job-prep.outputs.dbt-core-ref }}"
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # actions/checkout@v4
         with:
           repository: dbt-labs/dbt-core
           ref: ${{ needs.job-prep.outputs.dbt-core-ref }}
@@ -222,7 +222,7 @@ jobs:
 
     steps:
       - name: "Check out the repository@${{ needs.job-prep.outputs.dbt-core-ref }}"
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # actions/checkout@v4
         with:
           repository: dbt-labs/dbt-core
           ref: ${{ needs.job-prep.outputs.dbt-core-ref }}
@@ -276,7 +276,7 @@ jobs:
       DD_SERVICE: ${{ github.event.repository.name }}
     steps:
       - name: "Check out the repository@${{ needs.job-prep.outputs.dbt-core-ref }}"
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # actions/checkout@v4
         with:
           repository: dbt-labs/dbt-core
           ref: ${{ needs.job-prep.outputs.dbt-core-ref }}

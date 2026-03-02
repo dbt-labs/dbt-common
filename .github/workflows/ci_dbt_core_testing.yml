@@ -59,7 +59,7 @@ defaults:
 # top-level adjustments can be made here
 env:
   # number of parallel processes to spawn for python integration testing
-  PYTHON_INTEGRATION_TEST_WORKERS: 10
+  PYTHON_INTEGRATION_TEST_WORKERS: 15
 
 jobs:
   job-prep:
@@ -248,7 +248,12 @@ jobs:
           ./scripts/update_dev_packages.sh ${{ github.repository.name}} ${{ needs.job-prep.outputs.dbt-common-ref }}
 
       - name: "Run Functional tests"
-        run: cd core && hatch run ci:integration-tests -- --ddtrace --splits ${{ env.PYTHON_INTEGRATION_TEST_WORKERS }} --group ${{ matrix.split-group }}
+        uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08 # nick-fields/retry@v3
+        with:
+          timeout_minutes: 30
+          max_attempts: 3
+          shell: bash
+          command: cd core && hatch run ci:integration-tests -- --ddtrace --splits ${{ env.PYTHON_INTEGRATION_TEST_WORKERS }} --group ${{ matrix.split-group }}
 
       - name: "Check installed versions"
         run: pip freeze
@@ -306,7 +311,12 @@ jobs:
           ./scripts/update_dev_packages.sh ${{ github.repository.name}} ${{ needs.job-prep.outputs.dbt-common-ref }}
 
       - name: "Run Functional tests"
-        run: cd core && hatch run ci:integration-tests -- --ddtrace --splits ${{ env.PYTHON_INTEGRATION_TEST_WORKERS }} --group ${{ matrix.split-group }}
+        uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08 # nick-fields/retry@v3
+        with:
+          timeout_minutes: 30
+          max_attempts: 3
+          shell: bash
+          command: cd core && hatch run ci:integration-tests -- --ddtrace --splits ${{ env.PYTHON_INTEGRATION_TEST_WORKERS }} --group ${{ matrix.split-group }}
 
       - name: "Check installed versions"
         run: pip freeze

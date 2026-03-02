@@ -82,7 +82,8 @@ jobs:
         id: core-ref
         run: |
           if [[ -z "${{ inputs.dbt-core-ref }}" ]]; then
-            REF="main"
+            # use the latest 1.10.latest since this branch exists for security patches that are compatible with 1.10.x
+            REF="1.10.latest"
           else
             REF=${{ inputs.dbt-core-ref }}
           fi
@@ -344,7 +345,11 @@ jobs:
     if: ${{ always() }}
     name: "dbt-core Integration Test Suite Report"
     runs-on: ubuntu-latest
-    needs: [dbt-core-integration-tests-ubuntu, dbt-core-integration-tests-mac-windows]
+    needs:
+      [
+        dbt-core-integration-tests-ubuntu,
+        dbt-core-integration-tests-mac-windows,
+      ]
     steps:
       - name: "Integration Tests Failed"
         if: ${{ contains(needs.dbt-core-integration-tests-ubuntu.result, 'failure') || contains(needs.dbt-core-integration-tests-ubuntu.result, 'cancelled') || contains(needs.dbt-core-integration-tests-mac-windows.result, 'failure') || contains(needs.dbt-core-integration-tests-mac-windows.result, 'cancelled') }}

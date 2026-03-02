@@ -82,7 +82,8 @@ jobs:
         id: core-ref
         run: |
           if [[ -z "${{ inputs.dbt-core-ref }}" ]]; then
-            REF="main"
+            # use the latest 1.10.latest since this branch exists for security patches that are compatible with 1.10.x
+            REF="1.10.latest"
           else
             REF=${{ inputs.dbt-core-ref }}
           fi

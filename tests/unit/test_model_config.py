@@ -90,7 +90,10 @@ def test_update_from() -> None:
         "grants": {"two": "fine", "+one": "some"},
         "snapshot_table_column_names": {"first_column": "dbt_ack", "second_column": "dbt_more"},
     }
-    updated_obj = initial_obj.update_from(update_dct.copy(), SubstituteAdapterConfig)
+    updated_dict = initial_obj.update_from(
+        initial_obj.to_dict(), update_dct.copy(), SubstituteAdapterConfig
+    )
+    updated_obj = ThingWithMergeBehavior.from_dict(updated_dict)
 
     assert updated_obj.default_behavior == 3
     assert updated_obj.tags == ["one", "two", "five"]

@@ -15,9 +15,13 @@ from mashumaro.types import SerializableType, SerializationStrategy
 from mashumaro.jsonschema import build_json_schema
 
 # following includes DataClassDictMixin
-from mashumaro.mixins.msgpack import DataClassMessagePackMixin
+from mashumaro.mixins.msgpack import DataClassMessagePackMixin, MessagePackDialect
 
 import functools
+
+
+class FixedMessagePackDialect(MessagePackDialect):
+    no_copy_collections = ()
 
 
 class ValidationError(jsonschema.ValidationError):
@@ -49,6 +53,7 @@ class dbtMashConfig(MashBaseConfig):
     }
     serialize_by_alias = True
     lazy_compilation = True
+    dialect = FixedMessagePackDialect
 
 
 # This class pulls in DataClassDictMixin from Mashumaro. The 'to_dict'

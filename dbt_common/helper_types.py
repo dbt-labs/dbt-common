@@ -235,9 +235,11 @@ class WarnErrorOptionsV2(dbtClassMixin):
             and self.DEPRECATIONS in self.silence
         )
 
-    def _discriminated_match(self, event: Optional[BaseEvent], target_list: List[str]) -> bool:
+    def _discriminated_match(
+        self, event: Optional[BaseEvent], target_list: Union[str, List[str]]
+    ) -> bool:
         """Does this event's ClassName:discriminator() appear in target_list?"""
-        if event is None:
+        if event is None or isinstance(target_list, str):
             return False
         disc = event.discriminator()
         if disc is None:

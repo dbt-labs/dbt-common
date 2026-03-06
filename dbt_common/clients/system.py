@@ -581,9 +581,12 @@ def run_cmd(cwd: str, cmd: List[str], env: Optional[Dict[str, Any]] = None) -> T
 
 
 def download_with_retries(
-    url: str, path: str, timeout: Optional[Union[float, tuple]] = None
+    url: str,
+    path: str,
+    timeout: Optional[Union[float, tuple]] = None,
+    proxies: Optional[Dict[str, str]] = None,
 ) -> None:
-    download_fn = functools.partial(download, url, path, timeout)
+    download_fn = functools.partial(download, url, path, timeout, proxies)
     connection_exception_retry(download_fn, 5)
 
 
@@ -591,10 +594,11 @@ def download(
     url: str,
     path: str,
     timeout: Optional[Union[float, Tuple[float, float], Tuple[float, None]]] = None,
+    proxies: Optional[Dict[str, str]] = None,
 ) -> None:
     path = convert_path(path)
     connection_timeout = timeout or float(os.getenv("DBT_HTTP_TIMEOUT", 10))
-    response = requests.get(url, timeout=connection_timeout)
+    response = requests.get(url, timeout=connection_timeout, proxies=proxies)
     with open(path, "wb") as handle:
         for block in response.iter_content(1024 * 64):
             handle.write(block)

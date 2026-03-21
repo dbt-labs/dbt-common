@@ -24,6 +24,10 @@ def ctx_set_event_manager(event_manager: IEventManager) -> None:
     _EVENT_MANAGER = event_manager
 
 
+def raise_deferred_warn_errors() -> None:
+    _EVENT_MANAGER.raise_deferred_warn_errors()
+
+
 def cleanup_event_logger() -> None:
     # Reset to a no-op manager to release streams associated with logs. This is
     # especially important for tests, since pytest replaces the stdout stream

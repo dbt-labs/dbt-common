@@ -81,3 +81,9 @@ class TestDeferredWarnErrors:
         for event in events:
             assert event.flag_name in msg
         assert event_manager._deferred_warn_errors == []
+    
+    def test_raise_deferred_warn_errors_empty(self) -> None:
+        event_manager = EventManager()
+        event_manager.defer_warn_errors = True
+        event_manager.raise_deferred_warn_errors()
+        assert event_manager._deferred_warn_errors == []

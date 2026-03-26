@@ -16,8 +16,20 @@ class EventManager:
         self._warn_error: Optional[bool] = None
         self._warn_error_options: Optional[Union[WarnErrorOptions, WarnErrorOptionsV2]] = None
         self.require_warn_or_error_handling: bool = False
-        self.defer_warn_errors: bool = False
+        self._defer_warn_errors: Optional[bool] = None
         self._deferred_warn_errors: List[Tuple[str, Any]] = []
+
+    @property
+    def defer_warn_errors(self) -> bool:
+        if self._defer_warn_errors is None:
+            from dbt_common.events.functions import DEFER_WARN_ERRORS
+
+            return DEFER_WARN_ERRORS
+        return self._defer_warn_errors
+
+    @defer_warn_errors.setter
+    def defer_warn_errors(self, defer_warn_errors: bool) -> None:
+        self._defer_warn_errors = defer_warn_errors
 
     @property
     def warn_error(self) -> bool:
@@ -158,12 +170,3 @@ class TestEventManager(IEventManager):
         force_warn_or_error_handling: bool = False,
     ) -> None:
         self.event_history.append((e, level))
-
-    def add_logger(self, config: LoggerConfig) -> None:
-        raise NotImplementedError()
-
-    def add_callback(self, callback: TCallback) -> None:
-        raise NotImplementedError()
-
-    def raise_deferred_warn_errors(self) -> None:
-        return None

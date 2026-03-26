@@ -22,6 +22,7 @@ WARN_ERROR_OPTIONS: Union[WarnErrorOptions, WarnErrorOptionsV2] = WarnErrorOptio
     include=[], exclude=[]
 )
 WARN_ERROR = False
+DEFER_WARN_ERRORS = False
 
 # This global, and the following two functions for capturing stdout logs are
 # an unpleasant hack we intend to remove as part of API-ification. The GitHub

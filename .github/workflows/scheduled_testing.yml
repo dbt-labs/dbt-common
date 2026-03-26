@@ -28,4 +28,5 @@ jobs:
     uses: dbt-labs/actions/.github/workflows/release-branch-tests.yml@main
     with:
       workflows_to_run: '["ci_tests.yml", "build.yml", "ci_dbt_core_testing.yml"]'
+      branch_override: '["main"]'
     secrets: inherit

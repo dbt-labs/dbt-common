@@ -4,6 +4,7 @@ from typing import Any, List, Optional, Protocol, Tuple, Union
 
 from dbt_common.events.base_types import BaseEvent, EventLevel, msg_from_base_event, TCallback
 from dbt_common.events.logger import LoggerConfig, _Logger, _TextLogger, _JsonLogger, LineFormat
+from dbt_common.exceptions import env_secrets, scrub_secrets
 from dbt_common.exceptions.events import EventCompilationError
 from dbt_common.helper_types import WarnErrorOptions, WarnErrorOptionsV2
 
@@ -15,6 +16,20 @@ class EventManager:
         self._warn_error: Optional[bool] = None
         self._warn_error_options: Optional[Union[WarnErrorOptions, WarnErrorOptionsV2]] = None
         self.require_warn_or_error_handling: bool = False
+        self._defer_warn_errors: Optional[bool] = None
+        self._deferred_warn_errors: List[Tuple[str, Any]] = []
+
+    @property
+    def defer_warn_errors(self) -> bool:
+        if self._defer_warn_errors is None:
+            from dbt_common.events.functions import DEFER_WARN_ERRORS
+
+            return DEFER_WARN_ERRORS
+        return self._defer_warn_errors
+
+    @defer_warn_errors.setter
+    def defer_warn_errors(self, defer_warn_errors: bool) -> None:
+        self._defer_warn_errors = defer_warn_errors
 
     @property
     def warn_error(self) -> bool:
@@ -61,7 +76,11 @@ class EventManager:
             if self.warn_error or self.warn_error_options.errors(e):
                 # This has the potential to create an infinite loop if the handling of the raised
                 # EventCompilationError fires an event as a warning instead of an error.
-                raise EventCompilationError(e.message(), node)
+                if self.defer_warn_errors:
+                    scrubbed = scrub_secrets(e.message(), env_secrets())
+                    self._deferred_warn_errors.append((scrubbed, node))
+                else:
+                    raise EventCompilationError(e.message(), node)
             elif self.warn_error_options.silenced(e):
                 # Return early if the event is silenced
                 return
@@ -96,6 +115,13 @@ class EventManager:
         for logger in self.loggers:
             logger.flush()
 
+    def raise_deferred_warn_errors(self) -> None:
+        if not self._deferred_warn_errors:
+            return
+        combined = "\n".join(msg for msg, _node in self._deferred_warn_errors)
+        self._deferred_warn_errors.clear()
+        raise EventCompilationError(combined, None)
+
 
 class IEventManager(Protocol):
     callbacks: List[TCallback]
@@ -103,6 +129,7 @@ class IEventManager(Protocol):
     warn_error: bool
     warn_error_options: Union[WarnErrorOptions, WarnErrorOptionsV2]
     require_warn_or_error_handling: bool
+    defer_warn_errors: bool
 
     def fire_event(
         self,
@@ -119,6 +146,9 @@ class IEventManager(Protocol):
     def add_callback(self, callback: TCallback) -> None:
         ...
 
+    def raise_deferred_warn_errors(self) -> None:
+        ...
+
 
 class TestEventManager(IEventManager):
     __test__ = False
@@ -126,9 +156,11 @@ class TestEventManager(IEventManager):
     def __init__(self) -> None:
         self.event_history: List[Tuple[BaseEvent, Optional[EventLevel]]] = []
         self.loggers = []
+        self.callbacks: List[TCallback] = []
         self.warn_error = False
         self.warn_error_options = WarnErrorOptions(include=[], exclude=[])
         self.require_warn_or_error_handling = False
+        self.defer_warn_errors = False
 
     def fire_event(
         self,
@@ -138,6 +170,3 @@ class TestEventManager(IEventManager):
         force_warn_or_error_handling: bool = False,
     ) -> None:
         self.event_history.append((e, level))
-
-    def add_logger(self, config: LoggerConfig) -> None:
-        raise NotImplementedError()

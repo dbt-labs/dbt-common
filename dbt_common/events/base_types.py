@@ -106,6 +106,12 @@ class BaseEvent:
     def level_tag(self) -> EventLevel:
         return EventLevel.DEBUG
 
+    def discriminator(self) -> Optional[str]:
+        """Return a per-instance sub-identifier for fine-grained warn_error targeting.
+        Override in subclasses where multiple instances share one event class.
+        """
+        return None
+
     def message(self) -> str:
         raise Exception("message() not implemented for event")
 

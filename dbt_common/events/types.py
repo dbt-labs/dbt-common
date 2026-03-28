@@ -37,6 +37,9 @@ from dbt_common.ui import warning_tag
 
 
 class BehaviorChangeEvent(WarnLevel):
+    def discriminator(self) -> str:
+        return self.flag_name
+
     def code(self) -> str:
         return "D000"
 

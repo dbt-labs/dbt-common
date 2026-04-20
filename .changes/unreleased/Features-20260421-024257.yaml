@@ -1,0 +1,6 @@
+kind: Features
+body: Add event deferral capability to EventManager
+time: 2026-04-21T02:42:57.122492+05:30
+custom:
+    Author: ash2shukla
+    Issue: "12339"

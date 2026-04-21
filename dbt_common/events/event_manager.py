@@ -181,6 +181,11 @@ class IEventManager(Protocol):
     ) -> None:
         ...
 
+    def fire_deferred_events(
+        self, event_group_type: EventGroupType = EventGroupType.DEFAULT
+    ) -> None:
+        ...
+
     def add_logger(self, config: LoggerConfig) -> None:
         ...
 
@@ -214,6 +219,11 @@ class TestEventManager(IEventManager):
         level: Optional[EventLevel] = None,
         node: Any = None,
         force_warn_or_error_handling: bool = False,
+    ) -> None:
+        raise NotImplementedError()
+
+    def fire_deferred_events(
+        self, event_group_type: EventGroupType = EventGroupType.DEFAULT
     ) -> None:
         raise NotImplementedError()
 

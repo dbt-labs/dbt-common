@@ -160,6 +160,12 @@ def fire_or_defer_event(
     )
 
 
+def fire_deferred_events(
+    event_group_type: EventGroupType = EventGroupType.DEFAULT,
+) -> None:
+    get_event_manager().fire_deferred_events(event_group_type=event_group_type)
+
+
 def get_metadata_vars() -> Dict[str, str]:
     global metadata_vars
     if metadata_vars is None:

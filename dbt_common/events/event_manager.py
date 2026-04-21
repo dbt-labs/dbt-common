@@ -133,7 +133,7 @@ class EventManager:
         else:
             self.fire_event(e, level, node, force_warn_or_error_handling)
 
-    def _summarize_raised_events(self, event_group_type: EventGroupType) -> Optional[str]:
+    def _fire_and_summarize_raised_events(self, event_group_type: EventGroupType) -> Optional[str]:
         event_args = self._deferred_event_groups.pop(event_group_type, [])
         raised_events = []
 
@@ -150,7 +150,7 @@ class EventManager:
     def fire_deferred_events(
         self, event_group_type: EventGroupType = EventGroupType.DEFAULT
     ) -> None:
-        events_summary = self._summarize_raised_events(event_group_type)
+        events_summary = self._fire_and_summarize_raised_events(event_group_type)
         if events_summary is not None:
             raise EventCompilationError(events_summary, None)
 

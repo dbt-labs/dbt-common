@@ -171,6 +171,16 @@ class IEventManager(Protocol):
     ) -> None:
         ...
 
+    def fire_or_defer_event(
+        self,
+        e: BaseEvent,
+        event_group_type: EventGroupType = EventGroupType.DEFAULT,
+        level: Optional[EventLevel] = None,
+        node: Any = None,
+        force_warn_or_error_handling: bool = False,
+    ) -> None:
+        ...
+
     def add_logger(self, config: LoggerConfig) -> None:
         ...
 
@@ -196,6 +206,16 @@ class TestEventManager(IEventManager):
         force_warn_or_error_handling: bool = False,
     ) -> None:
         self.event_history.append((e, level))
+
+    def fire_or_defer_event(
+        self,
+        e: BaseEvent,
+        event_group_type: EventGroupType = EventGroupType.DEFAULT,
+        level: Optional[EventLevel] = None,
+        node: Any = None,
+        force_warn_or_error_handling: bool = False,
+    ) -> None:
+        raise NotImplementedError()
 
     def add_logger(self, config: LoggerConfig) -> None:
         raise NotImplementedError()

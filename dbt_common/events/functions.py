@@ -120,17 +120,6 @@ def warn_or_error(event, node=None) -> None:
     fire_event(e=event, node=node, force_warn_or_error_handling=True)
 
 
-def warn_or_error_with_deferral(
-    event: BaseEvent, node: Any = None, event_group_type=EventGroupType.DEFAULT
-) -> None:
-    fire_or_defer_event(
-        e=event,
-        node=node,
-        force_warn_or_error_handling=True,
-        event_group_type=event_group_type,
-    )
-
-
 # an alternative to fire_event which only creates and logs the event value
 # if the condition is met. Does nothing otherwise.
 def fire_event_if(

@@ -42,6 +42,13 @@ class EventLevel(str, Enum):
     ERROR = "error"
 
 
+class EventGroupType(Enum):
+    """Deferred events can be grouped by type"""
+
+    DEFAULT = "default"
+    PARSE = "parse"
+
+
 class BaseEvent:
     """BaseEvent for proto message generated python events."""
 

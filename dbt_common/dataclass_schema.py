@@ -36,6 +36,14 @@ class DateTimeSerialization(SerializationStrategy):
         return value if isinstance(value, datetime) else parse(value)
 
 
+class UncoercedBoolSerialization(SerializationStrategy):
+    def serialize(self, value: bool) -> bool:
+        return value
+
+    def deserialize(self, value: Any) -> Any:
+        return value
+
+
 class dbtMashConfig(MashBaseConfig):
     code_generation_options = [
         TO_DICT_ADD_OMIT_NONE_FLAG,
@@ -43,6 +51,9 @@ class dbtMashConfig(MashBaseConfig):
     ]
     serialization_strategy = {
         datetime: DateTimeSerialization(),
+        # to keep the behavior consistent with older versions ( before 3.15 ) of mashumaro
+        # we don't coerce boolean values as jsonschema validation depends on the original value's types
+        bool: UncoercedBoolSerialization(),
     }
     json_schema = {
         "additionalProperties": False,

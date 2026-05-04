@@ -42,7 +42,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
       - name: "Check out the repository"
@@ -52,6 +52,7 @@ jobs:
         uses: ./.github/actions/setup-python-hatch
         with:
           python-version: "${{ matrix.python-version }}"
+          allow-prereleases: true # required for python 3.14
 
       - name: "Run Tests"
         run: hatch run test:unit

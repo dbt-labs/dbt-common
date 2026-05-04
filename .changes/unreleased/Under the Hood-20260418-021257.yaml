@@ -1,0 +1,6 @@
+kind: Under the Hood
+body: Explicitly keep bool serde as a passthrough for mashumaro 3.15+ compat with versions before 3.15
+time: 2026-04-18T02:12:57.126158+05:30
+custom:
+    Author: ash2shukla
+    Issue: "12098"

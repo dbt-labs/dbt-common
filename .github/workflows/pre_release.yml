@@ -72,7 +72,7 @@ jobs:
 
     steps:
       - name: "Checkout ${{ github.repository }} Commit ${{ github.ref }}"
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # actions/checkout@v4
         with:
           ref: ${{ github.ref }}
 
@@ -128,7 +128,7 @@ jobs:
 
     steps:
       - name: "Checkout ${{ github.repository }} Commit ${{ github.ref }}"
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # actions/checkout@v4
         with:
           ref: ${{ github.ref }}
 
@@ -198,7 +198,7 @@ jobs:
 
     steps:
       - name: "Checkout ${{ github.repository }} Commit ${{ github.ref }}"
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # actions/checkout@v4
         with:
           ref: ${{ github.ref }}
 
@@ -235,7 +235,7 @@ jobs:
 
     steps:
       - name: "Checkout ${{ github.repository }} Branch ${{ needs.create-temp-branch.outputs.branch_name }}"
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # actions/checkout@v4
         with:
           ref: ${{ needs.create-temp-branch.outputs.branch_name }}
 
@@ -348,7 +348,7 @@ jobs:
 
     steps:
       - name: "Checkout ${{ github.repository }} Branch ${{ needs.create-temp-branch.outputs.branch_name }}"
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # actions/checkout@v4
         with:
           ref: ${{ needs.create-temp-branch.outputs.branch_name }}
 
@@ -382,7 +382,7 @@ jobs:
           echo needs.audit-version-in-code.outputs.up_to_date: ${{ needs.audit-version-in-code.outputs.up_to_date }}
 
       - name: "Checkout Repo ${{ github.repository }}"
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # actions/checkout@v4
         with:
           ref: ${{ github.ref }}
           token: ${{ secrets.FISHTOWN_BOT_PAT }}

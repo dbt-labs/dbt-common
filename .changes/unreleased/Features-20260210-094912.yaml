@@ -1,0 +1,6 @@
+kind: Features
+body: adds proxies to download function, necessary for running DBT without setting global proxy vars
+time: 2026-02-10T09:49:12.7780767+11:00
+custom:
+    Author: mansfieldj3
+    Issue: "348"

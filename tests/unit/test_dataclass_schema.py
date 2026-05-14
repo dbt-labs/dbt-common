@@ -40,3 +40,24 @@ def test_serialization_context():
 
     obj = MyObject.from_dict(dct)
     assert obj.sub_object.name == "testing"
+
+
+@dataclass
+class SomeBoolObject(dbtClassMixin):
+    flag: bool
+
+
+def test_bool_serialization_is_passthrough():
+    # Actual booleans round-trip unchanged (not coerced to int or otherwise).
+    obj = SomeBoolObject(flag=True)
+    dct = obj.to_dict()
+    assert dct == {"flag": True}
+    assert type(dct["flag"]) is bool
+
+    # Non-bool inputs must pass through unchanged on deserialization rather
+    # than being coerced (e.g. 1 -> True, "" -> False). jsonschema validation
+    # downstream relies on the original value's type being preserved.
+    for raw in (1, 0, "true", "false", "", None):
+        restored = SomeBoolObject.from_dict({"flag": raw})
+        assert restored.flag is raw
+        assert type(restored.flag) is type(raw)

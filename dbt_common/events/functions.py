@@ -4,7 +4,7 @@ from dbt_common.events.event_manager_client import get_event_manager
 from dbt_common.helper_types import WarnErrorOptions, WarnErrorOptionsV2
 from dbt_common.invocation import get_invocation_id
 from dbt_common.utils.encoding import ForgivingJSONEncoder
-from dbt_common.events.base_types import BaseEvent, EventLevel, EventMsg
+from dbt_common.events.base_types import BaseEvent, EventLevel, EventMsg, EventGroupType
 from dbt_common.events.logger import LoggerConfig, LineFormat
 from dbt_common.exceptions import scrub_secrets, env_secrets
 from dbt_common.events.types import Note
@@ -142,6 +142,28 @@ def fire_event(
     get_event_manager().fire_event(
         e, level=level, node=node, force_warn_or_error_handling=force_warn_or_error_handling
     )
+
+
+def fire_or_defer_event(
+    e: BaseEvent,
+    level: Optional[EventLevel] = None,
+    node: Any = None,
+    force_warn_or_error_handling: bool = False,
+    event_group_type: EventGroupType = EventGroupType.DEFAULT,
+) -> None:
+    get_event_manager().fire_or_defer_event(
+        e,
+        level=level,
+        node=node,
+        force_warn_or_error_handling=force_warn_or_error_handling,
+        event_group_type=event_group_type,
+    )
+
+
+def fire_deferred_events(
+    event_group_type: EventGroupType = EventGroupType.DEFAULT,
+) -> None:
+    get_event_manager().fire_deferred_events(event_group_type=event_group_type)
 
 
 def get_metadata_vars() -> Dict[str, str]:

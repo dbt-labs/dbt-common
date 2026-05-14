@@ -23,6 +23,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
@@ -35,7 +36,7 @@ dependencies = [
   "jsonschema>=4.0,<5.0",
   "Jinja2>=3.1.3,<4",
   "mashumaro[msgpack]>=3.9,<4.0",
-  "pathspec>=0.9,<0.13",
+  "pathspec>=0.9,<1.1",
   "protobuf>=6.0,<7.0",
   "python-dateutil>=2.0,<3.0",
   "requests<3.0.0",  # needs to match dbt-core

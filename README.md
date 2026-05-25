@@ -6,7 +6,7 @@ The shared common utilities for dbt-core and adapter implementations use
 To release a new version of dbt-common to pypi, you'll need to: 
 1. Run the [release workflow](https://github.com/dbt-labs/dbt-common/actions/workflows/release.yml) to bump the version, generate changelogs and release to pypi
 4. Bump the version of `dbt-common` in `dbt-core` and `dbt-adapters` if you're releasing a new major version or a pre-release: 
-   * `dbt-core`: [setup.py](https://github.com/dbt-labs/dbt-core/blob/main/core/setup.py)
+   * `dbt-core`: [setup.py](https://github.com/dbt-labs/dbt-core/blob/1.latest/core/setup.py)
    * `dbt-adapters`: [pyproject.toml](https://github.com/dbt-labs/dbt-adapters/blob/main/pyproject.toml)
    * Adapter Implementations: 
      * `dbt-postgres`: [pyproject.toml](https://github.com/dbt-labs/dbt-postgres/blob/main/pyproject.toml)

@@ -1,0 +1,6 @@
+kind: Security
+body: Redact sensitive environment values from record/replay artifacts
+time: 2026-07-29T18:54:21+05:30
+custom:
+  Author: sd-db
+  PR: "372"

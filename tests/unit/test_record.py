@@ -8,6 +8,7 @@ from typing import Optional
 
 from mashumaro.types import SerializationStrategy
 
+from dbt_common.clients.system import GetEnvRecord, get_env
 from dbt_common.context import set_invocation_context, get_invocation_context
 from dbt_common.record import (
     record_function,
@@ -102,6 +103,87 @@ def test_decorator_records(setup) -> None:
 
     assert recorder._records_by_type["TestRecord"][-1].params == expected_record.params
     assert recorder._records_by_type["TestRecord"][-1].result == expected_record.result
+
+
+def test_get_env_streamed_recording_redacts_configured_values(
+    setup, monkeypatch, tmp_path
+) -> None:
+    controlled_env = {
+        "DBT_RECORDER_MODE": "Record",
+        "DBT_RECORDER_REDACT_ENV_VARS": " EXPLICIT_CREDENTIAL, LEGACY_CREDENTIAL, ,",
+        "DBT_ENV_SECRET_ACCOUNT": "fake-prefixed-secret",
+        "dbt_env_secret_lower": "visible-lowercase-value",
+        "EXPLICIT_CREDENTIAL": "fake-explicit-secret",
+        "legacy_credential": "fake-legacy-secret",
+        "UNLISTED_CREDENTIAL": "fake-unlisted-value",
+        "ORDINARY_VALUE": "visible-value",
+    }
+    monkeypatch.setattr(os, "environ", controlled_env)
+    recording_path = tmp_path / "recording.json"
+    recorder = Recorder(
+        RecorderMode.RECORD,
+        None,
+        current_recording_path=str(recording_path),
+    )
+    set_invocation_context({})
+    get_invocation_context().recorder = recorder
+
+    live_env = get_env()
+    recorder.write()
+
+    assert live_env["DBT_ENV_SECRET_ACCOUNT"] == "fake-prefixed-secret"
+    assert live_env["EXPLICIT_CREDENTIAL"] == "fake-explicit-secret"
+    assert live_env["legacy_credential"] == "fake-legacy-secret"
+
+    recording_text = recording_path.read_text()
+    recording = json.loads(recording_text)
+    recorded_env = recording[0]["result"]["env"]
+    assert recorded_env["DBT_ENV_SECRET_ACCOUNT"] == "<redacted>"
+    assert recorded_env["dbt_env_secret_lower"] == "visible-lowercase-value"
+    assert recorded_env["EXPLICIT_CREDENTIAL"] == "<redacted>"
+    assert recorded_env["legacy_credential"] == "<redacted>"
+    assert recorded_env["UNLISTED_CREDENTIAL"] == "fake-unlisted-value"
+    assert recorded_env["ORDINARY_VALUE"] == "visible-value"
+    assert "fake-prefixed-secret" not in recording_text
+    assert "fake-explicit-secret" not in recording_text
+    assert "fake-legacy-secret" not in recording_text
+
+
+def test_get_env_in_memory_recording_replays_redacted_values(setup, monkeypatch) -> None:
+    controlled_env = {
+        "DBT_RECORDER_MODE": "Record",
+        "DBT_RECORDER_REDACT_ENV_VARS": "ADAPTER_CREDENTIAL",
+        "ADAPTER_CREDENTIAL": "fake-adapter-secret",
+        "ORDINARY_VALUE": "visible-value",
+    }
+    monkeypatch.setattr(os, "environ", controlled_env)
+    recorder = Recorder(RecorderMode.RECORD, None, in_memory=True)
+    set_invocation_context({})
+    get_invocation_context().recorder = recorder
+
+    live_env = get_env()
+    assert live_env["ADAPTER_CREDENTIAL"] == "fake-adapter-secret"
+    assert (
+        recorder._records_by_type["GetEnvRecord"][0].result.env["ADAPTER_CREDENTIAL"]
+        == "fake-adapter-secret"
+    )
+
+    buffer = StringIO()
+    recorder.write_json(buffer)
+    recording = json.loads(buffer.getvalue())
+    recorded_env = recording[0]["result"]["env"]
+    assert recorded_env["ADAPTER_CREDENTIAL"] == "<redacted>"
+    assert recorded_env["ORDINARY_VALUE"] == "visible-value"
+    assert "fake-adapter-secret" not in buffer.getvalue()
+
+    replay_recorder = Recorder(RecorderMode.REPLAY, None, in_memory=True)
+    replay_recorder._records_by_type["GetEnvRecord"] = [GetEnvRecord.from_dict(recording[0])]
+    set_invocation_context({})
+    get_invocation_context().recorder = replay_recorder
+
+    replayed_env = get_env()
+    assert replayed_env["ADAPTER_CREDENTIAL"] == "<redacted>"
+    assert replayed_env["ORDINARY_VALUE"] == "visible-value"
 
 
 def test_record_types(setup):

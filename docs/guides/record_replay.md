@@ -38,7 +38,7 @@ The record/replay subsystem is activated by setting the `DBT_ENGINE_RECORDER_MOD
 
 `DBT_ENGINE_RECORDER_TYPES` is optional.  It indicates which types to filter the results by and expects a list of strings values for the `Record` subclasses or groups of such classes. For example, all records of database/DWH interaction performed by adapters belong to the `Database` group. Any invalid type or group name will be ignored.  `all` is a valid value for this variable and has the same effect as not populating the variable.
 
-`DBT_RECORDER_REDACT_ENV_VARS` is an optional, comma-separated list of exact environment variable names whose values must be replaced with `<redacted>` in `GetEnvRecord`. Names are matched case-insensitively, and variables beginning with `DBT_ENV_SECRET` are always redacted. This setting must be present before the dbt process starts. Redaction only changes the serialized recording; the running dbt command still receives the original environment values.
+`DBT_ENGINE_RECORDER_REDACT_ENV_VARS` and `DBT_RECORDER_REDACT_ENV_VARS` are optional, comma-separated lists of exact environment variable names whose values must be replaced with `<redacted>` in `GetEnvRecord`. Values from both settings are combined. Names are matched case-insensitively, and variables beginning with `DBT_ENV_SECRET` are always redacted. These settings must be present before the dbt process starts. Redaction only changes the serialized recording; the running dbt command still receives the original environment values.
 
 
 ```bash

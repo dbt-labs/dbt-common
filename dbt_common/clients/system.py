@@ -735,14 +735,19 @@ class GetEnvParams:
     pass
 
 
-_RECORDER_REDACT_ENV_VAR = "DBT_RECORDER_REDACT_ENV_VARS"
+_RECORDER_REDACT_ENV_VARS = (
+    "DBT_ENGINE_RECORDER_REDACT_ENV_VARS",
+    "DBT_RECORDER_REDACT_ENV_VARS",
+)
 _REDACTED_ENV_VALUE = "<redacted>"
 
 
 def _redact_recorded_environment(env: Dict[str, str]) -> Dict[str, str]:
     redacted_names = {name.casefold() for name in env if name.startswith(SECRET_ENV_PREFIX)}
     for name, value in env.items():
-        if name.casefold() == _RECORDER_REDACT_ENV_VAR.casefold():
+        if any(
+            name.casefold() == config_name.casefold() for config_name in _RECORDER_REDACT_ENV_VARS
+        ):
             redacted_names.update(
                 configured_name.strip().casefold()
                 for configured_name in value.split(",")

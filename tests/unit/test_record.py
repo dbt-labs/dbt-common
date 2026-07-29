@@ -111,10 +111,13 @@ def test_get_env_streamed_recording_redacts_configured_values(
     controlled_env = {
         "DBT_RECORDER_MODE": "Record",
         "DBT_RECORDER_REDACT_ENV_VARS": " EXPLICIT_CREDENTIAL, LEGACY_CREDENTIAL, ,",
+        "DBT_ENGINE_RECORDER_REDACT_ENV_VARS": " ENGINE_CREDENTIAL, SHARED_CREDENTIAL ",
         "DBT_ENV_SECRET_ACCOUNT": "fake-prefixed-secret",
         "dbt_env_secret_lower": "visible-lowercase-value",
         "EXPLICIT_CREDENTIAL": "fake-explicit-secret",
         "legacy_credential": "fake-legacy-secret",
+        "engine_credential": "fake-engine-secret",
+        "SHARED_CREDENTIAL": "fake-shared-secret",
         "UNLISTED_CREDENTIAL": "fake-unlisted-value",
         "ORDINARY_VALUE": "visible-value",
     }
@@ -142,17 +145,21 @@ def test_get_env_streamed_recording_redacts_configured_values(
     assert recorded_env["dbt_env_secret_lower"] == "visible-lowercase-value"
     assert recorded_env["EXPLICIT_CREDENTIAL"] == "<redacted>"
     assert recorded_env["legacy_credential"] == "<redacted>"
+    assert recorded_env["engine_credential"] == "<redacted>"
+    assert recorded_env["SHARED_CREDENTIAL"] == "<redacted>"
     assert recorded_env["UNLISTED_CREDENTIAL"] == "fake-unlisted-value"
     assert recorded_env["ORDINARY_VALUE"] == "visible-value"
     assert "fake-prefixed-secret" not in recording_text
     assert "fake-explicit-secret" not in recording_text
     assert "fake-legacy-secret" not in recording_text
+    assert "fake-engine-secret" not in recording_text
+    assert "fake-shared-secret" not in recording_text
 
 
 def test_get_env_in_memory_recording_replays_redacted_values(setup, monkeypatch) -> None:
     controlled_env = {
         "DBT_RECORDER_MODE": "Record",
-        "DBT_RECORDER_REDACT_ENV_VARS": "ADAPTER_CREDENTIAL",
+        "DBT_ENGINE_RECORDER_REDACT_ENV_VARS": "ADAPTER_CREDENTIAL",
         "ADAPTER_CREDENTIAL": "fake-adapter-secret",
         "ORDINARY_VALUE": "visible-value",
     }

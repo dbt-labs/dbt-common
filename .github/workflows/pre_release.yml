@@ -250,6 +250,7 @@ jobs:
 
       - name: "Install Homebrew Packages"
         run: |
+          brew update
           brew install pre-commit
           brew tap miniscruff/changie https://github.com/miniscruff/changie
           brew install changie

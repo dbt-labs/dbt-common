@@ -12,6 +12,7 @@ import stat
 import subprocess
 import sys
 import tarfile
+import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, NoReturn, Optional, Tuple, Type, Union
 
@@ -177,16 +178,27 @@ class LoadFileRecord(Record):
     result_cls = LoadFileResult
 
 
+TRANSIENT_OS_ERRORS = {errno.ESTALE}
+MAX_RETRIES = 3
+RETRY_BACKOFF = 0.1
+
+
 @record_function(LoadFileRecord)
 def load_file_contents(path: str, strip: bool = True) -> str:
     path = convert_path(path)
-    with open(path, "rb") as handle:
-        to_return = handle.read().decode("utf-8")
-
-    if strip:
-        to_return = to_return.strip()
-
-    return to_return
+    for attempt in range(MAX_RETRIES):
+        try:
+            with open(path, "rb") as handle:
+                to_return = handle.read().decode("utf-8")
+            if strip:
+                to_return = to_return.strip()
+            return to_return
+        except OSError as e:
+            if e.errno in TRANSIENT_OS_ERRORS and attempt < MAX_RETRIES - 1:
+                time.sleep(RETRY_BACKOFF * (2**attempt))
+            else:
+                raise
+    raise RuntimeError("Unreachable")
 
 
 @functools.singledispatch
@@ -654,7 +666,7 @@ def untar_package(tar_path: str, dest_dir: str, rename_to: Optional[str] = None)
     tar_dir_name = None
     with tarfile.open(tar_path, "r:gz") as tarball:
         safe_extract(tarball, dest_dir)
-        tar_dir_name = os.path.commonprefix(tarball.getnames())
+        tar_dir_name = os.path.commonpath(tarball.getnames())
     if rename_to:
         downloaded_path = os.path.join(dest_dir, tar_dir_name)
         desired_path = os.path.join(dest_dir, rename_to)

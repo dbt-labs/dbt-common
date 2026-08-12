@@ -1,0 +1,6 @@
+kind: Fixes
+body: Replace unsafe os.path.commonprefix with os.path.commonpath in untar_package, add ESTALE retry in load_file_contents, add unit tests for encoding and dict utilities
+time: 2026-07-17T03:01:00.000000+05:30
+custom:
+  Author: arijitroy003
+  Issue: "360"

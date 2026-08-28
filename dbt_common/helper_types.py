@@ -115,9 +115,14 @@ class WarnErrorOptionsV2(dbtClassMixin):
     valid_error_names: a set of event names that can be named in error, warn, and silence.
 
     In a hierarchy of configuration, the following rules apply:
-    1. named > Deprecations > "all"/"*"
+    1. ClassName:<discriminator> > named > Deprecations > "all"/"*"
     2. silence > warn > error
     3. (1) > (2)
+
+    ClassName:<discriminator> entries target individual event instances by their discriminator()
+    return value. They take precedence over class-level targeting, Deprecations, and all/*.
+    The discriminator must be non-empty. Any event class that implements discriminator() can
+    opt into this per-instance targeting.
     """
 
     ERROR_ALL = ("all", "*")
@@ -137,7 +142,7 @@ class WarnErrorOptionsV2(dbtClassMixin):
         self._valid_error_names: Set[str] = valid_error_names or set()
         self._valid_error_names.add(self.DEPRECATIONS)
 
-        # We can't do `= error or []` because if someone passes in an empty list, and latter appends to that list
+        # We can't do `= error or []` because if someone passes in an empty list, and later appends to that list
         # they would expect references to the original list to be updated.
         self.error = error if error is not None else []
         self.warn = warn if warn is not None else []
@@ -150,10 +155,12 @@ class WarnErrorOptionsV2(dbtClassMixin):
         if isinstance(self.error, str) and self.error not in self.ERROR_ALL:
             raise ValidationError(f"error must be one of {self.ERROR_ALL} or a list of strings")
 
-        # To specify `warn`, one of the following must be true
+        # <event_name>:<flag_name> items are always allowed in `warn` — they are specific
+        # per-instance overrides. Non-discriminated items require a broad `error` setting:
         # 1. `error` must be "all"/"*"
         # 2. "deprecations" must be in either `error` or `silence`.
-        if self.warn and not (
+        non_discriminated_warns = [w for w in self.warn if ":" not in w]
+        if non_discriminated_warns and not (
             self.error in self.ERROR_ALL
             or self.DEPRECATIONS in self.error
             or self.DEPRECATIONS in self.silence
@@ -174,7 +181,15 @@ class WarnErrorOptionsV2(dbtClassMixin):
 
     def _validate_items(self, items: List[str]):
         for item in items:
-            if item not in self._valid_error_names:
+            if ":" in item:
+                class_name, discriminator = item.split(":", 1)
+                if not discriminator:
+                    raise ValidationError(
+                        f"'{item}' is missing a discriminator value. Use 'ClassName:value'."
+                    )
+                if class_name not in self._valid_error_names:
+                    raise ValidationError(f"'{class_name}' is not a valid dbt error name.")
+            elif item not in self._valid_error_names:
                 raise ValidationError(f"{item} is not a valid dbt error name.")
 
     @property
@@ -207,7 +222,7 @@ class WarnErrorOptionsV2(dbtClassMixin):
         )
 
     def _warn_as_deprecation(self, event: Optional[BaseEvent]) -> bool:
-        """Is the event a deprecation, and if so should it be treated as an warning?"""
+        """Is the event a deprecation, and if so should it be treated as a warning?"""
         return (
             event is not None and event.code().startswith("D") and self.DEPRECATIONS in self.warn
         )
@@ -219,6 +234,17 @@ class WarnErrorOptionsV2(dbtClassMixin):
             and event.code().startswith("D")
             and self.DEPRECATIONS in self.silence
         )
+
+    def _discriminated_match(
+        self, event: Optional[BaseEvent], target_list: Union[str, List[str]]
+    ) -> bool:
+        """Does this event's ClassName:discriminator() appear in target_list?"""
+        if event is None or isinstance(target_list, str):
+            return False
+        disc = event.discriminator()
+        if disc is None:
+            return False
+        return f"{type(event).__name__}:{disc}" in target_list
 
     def errors(self, item_name: Union[str, BaseEvent]) -> bool:
         """Should the event be treated as an error?
@@ -242,13 +268,22 @@ class WarnErrorOptionsV2(dbtClassMixin):
         deprecation_elsewhere = self._warn_as_deprecation(event) or self._silence_as_deprecation(
             event
         )
+        discriminated_elsewhere = self._discriminated_match(
+            event, self.warn
+        ) or self._discriminated_match(event, self.silence)
 
         # Calculate result
-        if self._named_error(event_name) and not named_elsewhere:
+        if self._discriminated_match(event, self.error) and not discriminated_elsewhere:
             return True
-        elif self._error_as_deprecation(event) and not (named_elsewhere or deprecation_elsewhere):
+        elif self._named_error(event_name) and not (named_elsewhere or discriminated_elsewhere):
             return True
-        elif self._error_all() and not (named_elsewhere or deprecation_elsewhere):
+        elif self._error_as_deprecation(event) and not (
+            named_elsewhere or deprecation_elsewhere or discriminated_elsewhere
+        ):
+            return True
+        elif self._error_all() and not (
+            named_elsewhere or deprecation_elsewhere or discriminated_elsewhere
+        ):
             return True
         else:
             return False
@@ -260,7 +295,8 @@ class WarnErrorOptionsV2(dbtClassMixin):
     def silenced(self, item_name: Union[str, BaseEvent]) -> bool:
         """Is the event silenced?
 
-        An event silenced if any of the following are true:
+        An event is silenced if any of the following are true:
+        - The event's ClassName:discriminator() appears in `silence` (silence > warn > error)
         - The event is named in `silence`
         - "Deprecations" is in `silence` and the event is not named in `error` or `warn`
         """
@@ -274,11 +310,18 @@ class WarnErrorOptionsV2(dbtClassMixin):
 
         # Pre-compute checks that will be used multiple times
         named_elsewhere = self._named_error(event_name) or self._named_warn(event_name)
+        discriminated_elsewhere = self._discriminated_match(
+            event, self.error
+        ) or self._discriminated_match(event, self.warn)
 
-        # Calculate result
-        if self._named_silence(event_name):
+        # Calculate result (silence wins over warn/error when same specificity)
+        if self._discriminated_match(event, self.silence):
             return True
-        elif self._silence_as_deprecation(event) and not named_elsewhere:
+        elif self._named_silence(event_name) and not discriminated_elsewhere:
+            return True
+        elif self._silence_as_deprecation(event) and not (
+            named_elsewhere or discriminated_elsewhere
+        ):
             return True
         else:
             return False

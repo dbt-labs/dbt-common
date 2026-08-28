@@ -276,3 +276,133 @@ class TestWarnErrorOptionsV2:
     def test_dictification(self) -> None:
         my_options = WarnErrorOptionsV2(error=[], warn=[], silence=[])
         assert my_options.to_dict() == {"error": [], "warn": [], "silence": []}
+
+    def test_discriminated_validation_accepts_valid_entry(self) -> None:
+        WarnErrorOptionsV2(
+            silence=["BehaviorChangeEvent:anything"],
+            valid_error_names={"BehaviorChangeEvent"},
+        )
+        WarnErrorOptionsV2(
+            error=["BehaviorChangeEvent:use_mat_v2"],
+            valid_error_names={"BehaviorChangeEvent"},
+        )
+
+    def test_discriminated_empty_discriminator_raises(self) -> None:
+        with pytest.raises(ValidationError, match="missing a discriminator value"):
+            WarnErrorOptionsV2(silence=["BehaviorChangeEvent:"])
+
+    def test_discriminated_warn_allowed_without_broad_error(self) -> None:
+        # ClassName:<discriminator> in warn should not require error=all/* or Deprecations
+        WarnErrorOptionsV2(
+            error=["BehaviorChangeEvent"],
+            warn=["BehaviorChangeEvent:use_mat_v2"],
+            silence=[],
+            valid_error_names={"BehaviorChangeEvent"},
+        )
+
+    def test_non_discriminated_warn_still_requires_broad_error(self) -> None:
+        with pytest.raises(ValidationError, match="`warn` can only be specified"):
+            WarnErrorOptionsV2(
+                error=["BehaviorChangeEvent"],
+                warn=["SomeOtherEvent"],
+                silence=[],
+                valid_error_names={"BehaviorChangeEvent", "SomeOtherEvent"},
+            )
+
+    # Per-flag BehaviorChange targeting in errors()
+    @pytest.mark.parametrize(
+        "error,warn,silence,flag_name,expected_errors",
+        [
+            # flag-level error fires when not overridden
+            (["BehaviorChangeEvent:use_mat_v2"], [], [], "use_mat_v2", True),
+            # flag-level silence beats flag-level error
+            (
+                ["BehaviorChangeEvent:use_mat_v2"],
+                [],
+                ["BehaviorChangeEvent:use_mat_v2"],
+                "use_mat_v2",
+                False,
+            ),
+            # flag-level silence beats class-level error
+            (["BehaviorChangeEvent"], [], ["BehaviorChangeEvent:use_mat_v2"], "use_mat_v2", False),
+            # flag-level silence beats Deprecations error
+            (["Deprecations"], [], ["BehaviorChangeEvent:use_mat_v2"], "use_mat_v2", False),
+            # different flag name — flag-level error does not fire
+            (["BehaviorChangeEvent:other_flag"], [], [], "use_mat_v2", False),
+            # flag-level warn overrides class-level error
+            (["BehaviorChangeEvent"], ["BehaviorChangeEvent:use_mat_v2"], [], "use_mat_v2", False),
+            # same flag in both error and silence: silence wins (silence > warn > error)
+            (
+                ["BehaviorChangeEvent:use_mat_v2"],
+                [],
+                ["BehaviorChangeEvent:use_mat_v2"],
+                "use_mat_v2",
+                False,
+            ),
+        ],
+    )
+    def test_errors_per_flag(
+        self,
+        error: Union[str, List[str]],
+        warn: List[str],
+        silence: List[str],
+        flag_name: str,
+        expected_errors: bool,
+    ) -> None:
+        event = BehaviorChangeEvent(
+            flag_name=flag_name,
+            flag_source="dbt_common",
+            description="test",
+            docs_url="https://docs.getdbt.com",
+        )
+        error_warn = WarnErrorOptionsV2(
+            error=error,
+            warn=warn,
+            silence=silence,
+            valid_error_names={"BehaviorChangeEvent", "ItemB"},
+        )
+        assert error_warn.errors(event) == expected_errors
+
+    # Per-flag BehaviorChange targeting in silenced()
+    @pytest.mark.parametrize(
+        "error,warn,silence,flag_name,expected_silence",
+        [
+            # primary use case: flag-level silence fires
+            ([], [], ["BehaviorChangeEvent:use_mat_v2"], "use_mat_v2", True),
+            # flag-level error beats class-level silence
+            (["BehaviorChangeEvent:use_mat_v2"], [], ["BehaviorChangeEvent"], "use_mat_v2", False),
+            # flag-level silence beats class-level error
+            (["BehaviorChangeEvent"], [], ["BehaviorChangeEvent:use_mat_v2"], "use_mat_v2", True),
+            # different flag not silenced
+            ([], [], ["BehaviorChangeEvent:other_flag"], "use_mat_v2", False),
+            # same flag in both error and silence: silence wins (silence > warn > error)
+            (
+                ["BehaviorChangeEvent:use_mat_v2"],
+                [],
+                ["BehaviorChangeEvent:use_mat_v2"],
+                "use_mat_v2",
+                True,
+            ),
+        ],
+    )
+    def test_silenced_per_flag(
+        self,
+        error: Union[str, List[str]],
+        warn: List[str],
+        silence: List[str],
+        flag_name: str,
+        expected_silence: bool,
+    ) -> None:
+        event = BehaviorChangeEvent(
+            flag_name=flag_name,
+            flag_source="dbt_common",
+            description="test",
+            docs_url="https://docs.getdbt.com",
+        )
+        my_options = WarnErrorOptionsV2(
+            error=error,
+            warn=warn,
+            silence=silence,
+            valid_error_names={"BehaviorChangeEvent", "ItemB"},
+        )
+        assert my_options.silenced(event) == expected_silence

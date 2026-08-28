@@ -92,7 +92,7 @@ Once you're able to manually test that your code change is working as expected, 
 
 See the pyproject.toml for a complete list of custom commands.  See the h[atch docs](https://hatch.pypa.io/latest/cli/reference/) for a description of built in commands and flags.
 
-Run `hatch env show` to view a list of all envoronments and all commands available within them.
+Run `hatch env show` to view a list of all environments and all commands available within them.
 
 Example uses:
 

@@ -1,0 +1,6 @@
+kind: Under the Hood
+body: Fix typos in CONTRIBUTING.md and system.py, update Black target-version to match Python >=3.10 requirement
+time: 2026-07-17T03:00:00.000000+05:30
+custom:
+  Author: arijitroy003
+  Issue: "370"

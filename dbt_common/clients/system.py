@@ -386,7 +386,7 @@ def _supports_long_paths() -> bool:
     # Eryk Sun says to use `WinDLL('ntdll')` instead of `windll.ntdll` because
     # of pointer caching in a comment here:
     # https://stackoverflow.com/a/35097999/11262881
-    # I don't know exaclty what he means, but I am inclined to believe him as
+    # I don't know exactly what he means, but I am inclined to believe him as
     # he's pretty active on Python windows bugs!
     else:
         try:

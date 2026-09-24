@@ -1,3 +1,6 @@
+import inspect
+from unittest import mock
+
 import pytest
 
 from dbt_common.behavior_flags import Behavior
@@ -203,3 +206,10 @@ def test_behavior_flags_fire_once_per_flag(event_catcher: EventCatcher) -> None:
     if behavior.flag_1:
         pass
     assert len(event_catcher.caught_events) == 2
+
+
+def test_behavior_flags_explicit_source_skips_stack_inspection() -> None:
+    flag = {"name": "flag", "default": True, "description": "x", "source": "dbt-foo"}
+    with mock.patch.object(inspect, "stack", wraps=inspect.stack) as stack:
+        Behavior([flag], {})
+    stack.assert_not_called()

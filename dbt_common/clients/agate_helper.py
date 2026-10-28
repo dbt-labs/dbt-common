@@ -115,6 +115,7 @@ def table_from_data_flat(data, column_names: Iterable[str]) -> agate.Table:
     coerced to '5'). Additionally, this method does not coerce values to
     None (eg. '' or 'null' will retain their string literal representations).
     """
+    column_names = tuple(column_names)
     rows = []
     text_only_columns = set()
     for _row in data:

@@ -1,6 +1,8 @@
 import unittest
 
 import agate
+import pytest
+from typing import Iterable
 
 from datetime import datetime
 from decimal import Decimal
@@ -43,6 +45,32 @@ EXPECTED_STRINGS = [
     ["1", "n", "test", "3.2", "20180806T11:33:29.320Z", "True", None],
     ["2", "y", "asdf", "900", "20180806T11:35:29.320Z", "False", "a string"],
 ]
+
+
+@pytest.mark.parametrize("row_count", [0, 1, 2])
+@pytest.mark.parametrize("kind", ["list", "tuple", "iterator", "generator"])
+def test_from_data_flat_iterable_columns(row_count: int, kind: str) -> None:
+    columns = ("payload", "code", "note", "count")
+    data = [
+        {"count": 1, "code": "005", "note": "null", "payload": {"a": 1}},
+        {"count": 2, "code": "006", "note": "", "payload": {"a": 2}},
+    ]
+    names: Iterable[str]
+    if kind == "list":
+        names = list(columns)
+    elif kind == "tuple":
+        names = columns
+    elif kind == "iterator":
+        names = iter(columns)
+    else:
+        names = (name for name in columns)
+    table = agate_helper.table_from_data_flat(data[:row_count], names)
+    assert table.column_names == columns
+    expected = [
+        ['{"a": 1}', "005", "null", 1],
+        ['{"a": 2}', "006", "", 2],
+    ]
+    assert [list(row) for row in table.rows] == expected[:row_count]
 
 
 class TestAgateHelper(unittest.TestCase):

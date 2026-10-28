@@ -1,0 +1,6 @@
+kind: Fixes
+body: Preserve iterator column names when building flat Agate tables.
+time: 2026-10-27T17:20:59.918419-07:00
+custom:
+    Author: Kayvan-Zahiri
+    Issue: "378"

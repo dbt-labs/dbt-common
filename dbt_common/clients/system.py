@@ -6,6 +6,7 @@ import functools
 import json
 import os
 import os.path
+import posixpath
 import re
 import shutil
 import stat
@@ -618,13 +619,119 @@ def rename(from_path: str, to_path: str, force: bool = False) -> None:
     shutil.move(from_path, to_path)
 
 
+# Limits applied to package archives fetched and unpacked by `download` and `safe_extract`.
+# Real packages are usually a few MB, but some ship large seed files, so the defaults are
+# generous. Each can be overridden with the matching environment variable, which is read
+# at call time.
+PACKAGE_MAX_DOWNLOAD_BYTES_ENV = "DBT_PACKAGE_MAX_DOWNLOAD_BYTES"
+PACKAGE_MAX_UNCOMPRESSED_BYTES_ENV = "DBT_PACKAGE_MAX_UNCOMPRESSED_BYTES"
+PACKAGE_MAX_FILES_ENV = "DBT_PACKAGE_MAX_FILES"
+DEFAULT_PACKAGE_MAX_DOWNLOAD_BYTES = 1024**3  # 1 GiB
+DEFAULT_PACKAGE_MAX_UNCOMPRESSED_BYTES = 1024**3  # 1 GiB
+DEFAULT_PACKAGE_MAX_FILES = 100_000
+
+
+def _get_package_limit(env_var: str, default: int) -> int:
+    """Return the limit set in `env_var`, or `default` if it is unset or empty."""
+    raw = os.getenv(env_var)
+    if raw is None or not raw.strip():
+        return default
+    try:
+        value = int(raw)
+    except ValueError:
+        value = 0
+    if value <= 0:
+        raise dbt_common.exceptions.DbtRuntimeError(
+            f"Invalid value for {env_var}: {raw!r}. It must be a positive integer."
+        )
+    return value
+
+
+def _check_tar_limits(tarball: tarfile.TarFile) -> None:
+    """Raise PackageTooLargeError if the archive has too many members or too much data.
+
+    Headers are read lazily, so this stops at the first member that crosses a limit
+    without scanning (or decompressing) the rest of the archive, and nothing has been
+    written to disk yet. Iterating caches the members on the TarFile, so a following
+    `extractall` reuses them instead of re-reading the archive.
+    """
+    max_members = _get_package_limit(PACKAGE_MAX_FILES_ENV, DEFAULT_PACKAGE_MAX_FILES)
+    max_bytes = _get_package_limit(
+        PACKAGE_MAX_UNCOMPRESSED_BYTES_ENV, DEFAULT_PACKAGE_MAX_UNCOMPRESSED_BYTES
+    )
+
+    def too_big(total: int) -> dbt_common.exceptions.PackageTooLargeError:
+        return dbt_common.exceptions.PackageTooLargeError(
+            "uncompressed size in bytes", total, max_bytes, PACKAGE_MAX_UNCOMPRESSED_BYTES_ENV
+        )
+
+    sizes: Dict[str, int] = {}  # member name -> size, for non-link members
+    links: Dict[str, str] = {}  # link member name -> name of the member it points at
+    count = total = 0
+    for member in tarball:
+        count += 1
+        if count > max_members:
+            raise dbt_common.exceptions.PackageTooLargeError(
+                "entry count", count, max_members, PACKAGE_MAX_FILES_ENV
+            )
+        name = posixpath.normpath(member.name)
+        if member.issym() or member.islnk():
+            links[name] = _tar_link_target(member)
+        else:
+            # For sparse members `size` is the expanded size, i.e. what lands on disk.
+            sizes[name] = member.size
+            total += member.size
+            if total > max_bytes:
+                raise too_big(total)
+
+    # Links take no space in the archive, but when the filesystem can't create one
+    # (e.g. symlinks on Windows without the privilege) tarfile extracts a full copy
+    # of the target instead. Count that worst case. A symlink's target may come later
+    # in the archive, so this needs the full member list from the loop above.
+    resolved: Dict[str, int] = {}
+    for name in links:
+        total += _resolve_tar_link_size(name, sizes, links, resolved)
+        if total > max_bytes:
+            raise too_big(total)
+
+
+def _tar_link_target(member: tarfile.TarInfo) -> str:
+    """Return the normalized archive name a link member points at, as tarfile resolves it."""
+    if member.issym():
+        # Symlink targets are relative to the directory holding the link.
+        return posixpath.normpath(posixpath.join(posixpath.dirname(member.name), member.linkname))
+    return posixpath.normpath(member.linkname)
+
+
+def _resolve_tar_link_size(
+    name: str, sizes: Dict[str, int], links: Dict[str, str], resolved: Dict[str, int]
+) -> int:
+    """Return the size of the non-link member that link `name` ends up at (0 if none).
+
+    Follows chains of links, memoizing into `resolved` so each link is walked once.
+    Cycles and dangling links resolve to 0 (tarfile fails to extract those anyway).
+    """
+    chain = []
+    while name in links and name not in resolved and len(chain) <= len(links):
+        chain.append(name)
+        name = links[name]
+    size = resolved[name] if name in resolved else sizes.get(name, 0)
+    for link in chain:
+        resolved[link] = size
+    return size
+
+
 def safe_extract(tarball: tarfile.TarFile, path: str = ".") -> None:
     """
     Fix for CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')
 
     Uses os.path.commonpath() instead of commonprefix() to prevent path traversal
     via sibling directories with matching prefixes (CVE-2026-1703).
+
+    Before extracting anything, also checks the archive's member count and total
+    uncompressed size against the package limits (see `_check_tar_limits`).
     """
+    _check_tar_limits(tarball)
 
     def _is_within_directory(directory, target):
         abs_directory = os.path.abspath(directory)

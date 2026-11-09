@@ -1,15 +1,24 @@
+import gzip
+import io
 import os
 import shutil
 import stat
 import sys
 import unittest
 import tarfile
+import types
 import pathspec
 import pytest
 from pathlib import Path
 from tempfile import mkdtemp, NamedTemporaryFile
+from typing import Dict
 
-from dbt_common.exceptions import ExecutableError, WorkingDirectoryError
+from dbt_common.exceptions import (
+    DbtRuntimeError,
+    ExecutableError,
+    PackageTooLargeError,
+    WorkingDirectoryError,
+)
 import dbt_common.clients.system
 
 
@@ -367,3 +376,175 @@ def test_safe_extract_pre_py312_path(tmp_path) -> None:
 
     # Verify extraction worked
     assert (dest_dir / "content.txt").exists()
+
+
+# --- Package archive limits -------------------------------------------------------------
+
+
+def _make_tar_gz(path: Path, files: Dict[str, bytes]) -> Path:
+    with tarfile.open(path, "w:gz") as tar:
+        for name, data in files.items():
+            info = tarfile.TarInfo(name)
+            info.size = len(data)
+            tar.addfile(info, io.BytesIO(data))
+    return path
+
+
+@pytest.fixture(params=["data_filter", "fallback"])
+def extract_branch(request, monkeypatch) -> str:
+    """Run a test against both branches of safe_extract.
+
+    The fallback branch is forced by hiding `data_filter` from the `tarfile` module that
+    system.py sees, rather than deleting it from the real module: on Python 3.14+
+    tarfile's own extractall looks up `data_filter` as its default filter.
+    """
+    if request.param == "fallback":
+        proxy = types.SimpleNamespace(
+            **{name: getattr(tarfile, name) for name in dir(tarfile) if name != "data_filter"}
+        )
+        monkeypatch.setattr(dbt_common.clients.system, "tarfile", proxy)
+    return request.param
+
+
+@pytest.fixture
+def dest(tmp_path) -> Path:
+    dest_dir = tmp_path / "dest"
+    dest_dir.mkdir()
+    return dest_dir
+
+
+def _extract(tar_path: Path, dest_dir: Path) -> None:
+    with tarfile.open(tar_path, "r:gz") as tarball:
+        dbt_common.clients.system.safe_extract(tarball, str(dest_dir))
+
+
+def test_safe_extract_within_limits_extracts_everything(tmp_path, dest, extract_branch) -> None:
+    files = {f"pkg/models/model_{i}.sql": f"select {i}".encode() for i in range(50)}
+    files["pkg/seeds/big.csv"] = b"a,b\n" * 10_000
+    tar_path = _make_tar_gz(tmp_path / "pkg.tar.gz", files)
+
+    _extract(tar_path, dest)
+
+    extracted = {
+        p.relative_to(dest).as_posix(): p.read_bytes() for p in dest.rglob("*") if p.is_file()
+    }
+    assert extracted == files
+
+
+def test_safe_extract_limits_checked_before_extractall_keeps_all_members(tmp_path) -> None:
+    # _check_tar_limits iterates the archive; extractall must still see every member.
+    files = {f"f{i}.txt": b"x" for i in range(20)}
+    tar_path = _make_tar_gz(tmp_path / "pkg.tar.gz", files)
+    with tarfile.open(tar_path, "r:gz") as tarball:
+        dbt_common.clients.system._check_tar_limits(tarball)
+        assert tarball.getnames() == list(files)
+
+
+def test_safe_extract_too_many_members(tmp_path, dest, extract_branch, monkeypatch) -> None:
+    monkeypatch.setenv("DBT_PACKAGE_MAX_FILES", "3")
+    tar_path = _make_tar_gz(tmp_path / "pkg.tar.gz", {f"f{i}.txt": b"x" for i in range(5)})
+
+    with pytest.raises(PackageTooLargeError, match="DBT_PACKAGE_MAX_FILES") as exc:
+        _extract(tar_path, dest)
+
+    assert exc.value.limit == 3
+    assert exc.value.observed == 4  # stops at the first member over the limit
+    assert list(dest.iterdir()) == []
+
+
+def test_safe_extract_total_size_too_large(tmp_path, dest, extract_branch, monkeypatch) -> None:
+    monkeypatch.setenv("DBT_PACKAGE_MAX_UNCOMPRESSED_BYTES", "100")
+    files = {"a.txt": b"a" * 40, "b.txt": b"b" * 40, "c.txt": b"c" * 40}
+    tar_path = _make_tar_gz(tmp_path / "pkg.tar.gz", files)
+
+    with pytest.raises(PackageTooLargeError, match="DBT_PACKAGE_MAX_UNCOMPRESSED_BYTES") as exc:
+        _extract(tar_path, dest)
+
+    assert exc.value.observed == 120
+    assert exc.value.limit == 100
+    assert list(dest.iterdir()) == []
+
+
+def test_safe_extract_declared_huge_member_rejected_before_any_write(
+    tmp_path, dest, extract_branch
+) -> None:
+    # A header that declares a 2 GiB member, followed by only a few bytes of data.
+    # With the default 1 GiB limit this must be rejected from the header alone.
+    info = tarfile.TarInfo("pkg/huge.csv")
+    info.size = 2 * 1024**3
+    tar_path = tmp_path / "pkg.tar.gz"
+    with gzip.open(tar_path, "wb") as gz:
+        gz.write(info.tobuf(format=tarfile.GNU_FORMAT) + b"x" * 1024)
+    assert tar_path.stat().st_size < 4096
+
+    with pytest.raises(PackageTooLargeError) as exc:
+        _extract(tar_path, dest)
+
+    assert exc.value.observed == 2 * 1024**3
+    assert exc.value.limit == dbt_common.clients.system.DEFAULT_PACKAGE_MAX_UNCOMPRESSED_BYTES
+    assert list(dest.iterdir()) == []
+
+
+def test_safe_extract_counts_link_targets(tmp_path, dest, extract_branch, monkeypatch) -> None:
+    # If links can't be created, tarfile extracts a copy of the target instead, so a
+    # link counts as its target's size. Include a chain and a link to a later member.
+    monkeypatch.setenv("DBT_PACKAGE_MAX_UNCOMPRESSED_BYTES", "200")
+    tar_path = tmp_path / "pkg.tar.gz"
+    with tarfile.open(tar_path, "w:gz") as tar:
+
+        def link(name: str, target: str, type: bytes) -> None:
+            info = tarfile.TarInfo(name)
+            info.type = type
+            info.linkname = target
+            tar.addfile(info)
+
+        link("pkg/early.csv", "data.csv", tarfile.SYMTYPE)  # target appears later
+        data = tarfile.TarInfo("pkg/data.csv")
+        data.size = 60
+        tar.addfile(data, io.BytesIO(b"d" * 60))
+        link("pkg/hard.csv", "pkg/data.csv", tarfile.LNKTYPE)
+        link("pkg/chain.csv", "hard.csv", tarfile.SYMTYPE)
+
+    with pytest.raises(PackageTooLargeError) as exc:
+        _extract(tar_path, dest)
+
+    assert exc.value.observed == 240
+    assert list(dest.iterdir()) == []
+
+
+def test_check_tar_limits_link_cycle_terminates(tmp_path) -> None:
+    tar_path = tmp_path / "pkg.tar.gz"
+    with tarfile.open(tar_path, "w:gz") as tar:
+        for name, target in [("a", "b"), ("b", "c"), ("c", "a"), ("d", "a")]:
+            info = tarfile.TarInfo(name)
+            info.type = tarfile.SYMTYPE
+            info.linkname = target
+            tar.addfile(info)
+    with tarfile.open(tar_path, "r:gz") as tarball:
+        dbt_common.clients.system._check_tar_limits(tarball)
+
+
+@pytest.mark.parametrize("value", ["abc", "0", "-5", "1.5", "1e9"])
+def test_package_limit_invalid_env_var(tmp_path, dest, monkeypatch, value) -> None:
+    monkeypatch.setenv("DBT_PACKAGE_MAX_FILES", value)
+    tar_path = _make_tar_gz(tmp_path / "pkg.tar.gz", {"a.txt": b"a"})
+
+    with pytest.raises(DbtRuntimeError, match="DBT_PACKAGE_MAX_FILES") as exc:
+        _extract(tar_path, dest)
+
+    assert not isinstance(exc.value, PackageTooLargeError)
+    assert list(dest.iterdir()) == []
+
+
+def test_package_limit_empty_env_var_uses_default(monkeypatch) -> None:
+    monkeypatch.setenv("DBT_PACKAGE_MAX_FILES", "")
+    assert dbt_common.clients.system._get_package_limit("DBT_PACKAGE_MAX_FILES", 7) == 7
+
+
+def test_package_too_large_error_message() -> None:
+    err = PackageTooLargeError("entry count", 100_001, 100_000, "DBT_PACKAGE_MAX_FILES")
+    assert isinstance(err, DbtRuntimeError)
+    assert "entry count" in str(err)
+    assert "100,001" in str(err)
+    assert "100,000" in str(err)
+    assert "DBT_PACKAGE_MAX_FILES" in str(err)

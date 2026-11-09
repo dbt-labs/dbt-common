@@ -1,7 +1,10 @@
 import functools
+from gzip import BadGzipFile
+from tarfile import ReadError
+
 import pytest
 from requests.exceptions import RequestException
-from dbt_common.exceptions import ConnectionError
+from dbt_common.exceptions import ConnectionError, PackageTooLargeError
 from dbt_common.utils.connection import connection_exception_retry
 
 
@@ -60,3 +63,23 @@ class TestSingleRetry:
         # If the value is not being passed it causes cryptic errors
         assert result == expected
         assert counter == 2
+
+
+class TestPackageTooLargeNotRetried:
+    def test_package_too_large_passes_through_without_retry(self, mocker) -> None:
+        sleep = mocker.patch("dbt_common.utils.connection.time.sleep")
+        calls = []
+
+        def too_large() -> None:
+            calls.append(1)
+            raise PackageTooLargeError("entry count", 11, 10, "DBT_PACKAGE_MAX_FILES")
+
+        with pytest.raises(PackageTooLargeError):
+            connection_exception_retry(too_large, 5)
+
+        assert len(calls) == 1
+        sleep.assert_not_called()
+
+    def test_package_too_large_is_not_a_retryable_type(self) -> None:
+        for retryable in (RequestException, ReadError, EOFError, BadGzipFile):
+            assert not issubclass(PackageTooLargeError, retryable)

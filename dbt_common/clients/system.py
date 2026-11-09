@@ -1,8 +1,10 @@
 import dbt_common.exceptions.base
+import contextlib
 import dataclasses
 import errno
 import fnmatch
 import functools
+import gzip
 import json
 import os
 import os.path
@@ -14,7 +16,18 @@ import subprocess
 import sys
 import tarfile
 from pathlib import Path
-from typing import Any, Callable, Dict, List, NoReturn, Optional, Tuple, Type, Union
+from typing import (
+    IO,
+    Any,
+    Callable,
+    Dict,
+    List,
+    NoReturn,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 
 import dbt_common.exceptions
 import requests
@@ -582,43 +595,6 @@ def run_cmd(cwd: str, cmd: List[str], env: Optional[Dict[str, Any]] = None) -> T
     return out, err
 
 
-def download_with_retries(
-    url: str, path: str, timeout: Optional[Union[float, tuple]] = None
-) -> None:
-    download_fn = functools.partial(download, url, path, timeout)
-    connection_exception_retry(download_fn, 5)
-
-
-def download(
-    url: str,
-    path: str,
-    timeout: Optional[Union[float, Tuple[float, float], Tuple[float, None]]] = None,
-) -> None:
-    path = convert_path(path)
-    connection_timeout = timeout or float(os.getenv("DBT_HTTP_TIMEOUT", 10))
-    response = requests.get(url, timeout=connection_timeout)
-    with open(path, "wb") as handle:
-        for block in response.iter_content(1024 * 64):
-            handle.write(block)
-
-
-def rename(from_path: str, to_path: str, force: bool = False) -> None:
-    from_path = convert_path(from_path)
-    to_path = convert_path(to_path)
-    is_symlink = path_is_symlink(to_path)
-
-    if from_path == to_path:
-        return
-
-    if os.path.exists(to_path) and force:
-        if is_symlink:
-            remove_file(to_path)
-        else:
-            rmdir(to_path)
-
-    shutil.move(from_path, to_path)
-
-
 # Limits applied to package archives fetched and unpacked by `download` and `safe_extract`.
 # Real packages are usually a few MB, but some ship large seed files, so the defaults are
 # generous. Each can be overridden with the matching environment variable, which is read
@@ -645,6 +621,130 @@ def _get_package_limit(env_var: str, default: int) -> int:
             f"Invalid value for {env_var}: {raw!r}. It must be a positive integer."
         )
     return value
+
+
+def download_with_retries(
+    url: str, path: str, timeout: Optional[Union[float, tuple]] = None
+) -> None:
+    download_fn = functools.partial(download, url, path, timeout)
+    connection_exception_retry(download_fn, 5)
+
+
+def download(
+    url: str,
+    path: str,
+    timeout: Optional[Union[float, Tuple[float, float], Tuple[float, None]]] = None,
+) -> None:
+    """Stream `url` to `path`, refusing bodies larger than the package download limit.
+
+    The limit defaults to DEFAULT_PACKAGE_MAX_DOWNLOAD_BYTES and can be changed with the
+    DBT_PACKAGE_MAX_DOWNLOAD_BYTES environment variable. If the body turns out to be too
+    large, or the transfer fails partway, the partially written file is removed.
+    """
+    path = convert_path(path)
+    connection_timeout = timeout or float(os.getenv("DBT_HTTP_TIMEOUT", 10))
+    max_bytes = _get_package_limit(
+        PACKAGE_MAX_DOWNLOAD_BYTES_ENV, DEFAULT_PACKAGE_MAX_DOWNLOAD_BYTES
+    )
+
+    def too_big(observed: int) -> dbt_common.exceptions.PackageTooLargeError:
+        return dbt_common.exceptions.PackageTooLargeError(
+            "download size in bytes", observed, max_bytes, PACKAGE_MAX_DOWNLOAD_BYTES_ENV
+        )
+
+    # closing() rather than `with requests.get(...)`, so the object we read from is the
+    # response itself even when callers' tests mock requests.get with a MagicMock.
+    with contextlib.closing(
+        requests.get(url, timeout=connection_timeout, stream=True)
+    ) as response:
+        # Content-Length is only a hint (it may be missing, malformed, or wrong), so it
+        # is used to fail fast; the byte count below is what enforces the limit.
+        try:
+            declared = int(response.headers.get("Content-Length", ""))
+        except ValueError:
+            declared = None
+        if declared is not None and declared > max_bytes:
+            raise too_big(declared)
+
+        received = 0
+        handle = open(path, "wb")
+        try:
+            with handle:
+                for block in response.iter_content(1024 * 64):
+                    received += len(block)
+                    if received > max_bytes:
+                        raise too_big(received)
+                    handle.write(block)
+        except BaseException:
+            # Remove only after the handle is closed: Windows can't delete an open file.
+            with contextlib.suppress(FileNotFoundError):
+                os.remove(path)
+            raise
+
+
+def rename(from_path: str, to_path: str, force: bool = False) -> None:
+    from_path = convert_path(from_path)
+    to_path = convert_path(to_path)
+    is_symlink = path_is_symlink(to_path)
+
+    if from_path == to_path:
+        return
+
+    if os.path.exists(to_path) and force:
+        if is_symlink:
+            remove_file(to_path)
+        else:
+            rmdir(to_path)
+
+    shutil.move(from_path, to_path)
+
+
+# Bytes of tar header data (512-byte headers plus GNU long-name and PAX extended
+# headers) allowed per permitted entry, on top of a fixed allowance. tarfile reads
+# extended headers fully into memory, and they are not members, so _check_tar_limits
+# never sees them; `_ReadBudget` bounds them instead. A plain entry needs one 512-byte
+# header; one with a long path (over 100 characters, common in GitHub tarballs) adds a
+# PAX header and its payload, 1.5 KiB in all. 2 KiB covers that for every entry, giving
+# ~196 MiB at the default entry limit; real packages use ~520 bytes per entry.
+PACKAGE_HEADER_BYTES_PER_ENTRY = 2048
+PACKAGE_HEADER_BYTES_ALLOWANCE = 1024**2  # 1 MiB
+
+
+class _ReadBudget:
+    """Read-only wrapper around a file object that raises once `limit` bytes are read.
+
+    Only bytes returned by `read` count; `seek` (which tarfile uses to skip member data)
+    does not. A read never asks the wrapped file for more than one byte past the
+    budget, so a crafted header cannot make it allocate more than that. Set `limit`
+    to None to lift the budget.
+    """
+
+    def __init__(self, fileobj: IO[bytes], limit: int) -> None:
+        self._fileobj = fileobj
+        self.limit: Optional[int] = limit
+        self.bytes_read = 0
+
+    def read(self, size: Optional[int] = -1) -> bytes:
+        if self.limit is not None:
+            remaining = self.limit - self.bytes_read
+            if size is None or size < 0 or size > remaining:
+                size = remaining + 1
+        data = self._fileobj.read(size)
+        self.bytes_read += len(data)
+        if self.limit is not None and self.bytes_read > self.limit:
+            raise dbt_common.exceptions.PackageTooLargeError(
+                "tar header data in bytes", self.bytes_read, self.limit, PACKAGE_MAX_FILES_ENV
+            )
+        return data
+
+    def seek(self, offset: int, whence: int = os.SEEK_SET) -> int:
+        return self._fileobj.seek(offset, whence)
+
+    def tell(self) -> int:
+        return self._fileobj.tell()
+
+    def seekable(self) -> bool:
+        return self._fileobj.seekable()
 
 
 def _check_tar_limits(tarball: tarfile.TarFile) -> None:
@@ -758,10 +858,24 @@ def safe_extract(tarball: tarfile.TarFile, path: str = ".") -> None:
 
 def untar_package(tar_path: str, dest_dir: str, rename_to: Optional[str] = None) -> None:
     tar_path = convert_path(tar_path)
-    tar_dir_name = None
-    with tarfile.open(tar_path, "r:gz") as tarball:
-        safe_extract(tarball, dest_dir)
-        tar_dir_name = os.path.commonprefix(tarball.getnames())
+    max_members = _get_package_limit(PACKAGE_MAX_FILES_ENV, DEFAULT_PACKAGE_MAX_FILES)
+    header_budget = max_members * PACKAGE_HEADER_BYTES_PER_ENTRY + PACKAGE_HEADER_BYTES_ALLOWANCE
+    # Open the gzip layer ourselves (rather than tarfile's "r:gz") so tarfile reads the
+    # decompressed stream through a budget: until every header has been checked, all it
+    # reads is header data, including extended headers it would otherwise read whole.
+    with gzip.open(tar_path, "rb") as gz:
+        reader = _ReadBudget(gz, header_budget)
+        try:
+            tarball = tarfile.open(fileobj=reader, mode="r:")
+        except OSError as exc:
+            # Match tarfile's "r:gz" mode, which reports a bad gzip file as a ReadError.
+            raise tarfile.ReadError("not a gzip file") from exc
+        with tarball:
+            _check_tar_limits(tarball)  # reads every header, within the budget
+            # Member data is bounded by _check_tar_limits; extraction reads only that.
+            reader.limit = None
+            safe_extract(tarball, dest_dir)  # its own limit check reuses the cached headers
+            tar_dir_name = os.path.commonprefix(tarball.getnames())
     if rename_to:
         downloaded_path = os.path.join(dest_dir, tar_dir_name)
         desired_path = os.path.join(dest_dir, rename_to)

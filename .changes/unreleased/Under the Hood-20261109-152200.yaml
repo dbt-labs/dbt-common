@@ -1,0 +1,6 @@
+kind: Under the Hood
+body: 'Bound package archive size and entry count: stream package downloads and cap their size, and check entry count and uncompressed size before extracting. Limits are configurable with DBT_PACKAGE_MAX_DOWNLOAD_BYTES, DBT_PACKAGE_MAX_UNCOMPRESSED_BYTES and DBT_PACKAGE_MAX_FILES.'
+time: 2026-11-09T15:22:00.535447+05:30
+custom:
+    Author: tauhid621
+    Issue: ""

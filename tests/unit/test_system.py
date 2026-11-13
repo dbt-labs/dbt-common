@@ -43,6 +43,28 @@ class TestLoadFileContentsRetry(unittest.TestCase):
 class TestUntarPackageCommonpath(unittest.TestCase):
     """Verify untar_package uses commonpath (path-aware) not commonprefix (string-based)."""
 
+    def test_empty_archive_without_rename(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tar_path = os.path.join(tmpdir, "empty.tar.gz")
+            with tarfile.open(tar_path, "w:gz"):
+                pass
+            untar_package(tar_path, os.path.join(tmpdir, "dest"))
+
+    def test_rename_uses_directory_components(self):
+        import io
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tar_path = os.path.join(tmpdir, "test.tar.gz")
+            with tarfile.open(tar_path, "w:gz") as tar:
+                for name in ("pkg/abc.txt", "pkg/abd.txt"):
+                    member = tarfile.TarInfo(name)
+                    member.size = 4
+                    tar.addfile(member, io.BytesIO(b"data"))
+            dest = os.path.join(tmpdir, "dest")
+            untar_package(tar_path, dest, rename_to="renamed")
+            assert os.path.isfile(os.path.join(dest, "renamed", "abc.txt"))
+            assert os.path.isfile(os.path.join(dest, "renamed", "abd.txt"))
+
     def test_commonpath_used(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create a tarball with a shared directory prefix

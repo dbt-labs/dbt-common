@@ -665,7 +665,8 @@ def untar_package(tar_path: str, dest_dir: str, rename_to: Optional[str] = None)
     tar_dir_name = None
     with tarfile.open(tar_path, "r:gz") as tarball:
         safe_extract(tarball, dest_dir)
-        tar_dir_name = os.path.commonpath(tarball.getnames())
+        if rename_to:
+            tar_dir_name = os.path.commonpath(tarball.getnames())
     if rename_to:
         downloaded_path = os.path.join(dest_dir, tar_dir_name)
         desired_path = os.path.join(dest_dir, rename_to)
